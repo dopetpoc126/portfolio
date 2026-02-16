@@ -12,27 +12,27 @@ gsap.registerPlugin(ScrollTrigger);
 const PROJECTS = [
     {
         title: 'BEAKAN',
-        description: 'Android notification intercepter with interactive pill UI.',
+        description: 'Dynamic Island-style notification overlay for Android.',
         tech: ['Android', 'Kotlin', 'Accessibility Svc', 'UI/UX'],
-        longDesc: "An app which intercepts specific notification categories—media playback, OTP messages, downloads, and system events—and presents them as an interactive, pill-shaped overlay inspired by Dynamic Island.",
+        longDesc: "A Dynamic Island-inspired overlay that intercepts media, OTPs, and system events, presenting them as an interactive pill for seamless background interaction.",
         status: 'DEPLOYED',
         link: 'https://github.com/dopetpoc126/Beakan',
         index: '01'
     },
     {
         title: 'ANADROME',
-        description: 'Advanced live wallpaper engine for Android.',
+        description: 'High-performance live wallpaper engine.',
         tech: ['Android', 'Video Rendering', 'Performance', 'Kotlin'],
-        longDesc: "An android app which allows users to apply any video as a live wallpaper along with additional functionality like audio visualizers and battery optimization.",
+        longDesc: "A wallpaper engine that renders local video files as live backgrounds with minimal battery impact. Features hardware-accelerated rendering and audio visualization.",
         status: 'OPERATIONAL',
         link: 'https://github.com/dopetpoc126/Anadrome',
         index: '02'
     },
     {
         title: 'NIDAN AI',
-        description: 'Intelligent medical symptom analysis assistant.',
+        description: 'Hybrid ML/LLM diagnosis tool.',
         tech: ['Machine Learning', 'Python', 'LLM', 'Healthcare'],
-        longDesc: "An intelligent medical symptom analysis assistant that combines Machine Learning predictions with LLM-based diagnostic reasoning to provide accurate health assessments.",
+        longDesc: "A diagnostic tool combining traditional ML probability models with LLM reasoning to analyze symptoms and provide comprehensive health risk assessments.",
         status: 'EXPERIMENTAL',
         link: 'https://github.com/dopetpoc126/htpss---Dataset-2.0---Nidan-AI',
         index: '03'
