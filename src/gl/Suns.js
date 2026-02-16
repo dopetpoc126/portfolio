@@ -23,7 +23,7 @@ export default class Suns {
         console.log('Earth System: Initializing...');
 
         this.loader.load(
-            '/Earth by NASA.glb',
+            import.meta.env.BASE_URL + 'Earth by NASA.glb',
             (gltf) => {
                 this.model = gltf.scene;
                 this.modelReady = true;
