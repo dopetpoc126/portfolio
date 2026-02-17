@@ -25,10 +25,10 @@ export default class GLManager {
 
         this.renderer.setSize(this.width, this.height);
         const pixelRatio = Math.min(window.devicePixelRatio, 2);
-        // Mobile optimization: Cap pixel ratio to 1.5 to save battery/performance
-        // Treat tablets/iPads as mobile for rendering safety (< 1025px covers iPad Pro vertical)
+        // EMERGENCY: Cap pixel ratio to 1.0 on Mobile/Tablet to prevent OOM Crashes
         const isMobile = window.innerWidth < 1025;
-        this.renderer.setPixelRatio(isMobile ? Math.min(pixelRatio, 1.5) : pixelRatio);
+        this.isMobile = isMobile;
+        this.renderer.setPixelRatio(isMobile ? 1.0 : pixelRatio);
 
         this.updates = []; // Array of update functions
 
@@ -44,17 +44,16 @@ export default class GLManager {
 
         const isMobile = window.innerWidth < 1025;
 
-        // Mobile optimization: Reduce bloom resolution
-        const resolution = new THREE.Vector2(this.width, this.height);
-        if (isMobile) resolution.multiplyScalar(0.5);
-
-        const bloomPass = new UnrealBloomPass(
-            resolution,
-            isMobile ? 0.8 : 1.0, // Strength: Reduced on mobile
-            0.5, // Radius: 0.5
-            0.85  // Threshold
-        );
-        this.composer.addPass(bloomPass);
+        // EMERGENCY: Disable Bloom on Mobile to save memory
+        if (!isMobile) {
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(this.width, this.height),
+                1.5,  // strength (restored to original high quality for desktop)
+                0.4,  // radius
+                0.85  // threshold
+            );
+            this.composer.addPass(bloomPass);
+        }
     }
 
     addEventListeners() {
