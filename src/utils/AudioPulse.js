@@ -11,7 +11,7 @@ function createAudioPulseSystem() {
         return {
             resume: () => Promise.resolve(),
             getEnergy: () => 0,
-            destroy: () => {}
+            destroy: () => { }
         };
     }
 
@@ -20,35 +20,62 @@ function createAudioPulseSystem() {
         return {
             resume: () => Promise.resolve(),
             getEnergy: () => 0,
-            destroy: () => {}
+            destroy: () => { }
         };
     }
 
     const context = new AudioContext();
     const analyser = context.createAnalyser();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
+    const masterGain = context.createGain();
+
+    // Zen Drone: Multiple low frequency oscillators
+    const drones = [];
+    const freqs = [110, 165, 220, 55]; // A2, E3, A3, A1 (Harmonic stack)
+
+    freqs.forEach(freq => {
+        const osc = context.createOscillator();
+        const gain = context.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        // Random slight detune for richness
+        osc.detune.value = (Math.random() - 0.5) * 10;
+
+        gain.gain.value = 0.0; // Start silent, fade in
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start();
+
+        // Low volume but audible
+        drones.push({ osc, gain, baseGain: 0.15 / freqs.length }); // Increased volume (was 0.05)
+    });
 
     analyser.fftSize = 256;
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    oscillator.type = DEFAULT_OSC_TYPE;
-    oscillator.frequency.value = DEFAULT_FREQ;
-    gain.gain.value = DEFAULT_GAIN;
+    masterGain.gain.value = 1.0;
 
-    oscillator.connect(analyser);
-    analyser.connect(gain);
-    gain.connect(context.destination);
-
-    oscillator.start();
+    masterGain.connect(analyser);
+    analyser.connect(context.destination);
 
     function resume() {
-        if (context.state === 'suspended') {
-            return context.resume();
-        }
-        return Promise.resolve();
+        // Always try to resume context
+        const resumePromise = (context.state === 'suspended') ? context.resume() : Promise.resolve();
+
+        return resumePromise.then(() => {
+            // Fade in drones now that we are resumed
+            const now = context.currentTime;
+            drones.forEach(d => {
+                // Cancel scheduled values to be safe
+                d.gain.gain.cancelScheduledValues(now);
+                // Ramp up
+                d.gain.gain.linearRampToValueAtTime(d.baseGain, now + 2.0); // Faster fade (2s)
+            });
+            console.log('Zenith Audio: Resumed & Fading In');
+        });
     }
 
     function getEnergy() {
+        if (context.state === 'suspended') return 0;
         analyser.getByteFrequencyData(dataArray);
         let sum = 0;
         for (let i = 0; i < dataArray.length; i++) {
@@ -60,10 +87,13 @@ function createAudioPulseSystem() {
     }
 
     function destroy() {
-        oscillator.stop();
-        oscillator.disconnect();
+        drones.forEach(d => {
+            d.osc.stop();
+            d.osc.disconnect();
+            d.gain.disconnect();
+        });
+        masterGain.disconnect();
         analyser.disconnect();
-        gain.disconnect();
         if (context.state !== 'closed') {
             context.close();
         }

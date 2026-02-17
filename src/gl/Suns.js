@@ -46,20 +46,33 @@ export default class Suns {
                     if (child.isMesh) {
                         // Use existing map if available
                         const oldMat = child.material;
-                        const newMat = new THREE.MeshBasicMaterial({
+                        const newMat = new THREE.MeshStandardMaterial({
                             map: oldMat.map || null,
-                            color: new THREE.Color(0xffffff), // Pure white to show texture
-                            transparent: false, // Start OPAQUE to force depth write
+                            color: new THREE.Color(0xffffff),
+                            roughness: 0.6, // Satin finish for vibrancy
+                            metalness: 0.1,
+                            transparent: false,
                             opacity: 1.0,
                             side: THREE.DoubleSide,
-                            depthWrite: true, // Start blocking stars
+                            depthWrite: true,
                             depthTest: true
                         });
+
+                        // Monochrome Shader Injection REMOVED per user request
+
                         child.material = newMat;
-                        child.renderOrder = 1; // Render before city
+                        child.renderOrder = 1;
                         this.earthMeshes.push(child);
                     }
                 });
+
+                // Add Sunlight - Vibrant and Warm
+                const sunLight = new THREE.DirectionalLight(0xffffee, 3.0); // Increased intensity, warm tint
+                sunLight.position.set(20, 10, 20); // Top-right-front
+                this.gl.scene.add(sunLight);
+                // Ambient light for bright shadows
+                const ambientLight = new THREE.AmbientLight(0x404040, 1.0); // Stronger ambient
+                this.gl.scene.add(ambientLight);
 
                 this.gl.scene.add(this.model);
             },

@@ -13,15 +13,15 @@ export default class ScrollManager {
 
         this.lenis = new Lenis({
             // Smoother scroll on mobile with higher lerp
-            lerp: isMobile ? 0.15 : 0.1,
+            lerp: isMobile ? 0.1 : 0.05, // Snappier on mobile, heavy on desktop
             // Native smooth scrolling fallback
             smoothWheel: true,
             // Touch responsiveness
-            touchMultiplier: isMobile ? 2.0 : 1.5,
+            touchMultiplier: isMobile ? 1.5 : 1.5,
             // Wheel responsiveness 
-            wheelMultiplier: 1.0,
+            wheelMultiplier: 0.8,
             // Reduce inertia duration on mobile for snappier feel
-            duration: isMobile ? 0.8 : 1.2,
+            duration: isMobile ? 1.0 : 2.0, // Shorter glide on mobile to prevent "stuck" feel
             // Direction
             orientation: 'vertical',
             // Gesture direction
@@ -29,9 +29,9 @@ export default class ScrollManager {
             // Smooth touch scrolling
             smoothTouch: true,
             // Keep touch scrolling in sync with JS state on mobile to reduce edge bounce artifacts
-            syncTouch: isMobile,
-            syncTouchLerp: isMobile ? 0.08 : 0.1,
-            touchInertiaMultiplier: isMobile ? 20 : 35,
+            syncTouch: false, // Disabled to prevent main-thread jank/stutter
+            syncTouchLerp: 0.1,
+            touchInertiaMultiplier: isMobile ? 15 : 35, // Reduced inertia
             // Infinite scroll disable
             infinite: false,
         });
