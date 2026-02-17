@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 const { clamp, lerp } = THREE.MathUtils;
-const CITY_MODEL_URL = import.meta.env.BASE_URL + 'scene-compressed.glb'; // Updated scene URL
+const CITY_MODEL_URL = import.meta.env.BASE_URL + 'scene-small.glb'; // Updated scene URL
 
 export default class City {
     constructor(glManager) {

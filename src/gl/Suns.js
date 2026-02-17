@@ -23,7 +23,7 @@ export default class Suns {
         console.log('Earth System: Initializing...');
 
         this.loader.load(
-            import.meta.env.BASE_URL + 'Earth by NASA.glb',
+            import.meta.env.BASE_URL + 'earth.glb',
             (gltf) => {
                 this.model = gltf.scene;
                 this.modelReady = true;
@@ -32,7 +32,7 @@ export default class Suns {
 
                 // 1. Scale & Position
                 this.isMobile = window.innerWidth < 768;
-                this.baseScale = this.isMobile ? 0.3 : 0.4; // Reduced by 25% for mobile
+                this.baseScale = this.isMobile ? 25.0 : 25.0; // Reduced by 25% for mobile
                 this.model.scale.set(this.baseScale, this.baseScale, this.baseScale);
 
                 // Positioned slightly lower to center in Hero view
