@@ -8,94 +8,94 @@ export default class ScrollManager {
     }
 
     init() {
-        const isMobile = window.innerWidth < 768;
+        // Treat tablets/iPads as mobile for scrolling (< 1025px)
+        const isMobile = window.innerWidth < 1025;
         this.isMobile = isMobile;
 
-        this.lenis = new Lenis({
-            // Smoother scroll on mobile with higher lerp
-            lerp: isMobile ? 0.1 : 0.05, // Snappier on mobile, heavy on desktop
-            // Native smooth scrolling fallback
-            smoothWheel: true,
-            // Touch responsiveness
-            touchMultiplier: isMobile ? 1.5 : 1.5,
-            // Wheel responsiveness 
-            wheelMultiplier: 0.8,
-            // Reduce inertia duration on mobile for snappier feel
-            duration: isMobile ? 1.0 : 2.0, // Shorter glide on mobile to prevent "stuck" feel
-            // Direction
-            orientation: 'vertical',
-            // Gesture direction
-            gestureOrientation: 'vertical',
-            // Smooth touch scrolling
-            smoothTouch: true,
-            // Keep touch scrolling in sync with JS state on mobile to reduce edge bounce artifacts
-            syncTouch: false, // Disabled to prevent main-thread jank/stutter
-            syncTouchLerp: 0.1,
-            touchInertiaMultiplier: isMobile ? 15 : 35, // Reduced inertia
-            // Infinite scroll disable
-            infinite: false,
-        });
+        if (!this.isMobile) {
+            this.lenis = new Lenis({
+                lerp: 0.05,
+                smoothWheel: true,
+                orientation: 'vertical',
+                gestureOrientation: 'vertical',
+                smoothTouch: false, // Disable touch smoothing on desktop too for trackpads
+                infinite: false,
+            });
 
-        // Sync with GSAP
-        this.lenis.on('scroll', (e) => {
-            ScrollTrigger.update();
-            window.scrollVelocity = e.velocity;
-        });
+            this.lenis.on('scroll', (e) => {
+                ScrollTrigger.update();
+                window.scrollVelocity = e.velocity;
+            });
 
-        ScrollTrigger.scrollerProxy(document.body, {
-            scrollTop: (value) => {
-                if (arguments.length) {
-                    this.lenis.scrollTo(value, { duration: 0, immediate: true });
-                }
-                return this.lenis.scroll;
-            },
-            getBoundingClientRect: () => {
-                return {
-                    top: 0,
-                    left: 0,
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                };
-            },
-            pinType: isMobile ? 'transform' : (document.body.style.transform ? 'transform' : 'fixed')
-        });
+            gsap.ticker.add((time) => {
+                this.lenis.raf(time * 1000);
+            });
+        }
 
-        const defaultLerp = this.lenis.lerp;
-        const workLerp = isMobile ? 0.06 : 0.08;
-        ScrollTrigger.create({
-            trigger: '#work',
-            start: 'top top',
-            end: 'bottom top',
-            onEnter: () => {
-                this.lenis.lerp = workLerp;
-            },
-            onLeave: () => {
-                this.lenis.lerp = defaultLerp;
-            },
-            onEnterBack: () => {
-                this.lenis.lerp = workLerp;
-            },
-            onLeaveBack: () => {
-                this.lenis.lerp = defaultLerp;
-            }
-        });
+        // Common Scroller Proxy
+        if (!isMobile) {
+            ScrollTrigger.scrollerProxy(document.body, {
+                scrollTop(value) {
+                    if (arguments.length) {
+                        // isMobile is always false here
+                        // Access the lenis instance from the outer scope if needed, or this.lenis
+                    }
+                    return (this.lenis ? this.lenis.scroll : window.scrollY);
+                },
+                getBoundingClientRect() {
+                    return {
+                        top: 0,
+                        left: 0,
+                        width: window.innerWidth,
+                        height: window.innerHeight
+                    };
+                },
+                pinType: 'transform'
+            });
+        }
 
-        gsap.ticker.add((time) => {
-            this.lenis.raf(time * 1000);
-        });
 
-        gsap.ticker.lagSmoothing(0);
+        // If not mobile, we need to proxy the scrollTo method. 
+        // If mobile, we just use native.
+
+        // No more complex lerp shifting logic.
+    }
+
+    get scroll() {
+        return this.isMobile ? window.scrollY : (this.lenis ? this.lenis.scroll : window.scrollY);
+    }
+
+    get velocity() {
+        return this.isMobile ? 0 : (this.lenis ? this.lenis.velocity : 0);
     }
 
     scrollTo(target, options) {
-        this.lenis.scrollTo(target, options);
+        if (this.isMobile) {
+            // Native smooth scroll
+            // 'target' can be a number or element
+            let y = target;
+            if (typeof target !== 'number') {
+                // assume element
+                const rect = target.getBoundingClientRect();
+                y = window.scrollY + rect.top;
+            }
+
+            window.scrollTo({
+                top: y,
+                behavior: 'smooth'
+            });
+        } else if (this.lenis) {
+            this.lenis.scrollTo(target, options);
+        }
     }
 
     stop() {
-        this.lenis.stop();
+        if (this.lenis) this.lenis.stop();
+        else document.body.style.overflow = 'hidden';
     }
 
     start() {
-        this.lenis.start();
+        if (this.lenis) this.lenis.start();
+        else document.body.style.overflow = '';
     }
 }

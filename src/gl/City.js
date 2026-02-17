@@ -7,7 +7,7 @@ const CITY_MODEL_URL = import.meta.env.BASE_URL + 'scene-small.glb'; // Updated 
 export default class City {
     constructor(glManager) {
         this.gl = glManager;
-        this.isMobile = window.innerWidth < 768;
+        this.isMobile = window.innerWidth < 1025;
         // Massive scale increase based on debug raw size (4 units high -> 100 units high)
         this.baseY = this.isMobile ? -40 : -50;
         this.modelScale = this.isMobile ? 3.75 : 15.0; // Reduced by 25% for mobile

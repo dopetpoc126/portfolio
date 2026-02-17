@@ -26,7 +26,8 @@ export default class GLManager {
         this.renderer.setSize(this.width, this.height);
         const pixelRatio = Math.min(window.devicePixelRatio, 2);
         // Mobile optimization: Cap pixel ratio to 1.5 to save battery/performance
-        const isMobile = window.innerWidth < 768;
+        // Treat tablets/iPads as mobile for rendering safety (< 1025px covers iPad Pro vertical)
+        const isMobile = window.innerWidth < 1025;
         this.renderer.setPixelRatio(isMobile ? Math.min(pixelRatio, 1.5) : pixelRatio);
 
         this.updates = []; // Array of update functions
@@ -41,7 +42,7 @@ export default class GLManager {
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(new RenderPass(this.scene, this.camera));
 
-        const isMobile = window.innerWidth < 768;
+        const isMobile = window.innerWidth < 1025;
 
         // Mobile optimization: Reduce bloom resolution
         const resolution = new THREE.Vector2(this.width, this.height);
