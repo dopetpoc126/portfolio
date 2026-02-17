@@ -21,7 +21,7 @@ export default class FighterJet {
         // or directly in public/ if no models folder exists.
         // Based on typical Vite structure, public assets are served at root.
 
-        const modelPath = import.meta.env.BASE_URL + 'f35-small.glb';
+        const modelPath = import.meta.env.BASE_URL + 'f35-small.glb?v=compressed';
 
         this.loader.load(
             modelPath,

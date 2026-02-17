@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 
 export default class GLManager {
     constructor(canvas) {
@@ -11,30 +12,29 @@ export default class GLManager {
         this.height = window.innerHeight;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color('#050505');
+        this.scene.background = new THREE.Color('#050505'); // Deep Space Black
 
         this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 1000);
         this.camera.position.z = 40;
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
-            antialias: false, // Post-processing handles AA usually, or we disable for perf
+            antialias: false,
             powerPreference: 'high-performance',
-            alpha: true // PRD Requirement
+            alpha: true
         });
 
         this.renderer.setSize(this.width, this.height);
-        const pixelRatio = Math.min(window.devicePixelRatio, 2);
-        // EMERGENCY: Cap pixel ratio to 1.0 on Mobile/Tablet to prevent OOM Crashes
+        const pixelRatio = window.devicePixelRatio || 1;
         const isMobile = window.innerWidth < 1025;
         this.isMobile = isMobile;
-        this.renderer.setPixelRatio(isMobile ? 1.0 : pixelRatio);
+        this.renderer.setPixelRatio(isMobile ? Math.min(pixelRatio, 1.5) : Math.min(pixelRatio, 2));
 
-        this.updates = []; // Array of update functions
+        this.updates = [];
 
         this.initPost();
         this.addEventListeners();
-        this.onResize(); // Set initial FOV for mobile
+        this.onResize();
         this.render();
     }
 
@@ -42,18 +42,7 @@ export default class GLManager {
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(new RenderPass(this.scene, this.camera));
 
-        const isMobile = window.innerWidth < 1025;
-
-        // EMERGENCY: Disable Bloom on Mobile to save memory
-        if (!isMobile) {
-            const bloomPass = new UnrealBloomPass(
-                new THREE.Vector2(this.width, this.height),
-                1.5,  // strength (restored to original high quality for desktop)
-                0.4,  // radius
-                0.85  // threshold
-            );
-            this.composer.addPass(bloomPass);
-        }
+        // Bloom removed per user request
     }
 
     addEventListeners() {
@@ -65,15 +54,13 @@ export default class GLManager {
         this.height = window.innerHeight;
         this.camera.aspect = this.width / this.height;
 
-        // Adjust FOV for mobile to match desktop POV
-        // On desktop (landscape), aspect > 1 → use base FOV 75
-        // On mobile (portrait), aspect < 1 → increase FOV to show more of the scene
+        // Adjust FOV for mobile
         const baseFOV = 75;
         if (this.camera.aspect < 1) {
-            // Scale FOV inversely with aspect ratio to preserve horizontal coverage
-            this.camera.fov = baseFOV / this.camera.aspect;
-            // Cap it so it doesn't go too extreme
-            this.camera.fov = Math.min(this.camera.fov, 120);
+            // OPTIMIZATION: Clamped FOV. 
+            // Previous: Math.min(..., 120) -> 120 is HUGE, renders way too much peripheral geometry.
+            // New: Max 85. This zooms in slightly but saves rendering objects on edges.
+            this.camera.fov = Math.min(baseFOV / this.camera.aspect, 85);
         } else {
             this.camera.fov = baseFOV;
         }
@@ -84,7 +71,6 @@ export default class GLManager {
     }
 
     render() {
-        // Run all registered updates
         this.updates.forEach(update => update());
 
         // this.renderer.render(this.scene, this.camera);

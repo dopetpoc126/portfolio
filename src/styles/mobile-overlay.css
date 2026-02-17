@@ -1,0 +1,92 @@
+/* Mobile Project Overlay */
+.mobile-project-card {
+    display: none;
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    /* Simple centering at 25% height */
+    width: 92%;
+    max-width: 480px;
+    z-index: 50;
+    padding: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mp-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.mp-nav-btn {
+    background: none;
+    border: none;
+    color: #00ffff;
+    font-size: 2.5rem;
+    padding: 0 1rem;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: opacity 0.3s ease;
+}
+
+.mp-nav-btn:active {
+    opacity: 0.5;
+}
+
+.mp-title {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #fff;
+    margin: 0;
+    flex-grow: 1;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.mp-divider {
+    width: 80%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0.5rem auto 1rem auto;
+}
+
+.mp-desc {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: #ccc;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+    text-align: center;
+    min-height: 3rem;
+}
+
+.mp-tech {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: #888;
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+
+.mp-button {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.mp-button:active {
+    background: rgba(0, 255, 255, 0.3);
+}

@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         gsap.registerPlugin(ScrollTrigger);
 
+        // Industry Standard Fix for Mobile/iOS thread jank
+        if (window.innerWidth < 1025) {
+            ScrollTrigger.normalizeScroll(true);
+            ScrollTrigger.config({ ignoreMobileResize: true });
+        }
+
+        gsap.ticker.lagSmoothing(0);
+
         console.log('2. Check DOM...');
         const canvas = document.querySelector('#gl-canvas');
         if (!canvas) throw new Error('Canvas #gl-canvas not found');
@@ -312,18 +320,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (satellites && satellites.setScrollProgress) satellites.setScrollProgress(scrollPct);
             if (projectCardsSystem && projectCardsSystem.update) projectCardsSystem.update();
 
+            // --- HAPTIC MODES ---
+            if (scrollPct > 0.25 && scrollPct < 0.45) {
+                if (haptics.hapticMode !== 'grid') haptics.setHapticMode('grid');
+            } else if (scrollPct > 0.5 && scrollPct < 0.8) {
+                if (haptics.hapticMode !== 'immersive') haptics.setHapticMode('immersive');
+            } else {
+                if (haptics.hapticMode !== 'neutral') haptics.setHapticMode('neutral');
+            }
+
             // Haptic feedback on scroll progress
             haptics.onScrollProgress(scrollPct);
-
-            // Pass uniform to Suns if needed
-            if (suns.setScrollData) {
-                suns.setScrollData(scrollPct, velocity);
-            }
-
-            if (audioPulse && suns.setAudioEnergy) {
-                const energy = audioPulse.getEnergy ? audioPulse.getEnergy() : 0;
-                suns.setAudioEnergy(energy);
-            }
 
             if (cinematic && cinematic.update) {
                 cinematic.update(scrollPct, velocity);

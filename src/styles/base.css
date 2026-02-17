@@ -1,3 +1,5 @@
+@import './mobile-overlay.css';
+
 :root {
   --color-void: #050505;
   --color-text: #ffffff;
@@ -338,13 +340,12 @@ h3 {
   }
 
   .work-header {
-    top: 4.9rem;
-    left: 1rem;
-    right: 1rem;
+    top: 4.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
     text-align: left;
     width: auto;
     transform: none;
-    /* Reset any potential transforms */
   }
 
   .display-huge {

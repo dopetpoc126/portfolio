@@ -36,7 +36,7 @@ export default class Satellites {
             { orbitRadius: baseRadius + 12, orbitSpeed: 0.005, orbitOffset: Math.PI * 1.16, zOffset: -12, scale: 0.52 },
         ].map(c => ({
             ...c,
-            path: import.meta.env.BASE_URL + 'satellite.glb',
+            path: import.meta.env.BASE_URL + 'satellite.glb?v=compressed',
             scale: isMobile ? c.scale * 0.6 : c.scale
         }));
 

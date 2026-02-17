@@ -11,6 +11,8 @@ class Haptics {
         this.scrollThrottleMs = 100;
         this.sectionBoundaries = [0, 0.25, 0.5, 0.75, 1.0];
         this.lastSection = -1;
+        this.lastSectionIndex = -1;
+        this.hapticMode = 'neutral';
 
         // Intensity presets (in ms)
         this.patterns = {
@@ -91,56 +93,72 @@ class Haptics {
         if (!this.enabled) return;
 
         let lastScrollY = window.scrollY;
-        let scrollVelocity = 0;
+        this.hapticMode = 'neutral'; // 'grid', 'immersive', 'dense'
 
         window.addEventListener('scroll', () => {
             const now = performance.now();
             const currentScrollY = window.scrollY;
 
             // Calculate velocity
-            scrollVelocity = Math.abs(currentScrollY - lastScrollY);
+            const delta = Math.abs(currentScrollY - lastScrollY);
             lastScrollY = currentScrollY;
 
             // Throttle haptic feedback
-            if (now - this.lastScrollHaptic < this.scrollThrottleMs) return;
+            const baseThrottle = this.scrollThrottleMs;
+
+            // Dynamic Throttle based on speed: faster scroll = slightly faster ticks but capped
+            const currentThrottle = delta > 50 ? 60 : 120;
+            if (now - this.lastScrollHaptic < currentThrottle) return;
+
             this.lastScrollHaptic = now;
 
-            // Velocity-based tick intensity
-            if (scrollVelocity > 50) {
-                this.vibrate('scrollMomentum');
-            } else if (scrollVelocity > 10) {
-                this.vibrate('scrollTick');
+            // Situational Logic
+            if (this.hapticMode === 'grid') {
+                // High frequency "robotic" ticks for Archive
+                this.vibrate(delta > 40 ? 10 : 5);
+            } else if (this.hapticMode === 'immersive') {
+                // Softer, wider pulses for About
+                if (delta > 30) this.vibrate([2, 5, 2]);
+            } else {
+                // Neutral default
+                if (delta > 60) {
+                    this.vibrate('scrollMomentum');
+                } else if (delta > 20) {
+                    this.vibrate('scrollTick');
+                }
             }
         }, { passive: true });
     }
 
     /**
-     * Register section boundaries for snap haptics
+     * Refined situational mode change
      */
-    setSectionBoundaries(boundaries) {
-        this.sectionBoundaries = boundaries;
+    setHapticMode(mode) {
+        if (this.hapticMode === mode) return;
+        this.hapticMode = mode;
+        // Subtle confirmation pulse
+        this.vibrate(this.patterns.lightTap);
     }
 
     /**
-     * Call this with scroll progress (0-1) to trigger section boundary haptics
+     * Smoothly triggers haptics based on scroll progress
+     * @param {number} progress 0 to 1
      */
     onScrollProgress(progress) {
         if (!this.enabled) return;
 
-        // Find current section
-        let currentSection = 0;
-        for (let i = 0; i < this.sectionBoundaries.length; i++) {
-            if (progress >= this.sectionBoundaries[i]) {
-                currentSection = i;
+        // Vibrates when passing major section boundaries with precise timing
+        const sectionIndex = this.sectionBoundaries.findIndex(b => Math.abs(progress - b) < 0.005);
+        if (sectionIndex !== -1 && sectionIndex !== this.lastSectionIndex) {
+            this.lastSectionIndex = sectionIndex;
+
+            // Situational pulses on entry
+            if (this.hapticMode === 'grid') {
+                this.vibrate([10, 30, 10]); // Mechanical "clunk"
+            } else {
+                this.vibrate('sectionEntry');
             }
         }
-
-        // Section changed
-        if (currentSection !== this.lastSection && this.lastSection !== -1) {
-            this.vibrate('sectionSnap');
-        }
-
-        this.lastSection = currentSection;
     }
 
     /**

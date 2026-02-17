@@ -259,6 +259,7 @@ class DetailView {
         });
 
         this.mesh = new THREE.Mesh(geo, mat);
+        this.mesh.renderOrder = 101; // Text on top
         this.group.add(this.mesh);
     }
 
@@ -273,31 +274,31 @@ class DetailView {
         // Title
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ffffff';
-        const titleSize = isMobile ? '40px' : '60px';
+        const titleSize = isMobile ? '36px' : '60px'; // Reduced from 40px
         ctx.font = `bold ${titleSize} "JetBrains Mono", monospace`;
-        ctx.fillText(project.title, 512, isMobile ? 60 : 80);
+        ctx.fillText(project.title, 512, isMobile ? 50 : 80); // Moved up slightly
 
         // Divider
         ctx.strokeStyle = '#ffffff';
         ctx.beginPath();
-        const divX1 = isMobile ? 212 : 112;
-        const divX2 = isMobile ? 812 : 912;
-        ctx.moveTo(divX1, 110);
-        ctx.lineTo(divX2, 110);
+        const divX1 = isMobile ? 262 : 112; // Narrower divider
+        const divX2 = isMobile ? 762 : 912;
+        ctx.moveTo(divX1, isMobile ? 80 : 110);
+        ctx.lineTo(divX2, isMobile ? 80 : 110);
         ctx.stroke();
 
         // Description
-        const descSize = isMobile ? '18px' : '24px';
+        const descSize = isMobile ? '20px' : '24px'; // Slightly larger for readability? No, keep manageable.
         ctx.font = `${descSize} "JetBrains Mono", monospace`;
         ctx.fillStyle = '#cccccc';
-        const maxWidth = isMobile ? 800 : 850;
-        const lineHeight = isMobile ? 32 : 36;
-        let lastY = this.wrapText(ctx, project.longDesc || project.description, 512, 160, maxWidth, lineHeight);
+        const maxWidth = isMobile ? 700 : 850; // Tighter margins (was 800)
+        const lineHeight = isMobile ? 30 : 36;
+        let lastY = this.wrapText(ctx, project.longDesc || project.description, 512, isMobile ? 130 : 160, maxWidth, lineHeight);
 
         // Tech stack
-        const techY = Math.max(lastY + (isMobile ? 30 : 50), isMobile ? 280 : 320);
+        const techY = Math.max(lastY + (isMobile ? 25 : 50), isMobile ? 260 : 320);
         ctx.fillStyle = '#888888';
-        const techSize = isMobile ? '18px' : '20px';
+        const techSize = isMobile ? '16px' : '20px'; // Reduced from 18px
         ctx.font = `bold ${techSize} "JetBrains Mono", monospace`;
         ctx.fillText(`SYSTEMS: ${project.tech.join(' // ')}`, 512, techY);
 
@@ -492,11 +493,13 @@ export default class ProjectCards {
     }
 
     updateArrowVisibility() {
+        const isMobile = window.innerWidth < 768;
+
         if (this.leftArrow) {
-            this.leftArrow.visible = this.currentIndex > 0;
+            this.leftArrow.visible = !isMobile && this.currentIndex > 0;
         }
         if (this.rightArrow) {
-            this.rightArrow.visible = this.currentIndex < this.cards.length - 1;
+            this.rightArrow.visible = !isMobile && this.currentIndex < this.cards.length - 1;
         }
     }
 
@@ -541,6 +544,7 @@ export default class ProjectCards {
         this.currentIndex = newIndex;
         this.selectedIndex = newIndex;
         this.detailView.updateContent(PROJECTS[newIndex]);
+        this.updateMobileOverlay(newIndex); // Sync mobile HTML
         this.updateArrowVisibility();
 
         haptics.cardSelect();
@@ -562,6 +566,11 @@ export default class ProjectCards {
         this.hudContainer.position.y = -50;
         this.hudContainer.visible = false;
 
+        const mobileOverlay = document.getElementById('mobile-project-overlay');
+        if (mobileOverlay) {
+            gsap.set(mobileOverlay, { autoAlpha: 0, y: 30 }); // Start lower and transparent
+        }
+
         // Hide work header initially
         const workHeader = document.querySelector('.work-header');
         if (workHeader) {
@@ -571,7 +580,10 @@ export default class ProjectCards {
         const toggleHeader = (show) => {
             const header = document.querySelector('.work-header');
             if (header) {
-                gsap.set(header, { autoAlpha: show ? 1 : 0 });
+                gsap.to(header, { autoAlpha: show ? 1 : 0, duration: 0.3 });
+            }
+            if (mobileOverlay && window.innerWidth < 768) {
+                gsap.to(mobileOverlay, { autoAlpha: show ? 1 : 0, duration: 0.3 });
             }
         };
 
@@ -622,13 +634,17 @@ export default class ProjectCards {
                         if (header) {
                             gsap.set(header, { autoAlpha: 1 - disintegrateProgress });
                         }
+                        if (mobileOverlay && window.innerWidth < 768) {
+                            gsap.set(mobileOverlay, { autoAlpha: 1 - disintegrateProgress });
+                        }
                     } else {
                         const baseScale = this.baseScale || 1;
                         this.hudContainer.scale.set(baseScale, baseScale, baseScale);
                         this.cards.forEach(card => card.setDisintegration(0));
 
-                        if (self.progress > 0.25 && header) {
-                            gsap.set(header, { autoAlpha: 1 });
+                        if (self.progress > 0.25) {
+                            if (header) gsap.set(header, { autoAlpha: 1 });
+                            if (mobileOverlay && window.innerWidth < 768) gsap.set(mobileOverlay, { autoAlpha: 1 });
                         }
                     }
                 }
@@ -636,7 +652,11 @@ export default class ProjectCards {
         });
 
         tl.to(this.hudContainer.position, { y: 0, duration: 1, ease: 'power2.out' })
-            .to('.work-header', { opacity: 1, duration: 1, ease: 'power2.out' }, '<');
+            .to('.work-header', { autoAlpha: 1, duration: 1, ease: 'power2.out' }, '<');
+
+        if (mobileOverlay && window.innerWidth < 768) {
+            tl.to(mobileOverlay, { autoAlpha: 1, y: 0, duration: 1, ease: 'power2.out' }, '<');
+        }
 
         tl.to(this.hudContainer.position, { y: 0, duration: 2 });
         tl.to(this.hudContainer.position, { y: 0, duration: 1 });
@@ -686,34 +706,51 @@ export default class ProjectCards {
 
         if (isMobile) {
             // The wider FOV on mobile makes everything smaller,
-            // so we need a larger scale to keep text readable
-            scale = 1.6;
+            // but 1.6 was way too big. Reducing to 1.1 to fit screen.
+            scale = 1.1;
 
             this.baseScale = scale;
             this.hudContainer.scale.set(scale, scale, scale);
 
-            // Reposition elements toward center for mobile
-            this.detailView.group.position.set(-0.5, 2.0, 0.1);
+            // NOTE: Mobile DetailView is now HTML overlay. Hiding 3D detail view.
+            this.detailView.group.visible = false;
 
-            if (this.githubButton) {
-                this.githubButton.position.set(-0.5, -0.3, 0.2);
-            }
-            if (this.leftArrow) {
-                this.leftArrow.position.set(-3.0, -0.3, 0.2);
-            }
-            if (this.rightArrow) {
-                this.rightArrow.position.set(2.0, -0.3, 0.2);
-            }
+            // Hide 3D arrows and Github button on mobile 
+            if (this.githubButton) this.githubButton.visible = false;
+            if (this.leftArrow) this.leftArrow.visible = false;
+            if (this.rightArrow) this.rightArrow.visible = false;
 
-            // Reposition cards toward center
+            // Reposition cards (the 3D models) ABOVE the center card
             this.cards.forEach(card => {
-                card.group.position.x = -0.5;
+                card.group.position.x = 0.0;
+                card.group.position.y = 4.0; // Raised further to match the user's 20% top box
             });
+
+            // Show Mobile HTML Overlay
+            const mobileOverlay = document.getElementById('mobile-project-overlay');
+            if (mobileOverlay) {
+                mobileOverlay.style.display = 'block';
+                this.updateMobileOverlay(this.currentIndex);
+
+                // Bind buttons once
+                if (!this.mobileOverlayBound) {
+                    document.getElementById('mp-prev')?.addEventListener('click', () => this.navigateToCard(this.currentIndex - 1));
+                    document.getElementById('mp-next')?.addEventListener('click', () => this.navigateToCard(this.currentIndex + 1));
+                    this.mobileOverlayBound = true;
+                }
+            }
+
         } else {
             this.baseScale = 0.95;
             this.hudContainer.scale.set(0.95, 0.95, 0.95);
 
+            // Hide Glass Backing on Desktop
+            if (this.detailView.glassBacking) {
+                this.detailView.glassBacking.visible = false;
+            }
+
             // Restore desktop positions
+            this.detailView.group.visible = true;
             this.detailView.group.position.set(-5.0, 2.2, 0.1);
 
             if (this.githubButton) {
@@ -729,7 +766,31 @@ export default class ProjectCards {
             this.cards.forEach(card => {
                 card.group.position.x = -5.0;
             });
+
+            // Hide Mobile HTML Overlay
+            const mobileOverlay = document.getElementById('mobile-project-overlay');
+            if (mobileOverlay) {
+                mobileOverlay.style.display = 'none';
+            }
         }
+    }
+
+    updateMobileOverlay(index) {
+        const project = PROJECTS[index];
+        const titleEl = document.getElementById('mp-title');
+        const descEl = document.getElementById('mp-desc');
+        const techEl = document.getElementById('mp-tech');
+        const linkEl = document.getElementById('mp-link');
+        const prevBtn = document.getElementById('mp-prev');
+        const nextBtn = document.getElementById('mp-next');
+
+        if (titleEl) titleEl.textContent = project.title;
+        if (descEl) descEl.textContent = project.longDesc || project.description;
+        if (techEl) techEl.textContent = `SYSTEMS: ${project.tech.join(' // ')}`;
+        if (linkEl) linkEl.href = project.link;
+
+        if (prevBtn) prevBtn.style.opacity = index === 0 ? '0.2' : '1';
+        if (nextBtn) nextBtn.style.opacity = index === PROJECTS.length - 1 ? '0.2' : '1';
     }
 
     update(time) {
