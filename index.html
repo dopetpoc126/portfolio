@@ -11,6 +11,11 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400&display=swap"
     rel="stylesheet">
+  <script>
+    if (window.location.hostname.includes('github.io')) {
+      window.location.replace('https://m3tro.vercel.app/' + window.location.hash);
+    }
+  </script>
 </head>
 
 <body data-barba="wrapper">
