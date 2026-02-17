@@ -335,17 +335,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentSection = i;
                 }
             }
-            if (lastSectionIndex === -1) {
-                lastSectionIndex = currentSection;
-            } else if (currentSection !== lastSectionIndex) {
-                lastSectionIndex = currentSection;
-                if (suns.triggerPulse) {
-                    suns.triggerPulse(0.75 + currentSection * 0.2);
-                }
-                if (cinematic && cinematic.triggerPulse) {
-                    cinematic.triggerPulse(0.65 + currentSection * 0.15);
+
+            // --- VISIBILITY CULLING (PERFORMANCE) ---
+            // 1. Earth (Suns): Visible Start -> 0.25 (Approach). Hidden in City.
+            //    Re-appear at end? No, stays hidden.
+            if (suns && suns.model) {
+                // Force hide if deep in city to save fragment shader
+                suns.model.visible = scrollPct < 0.3;
+            }
+
+            // 2. City: Hidden at Start (0.0 -> 0.1). Visible 0.1 -> End.
+            if (city && city.group) {
+                const cityVisible = scrollPct > 0.05;
+                city.group.visible = cityVisible;
+                // Also optimize stall visibility
+                if (cityVisible && city.stallModels) {
+                    // Stalls only needed in Segment 1 & 2
+                    const stallsNeeded = scrollPct > 0.2 && scrollPct < 0.6;
+                    city.stallModels.forEach(s => s.visible = stallsNeeded);
                 }
             }
+
+            // 3. Satellites: Handled internally by setScrollProgress (visible < 0.1)
+
+            // 4. Project Cards: Only visible in Work/Archive section (0.2 -> 0.4)
+            if (projectCardsSystem && projectCardsSystem.container) {
+                // Optimization if container exposes visibility control
+                // For now, reliance on internal logic or CSS opacity
+            }
+
 
 
         });
