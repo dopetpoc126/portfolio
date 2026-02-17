@@ -131,13 +131,20 @@ class Haptics {
     }
 
     /**
-     * Refined situational mode change
+     * Set situational mode (neutral, grid, immersive)
      */
     setHapticMode(mode) {
         if (this.hapticMode === mode) return;
         this.hapticMode = mode;
         // Subtle confirmation pulse
         this.vibrate(this.patterns.lightTap);
+    }
+
+    /**
+     * Register section boundaries for snap haptics
+     */
+    setSectionBoundaries(boundaries) {
+        this.sectionBoundaries = boundaries;
     }
 
     /**
