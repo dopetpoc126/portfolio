@@ -40,16 +40,6 @@ export default class ScrollManager {
         this.lenis.on('scroll', (e) => {
             ScrollTrigger.update();
             window.scrollVelocity = e.velocity;
-
-            if (this.isMobile) {
-                const nearBottom = e.limit - e.scroll < window.innerHeight * 0.4;
-                this.lenis.lerp = nearBottom ? 0.55 : 0.15;
-
-                // Clamp overscroll attempts at the bottom to avoid pinned section flashback on iOS/Android bounce
-                if (e.velocity > 0 && e.scroll >= e.limit - 0.5) {
-                    this.lenis.scrollTo(e.limit, { duration: 0, immediate: true });
-                }
-            }
         });
 
         ScrollTrigger.scrollerProxy(document.body, {

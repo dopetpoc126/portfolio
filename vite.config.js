@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/portfolio/' : '/', // Only use subpath for production build
+  base: '/', // Vercel deploys to root
   plugins: [glsl()],
   server: {
     host: true
