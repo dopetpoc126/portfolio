@@ -184,13 +184,22 @@ export default class City {
             this.model.scale.setScalar(this.modelScale);
 
             // Fade in textures
-            const opacity = lerp(0, 1, appearance);
-            this.cityMaterials.forEach(material => {
-                material.opacity = opacity;
-                // Force solid rendering when fully reached to prevent "ghosting" or sorting issues
-                material.transparent = opacity < 1.0;
-                material.depthWrite = true; // Always write depth for city
-            });
+            // OPTIMIZATION: On mobile, skip transparency fade to avoid massive overdraw
+            if (this.isMobile) {
+                this.cityMaterials.forEach(material => {
+                    material.opacity = 1.0;
+                    material.transparent = false; // Always opaque = fast depth testing
+                    material.depthWrite = true;
+                });
+            } else {
+                const opacity = lerp(0, 1, appearance);
+                this.cityMaterials.forEach(material => {
+                    material.opacity = opacity;
+                    // Force solid rendering when fully reached to prevent "ghosting" or sorting issues
+                    material.transparent = opacity < 1.0;
+                    material.depthWrite = true; // Always write depth for city
+                });
+            }
 
             // Sync jets visibility with city appearance
             this.jets.forEach(jet => {

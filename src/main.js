@@ -337,11 +337,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // --- VISIBILITY CULLING (PERFORMANCE) ---
-            // 1. Earth (Suns): Visible Start -> 0.25 (Approach). Hidden in City.
+            // 1. Earth (Suns): Visible Start -> 0.15 (Approach). Hidden in City.
             //    Re-appear at end? No, stays hidden.
             if (suns && suns.model) {
                 // Force hide if deep in city to save fragment shader
-                suns.model.visible = scrollPct < 0.3;
+                // OPTIMIZATION: Hide sooner (0.15) to prevent overdraw with City
+                suns.model.visible = scrollPct < 0.15;
             }
 
             // 2. City: Hidden at Start (0.0 -> 0.1). Visible 0.1 -> End.
