@@ -35,14 +35,13 @@ export default class ScrollManager {
         // Common Scroller Proxy
         if (!isMobile) {
             ScrollTrigger.scrollerProxy(document.body, {
-                scrollTop(value) {
+                scrollTop: (value) => {
                     if (arguments.length) {
-                        // isMobile is always false here
-                        // Access the lenis instance from the outer scope if needed, or this.lenis
+                        this.lenis.scrollTo(value, { duration: 0, immediate: true });
                     }
                     return (this.lenis ? this.lenis.scroll : window.scrollY);
                 },
-                getBoundingClientRect() {
+                getBoundingClientRect: () => {
                     return {
                         top: 0,
                         left: 0,
