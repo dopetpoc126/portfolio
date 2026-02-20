@@ -13,8 +13,10 @@ export default class ScrollManager {
         this.isMobile = isMobile;
 
         this.lenis = new Lenis({
-            lerp: isMobile ? 0.1 : 0.05, // Snappier on mobile
+            duration: 1.5, // Fixed duration for consistent speed
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Smooth easing
             smoothWheel: true,
+            wheelMultiplier: 1,
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             smoothTouch: true, // Crucial for 60fps feel on touch

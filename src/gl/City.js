@@ -109,6 +109,10 @@ export default class City {
 
                         child.material = newMat;
                         this.cityMaterials.push(child.material);
+
+                        // OPTIMIZATION: Freeze static matrices
+                        child.matrixAutoUpdate = false;
+                        child.updateMatrix();
                     }
                 });
 
@@ -116,9 +120,12 @@ export default class City {
                 // Center correction based on debug: Raw center was x:-7, z:-1
                 // We shift it back to 0,0,0
                 this.model.position.set(7, 0, 1);
+                this.model.updateMatrix();
+
                 // Rotate to align city streets
                 // this.model.rotation.y = Math.PI; // Removed per user request to flip Z perspective
                 this.group.add(this.model);
+                this.group.updateMatrixWorld(true);
 
                 // --- HOTSPOT ANCHORS ---
                 // We attach these to the model so they transform with it.
@@ -181,8 +188,6 @@ export default class City {
         this.group.position.z = -50;
 
         if (this.modelReady && this.model) {
-            this.model.scale.setScalar(this.modelScale);
-
             // Fade in textures
             const opacity = lerp(0, 1, appearance);
             this.cityMaterials.forEach(material => {

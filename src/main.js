@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const City = (await import('./gl/City')).default;
         const Satellites = (await import('./gl/Satellites')).default;
         const haptics = (await import('./utils/Haptics')).default;
-        const createAudioPulseSystem = (await import('./utils/AudioPulse')).default;
         const CinematicManager = (await import('./utils/CinematicManager')).default;
         const ProjectCards = (await import('./gl/ProjectCards')).default;
 
@@ -46,7 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loaderBar = document.getElementById('loader-progress');
         const loaderPct = document.getElementById('loader-pct');
         const loaderText = document.getElementById('loader-text');
-
 
         let suns, city, satellites, fallout, projectCardsSystem;
 
@@ -64,111 +62,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 800);
         };
 
-        // PHASE 1: Earth (Suns)
-        setLoaderProgress(10, 'ESTABLISHING_NEURAL_UPLINK');
-        suns = new Suns(gl);
-        suns.onLoad = () => {
-            // PHASE 2: City
-            setLoaderProgress(40, 'CALIBRATING_CITY_GRID');
-            city = new City(gl);
-            city.onLoad = () => {
-                // PHASE 3: Remaining Systems
-                setLoaderProgress(70, 'SCANNING_ORBITAL_OBJECTS');
-                satellites = new Satellites(gl);
-                fallout = new Fallout(gl);
-                projectCardsSystem = new ProjectCards(gl);
-
-                // Final Delay to ensure everything settles
-                setTimeout(finishLoading, 500);
-            };
-        };
-
-        const audioPulse = createAudioPulseSystem();
-        const cinematic = new CinematicManager();
-
-        // Setup haptic section boundaries (Hero, ARCHIVE, About, Contact)
-        haptics.setSectionBoundaries([0, 0.27, 0.5, 0.8, 1.0]);
-        const sectionBoundaries = [0, 0.27, 0.5, 0.8, 1.0];
-        let lastSectionIndex = -1;
-
-        const fireNavPulse = () => {
-            if (suns.triggerPulse) {
-                suns.triggerPulse(0.9);
-            }
-            if (cinematic && cinematic.triggerPulse) {
-                cinematic.triggerPulse(0.9);
-            }
-        };
-
-        const resumeAudio = () => {
-            if (audioPulse && audioPulse.resume) {
-                audioPulse.resume().catch(() => { });
-            }
-        };
-
-        document.addEventListener('pointerdown', resumeAudio, { once: true, passive: true });
-
-        // We keep projectCards/transitions for now as they might be used for the Project section? 
-        // PRD says "The experience serves as a continuous visual narrative".
-        // If ProjectCards are part of the "Works" section, we might keep them but they aren't in the PRD scope I'm implementing right now.
-        // I'll leave them to avoid breaking existing functionality unless requested to remove.
-        // I'll leave them to avoid breaking existing functionality unless requested to remove.
-        // We keep projectCards/transitions for now as they might be used for the Project section? 
-        // PRD says "The experience serves as a continuous visual narrative".
-        // If ProjectCards are part of the "Works" section, we might keep them but they aren't in the PRD scope I'm implementing right now.
-        // projectCardsSystem is already declared above
+        // SHARED SCENE UPDATE LOGIC
+        // Extracted to verify everything behaves IDENTICALLY during warmup and gameplay
         const clamp01 = (value) => Math.max(0, Math.min(1, value));
         const lerp = (from, to, t) => from + (to - from) * t;
-        const CITY_CAMERA_ENTRY = 0.65;
-        const TILT_START = 0.55;
 
-        // --- NAVBAR CLICKS ---
-        document.querySelectorAll('.hud-nav a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href');
-                if (targetId && targetId.startsWith('#')) {
-                    // Special handling for #work because it uses GSAP pinning
-                    if (targetId === '#work') {
-                        // Dynamic calculation: Match exactly with Camera Segment 1 end (scrollPct = 0.27)
-                        // This ensures we land exactly at the "Archive" hotspot
-                        const maxScroll = document.body.scrollHeight - window.innerHeight;
-                        scroll.scrollTo(maxScroll * 0.27, {
-                            duration: 1.5,
-                            easing: (t) => 1 - Math.pow(1 - t, 3)
-                        });
-                    } else {
-                        const target = document.querySelector(targetId);
-                        if (target) {
-                            scroll.scrollTo(target, {
-                                offset: 0,
-                                duration: 1.5,
-                                easing: (t) => 1 - Math.pow(1 - t, 3)
-                            });
-                        }
-                    }
-                    fireNavPulse();
-                }
-            });
-        });
+        const sectionBoundaries = [0, 0.27, 0.5, 0.8, 1.0];
 
-        // --- RESIZE HANDLER ---
-        window.addEventListener('resize', () => {
-            if (projectCardsSystem && projectCardsSystem.resize) {
-                projectCardsSystem.resize();
-            }
-
-        });
-
-        // Hook Scroll Velocity and Position
-        gsap.ticker.add(() => {
-            // Unified access (Works for both Lenis and Native)
-            const velocity = scroll.velocity || 0;
-            const progress = scroll.scroll || 0;
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-
-            const scrollPct = Math.min(progress / maxScroll, 1.0); // 0 to 1
-
+        const updateScene = (scrollPct, velocity = 0, isWarmup = false) => {
             // --- CAMERA LOGIC (PRD 6. Scroll Hook) ---
             // 4-Point Path (Rev 10): Archive -> Path1 -> About -> Connect
             let p1 = { x: 5, y: -36, z: 51 };   // Archive
@@ -205,8 +106,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gl.camera.rotation.x = lerp(0, 0, t);
                 gl.camera.rotation.y = lerp(0, rotP1, t);
 
-
-
                 // Show stalls after passing archive (scrollPct >= 0.22)
                 if (city && city.stallModels) {
                     city.stallModels.forEach(stall => {
@@ -214,11 +113,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-
-
                 // Hide About section if visible
                 const aboutSection = document.querySelector('.battlefield-hud');
-                if (aboutSection) {
+                if (aboutSection && !isWarmup) {
                     aboutSection.style.opacity = '0';
                     aboutSection.style.pointerEvents = 'none';
                 }
@@ -244,18 +141,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
 
-
                 // Keep stalls visible
                 if (city && city.stallModels) {
                     city.stallModels.forEach(stall => stall.visible = true);
                 }
 
-
-
                 // Show About section IMMEDIATELY in Segment 2
-                // This ensures it starts fading in right after leaving Archive at 0.27
                 const aboutSection = document.querySelector('.battlefield-hud');
-                if (aboutSection) {
+                if (aboutSection && !isWarmup) {
                     aboutSection.style.opacity = '1';
                     aboutSection.style.pointerEvents = 'auto';
                 }
@@ -272,10 +165,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gl.camera.rotation.y = targetRot;
 
                 // Show About section ASAP (scrollPct >= 0.5)
-                // The camera arrives at About ~0.5. We ensure it's visible.
-                // Fade in Survivor model during About section
                 const aboutSection = document.querySelector('.battlefield-hud');
-                if (aboutSection) {
+                if (aboutSection && !isWarmup) {
                     aboutSection.style.opacity = '1';
                     aboutSection.style.pointerEvents = 'auto';
                 }
@@ -288,8 +179,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     });
                 }
-
-
             } else {
                 // Segment 4: About -> Connect (P3 -> P4)
                 const norm = (scrollPct - 0.85) / 0.15;
@@ -304,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Keep About section visible
                 const aboutSection = document.querySelector('.battlefield-hud');
-                if (aboutSection) {
+                if (aboutSection && !isWarmup) {
                     aboutSection.style.opacity = '1';
                     aboutSection.style.pointerEvents = 'auto';
                 }
@@ -321,59 +210,163 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (projectCardsSystem && projectCardsSystem.update) projectCardsSystem.update();
 
             // --- HAPTIC MODES ---
-            if (scrollPct > 0.25 && scrollPct < 0.45) {
-                if (haptics.hapticMode !== 'grid') haptics.setHapticMode('grid');
-            } else if (scrollPct > 0.5 && scrollPct < 0.8) {
-                if (haptics.hapticMode !== 'immersive') haptics.setHapticMode('immersive');
-            } else {
-                if (haptics.hapticMode !== 'neutral') haptics.setHapticMode('neutral');
+            // Only trigger haptics if NOT in warmup
+            if (!isWarmup) {
+                if (scrollPct > 0.25 && scrollPct < 0.45) {
+                    if (haptics.hapticMode !== 'grid') haptics.setHapticMode('grid');
+                } else if (scrollPct > 0.5 && scrollPct < 0.8) {
+                    if (haptics.hapticMode !== 'immersive') haptics.setHapticMode('immersive');
+                } else {
+                    if (haptics.hapticMode !== 'neutral') haptics.setHapticMode('neutral');
+                }
+                // Haptic feedback on scroll progress
+                haptics.onScrollProgress(scrollPct);
             }
-
-            // Haptic feedback on scroll progress
-            haptics.onScrollProgress(scrollPct);
 
             if (cinematic && cinematic.update) {
                 cinematic.update(scrollPct, velocity);
             }
 
-            let currentSection = 0;
-            for (let i = 0; i < sectionBoundaries.length; i++) {
-                if (scrollPct >= sectionBoundaries[i]) {
-                    currentSection = i;
-                }
-            }
-
             // --- VISIBILITY CULLING (PERFORMANCE) ---
-            // 1. Earth (Suns): Visible Start -> 0.15 (Approach). Hidden in City.
-            //    Re-appear at end? No, stays hidden.
             if (suns && suns.model) {
-                // Force hide if deep in city to save fragment shader
-                // OPTIMIZATION: Hide sooner (0.15) to prevent overdraw with City
                 suns.model.visible = scrollPct < 0.15;
             }
 
-            // 2. City: Hidden at Start (0.0 -> 0.1). Visible 0.1 -> End.
             if (city && city.group) {
                 const cityVisible = scrollPct > 0.05;
                 city.group.visible = cityVisible;
-                // Also optimize stall visibility
                 if (cityVisible && city.stallModels) {
-                    // Stalls only needed in Segment 1 & 2
                     const stallsNeeded = scrollPct > 0.2 && scrollPct < 0.6;
                     city.stallModels.forEach(s => s.visible = stallsNeeded);
                 }
             }
+        };
 
-            // 3. Satellites: Handled internally by setScrollProgress (visible < 0.1)
+        const runWarmupSequence = async () => {
+            console.log('ZENITH: INITIATING GPU_WARMUP');
+            setLoaderProgress(85, 'OPTIMIZING_TRANSITIONS');
 
-            // 4. Project Cards: Only visible in Work/Archive section (0.2 -> 0.4)
-            if (projectCardsSystem && projectCardsSystem.container) {
-                // Optimization if container exposes visibility control
-                // For now, reliance on internal logic or CSS opacity
+            // Disable frustum culling globally for warmup to force GPU upload
+            gl.scene.traverse(child => {
+                if (child.isMesh) {
+                    child.userData.originalFrustumCulled = child.frustumCulled;
+                    child.frustumCulled = false;
+                }
+            });
+
+            // 1. Compile Shaders (Pre-compile all materials)
+            gl.compile(gl.scene, gl.camera);
+
+            // 2. Texture Upload & State Warmup (Multiple Render Passes)
+            // Render at different scroll points to ensure all variants (transparent vs opaque) 
+            // and textures are fully uploaded to the GPU.
+
+            // Warmup at 0.1 (City fading in, materials.transparent = true)
+            updateScene(0.1, 0, true);
+            gl.forceRender();
+
+            // Warmup at 0.3 (City fully visible, materials.transparent = false)
+            updateScene(0.3, 0, true);
+            gl.forceRender();
+
+            // Warmup at 0.9 (End of city, all components should be heavily cached)
+            updateScene(0.9, 0, true);
+            gl.forceRender();
+
+            // Restore frustum culling
+            gl.scene.traverse(child => {
+                if (child.isMesh && child.userData.originalFrustumCulled !== undefined) {
+                    child.frustumCulled = child.userData.originalFrustumCulled;
+                }
+            });
+
+            // 3. Reset Scene to start
+            updateScene(0, 0, true);
+            gl.forceRender();
+
+            console.log('ZENITH: WARMUP_COMPLETE');
+            setTimeout(finishLoading, 200);
+        };
+
+        // PHASE 1: Earth (Suns)
+        setLoaderProgress(10, 'ESTABLISHING_NEURAL_UPLINK');
+        suns = new Suns(gl);
+        suns.onLoad = () => {
+            // PHASE 2: City
+            setLoaderProgress(40, 'CALIBRATING_CITY_GRID');
+            city = new City(gl);
+            city.onLoad = () => {
+                // PHASE 3: Remaining Systems
+                setLoaderProgress(70, 'SCANNING_ORBITAL_OBJECTS');
+                satellites = new Satellites(gl);
+                fallout = new Fallout(gl);
+                projectCardsSystem = new ProjectCards(gl);
+
+                // NEW: GPU Warm-up sequence
+                runWarmupSequence();
+            };
+        };
+
+        const cinematic = new CinematicManager();
+
+        // Setup haptic section boundaries
+        haptics.setSectionBoundaries([0, 0.27, 0.5, 0.8, 1.0]);
+
+        const fireNavPulse = () => {
+            if (suns.triggerPulse) {
+                suns.triggerPulse(0.9);
+            }
+            if (cinematic && cinematic.triggerPulse) {
+                cinematic.triggerPulse(0.9);
+            }
+        };
+
+
+        // --- NAVBAR CLICKS ---
+        document.querySelectorAll('.hud-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                if (targetId && targetId.startsWith('#')) {
+                    if (targetId === '#work') {
+                        const maxScroll = document.body.scrollHeight - window.innerHeight;
+                        scroll.scrollTo(maxScroll * 0.27, {
+                            duration: 1.5,
+                            easing: (t) => 1 - Math.pow(1 - t, 3)
+                        });
+                    } else {
+                        const target = document.querySelector(targetId);
+                        if (target) {
+                            scroll.scrollTo(target, {
+                                offset: 0,
+                                duration: 1.5,
+                                easing: (t) => 1 - Math.pow(1 - t, 3)
+                            });
+                        }
+                    }
+                    fireNavPulse();
+                }
+            });
+        });
+
+        // --- RESIZE HANDLER ---
+        window.addEventListener('resize', () => {
+            if (projectCardsSystem && projectCardsSystem.resize) {
+                projectCardsSystem.resize();
             }
 
+        });
 
+        // Hook Scroll Velocity and Position
+        gsap.ticker.add(() => {
+            // Unified access (Works for both Lenis and Native)
+            const velocity = scroll.velocity || 0;
+            const progress = scroll.scroll || 0;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const scrollPct = Math.min(progress / maxScroll, 1.0); // 0 to 1
 
+            // Call the shared update function
+            updateScene(scrollPct, velocity, false);
         });
 
         // --- TEXT SCRAMBLE EFFECT ---
@@ -386,7 +379,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             heroTitle.addEventListener('mouseover', event => {
                 let iteration = 0;
                 const originalHTML = heroTitle.dataset.original;
-                // Split by <br> to preserve layout
                 const parts = originalHTML.split('<br>');
 
                 clearInterval(heroTitle.interval);
@@ -405,7 +397,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     heroTitle.innerHTML = newParts.join('<br>');
 
-                    // Stop when all letters are resolved
                     if (iteration >= Math.max(...parts.map(p => p.length))) {
                         clearInterval(heroTitle.interval);
                         heroTitle.innerHTML = heroTitle.dataset.original;
@@ -438,4 +429,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`;
     }
 });
-

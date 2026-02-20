@@ -28,7 +28,7 @@ export default class GLManager {
         const pixelRatio = window.devicePixelRatio || 1;
         const isMobile = window.innerWidth < 1025;
         this.isMobile = isMobile;
-        this.renderer.setPixelRatio(isMobile ? Math.min(pixelRatio, 1.5) : Math.min(pixelRatio, 2));
+        this.renderer.setPixelRatio(isMobile ? Math.min(pixelRatio, 1.2) : Math.min(pixelRatio, 2));
 
         this.updates = [];
 
@@ -68,6 +68,15 @@ export default class GLManager {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.width, this.height);
         this.composer.setSize(this.width, this.height);
+    }
+
+    compile(scene, camera) {
+        this.renderer.compile(scene, camera);
+    }
+
+    forceRender() {
+        this.updates.forEach(update => update());
+        this.composer.render();
     }
 
     render() {
