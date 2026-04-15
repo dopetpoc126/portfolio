@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { cloneCachedScene, createModelUrl } from './modelCache.js';
 const { clamp, lerp } = THREE.MathUtils;
-const CITY_MODEL_URL = import.meta.env.BASE_URL + 'scene-small.glb?v=compressed'; // Updated scene URL
+const CITY_MODEL_URL = createModelUrl('scene-small.glb');
 
 export default class City {
     constructor(glManager) {
@@ -19,26 +18,25 @@ export default class City {
         // Model references for visibility control
         // this.stallModels = []; // Removed
 
-        this.loader = new GLTFLoader();
-        this.dracoLoader = new DRACOLoader();
-        this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        this.loader.setDRACOLoader(this.dracoLoader);
-
         this.group = new THREE.Group();
         // Center the city in the camera's flight path (Camera goes 40 -> -100)
         this.group.position.set(0, this.baseY, -50);
         this.group.rotation.y = Math.PI / 6;
         this.gl.scene.add(this.group);
 
+        this.disposed = false;
         this.jets = [];
+        this.jetsInitialized = false;
         // this.initLights(); // Removing lights per user request
-        this.initJets();
         this.loadCityModel();
     }
 
     // initLights() removed per user request
 
     initJets() {
+        if (this.jetsInitialized || this.disposed) return;
+        this.jetsInitialized = true;
+
         import('./FighterJet.js').then(({ default: FighterJet }) => {
             const createJet = (direction) => { // direction: 1 (Left->Right), -1 (Right->Left)
                 const jet = new FighterJet();
@@ -82,11 +80,18 @@ export default class City {
         });
     }
 
+    scheduleJetInitialization() {
+        const schedule = window.requestIdleCallback
+            ? (callback) => window.requestIdleCallback(callback, { timeout: 1500 })
+            : (callback) => window.setTimeout(callback, 250);
+
+        schedule(() => this.initJets());
+    }
+
     loadCityModel() {
-        this.loader.load(
-            CITY_MODEL_URL,
-            (gltf) => {
-                this.model = gltf.scene;
+        cloneCachedScene(CITY_MODEL_URL)
+            .then((scene) => {
+                this.model = scene;
                 this.modelReady = true;
                 console.log('City System: Model Loaded (scene (2).glb)');
                 if (this.onLoad) this.onLoad();
@@ -160,12 +165,11 @@ export default class City {
                 // No longer loading separate stalls or survivor as they are baked into scene (2).glb
 
                 this.modelReady = true;
-            },
-            undefined,
-            (error) => {
+                this.scheduleJetInitialization();
+            })
+            .catch((error) => {
                 console.warn('City model failed to load', error);
-            }
-        );
+            });
     }
 
     getWaypoint(name) {
@@ -235,6 +239,7 @@ export default class City {
     }
 
     dispose() {
+        this.disposed = true;
         console.log('City System: Disposing...');
         if (this.model) {
             this.model.traverse(node => {
@@ -255,6 +260,5 @@ export default class City {
             });
             this.group.remove(this.model);
         }
-        if (this.dracoLoader) this.dracoLoader.dispose();
     }
 }

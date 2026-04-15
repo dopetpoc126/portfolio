@@ -1,19 +1,13 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import gsap from 'gsap';
+import { cloneCachedScene, createModelUrl } from './modelCache.js';
+
+const EARTH_MODEL_URL = createModelUrl('earth.glb');
 
 export default class Suns {
     constructor(glManager) {
         this.gl = glManager;
         this.clock = new THREE.Clock();
-        this.loader = new GLTFLoader();
-
-        // DRACO Configuration
-        this.dracoLoader = new DRACOLoader();
-        this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        this.loader.setDRACOLoader(this.dracoLoader);
-
         this.model = null;
 
         this.init();
@@ -22,10 +16,9 @@ export default class Suns {
     init() {
         console.log('Earth System: Initializing...');
 
-        this.loader.load(
-            import.meta.env.BASE_URL + 'earth.glb?v=compressed',
-            (gltf) => {
-                this.model = gltf.scene;
+        cloneCachedScene(EARTH_MODEL_URL)
+            .then((scene) => {
+                this.model = scene;
                 this.modelReady = true;
                 console.log('Earth System: Model Loaded');
                 if (this.onLoad) this.onLoad();
@@ -75,12 +68,10 @@ export default class Suns {
                 this.gl.scene.add(ambientLight);
 
                 this.gl.scene.add(this.model);
-            },
-            undefined,
-            (error) => {
+            })
+            .catch((error) => {
                 console.error('Earth System Error:', error);
-            }
-        );
+            });
 
         // --- MANDALA RESTORATION: Mouse Interaction ---
         this.mouse = new THREE.Vector2();
@@ -228,6 +219,5 @@ export default class Suns {
             });
             this.gl.scene.remove(this.model);
         }
-        if (this.dracoLoader) this.dracoLoader.dispose();
     }
 }

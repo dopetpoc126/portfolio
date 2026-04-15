@@ -20,7 +20,6 @@ body {
   font-family: var(--font-sans);
   overflow-x: hidden;
   overscroll-behavior-y: none;
-  /* Hide scrollbar for Lenis */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -31,6 +30,19 @@ main {
 
 html {
   overscroll-behavior-y: none;
+}
+
+html,
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .hl-text {

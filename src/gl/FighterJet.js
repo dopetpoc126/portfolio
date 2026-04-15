@@ -1,32 +1,17 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { cloneCachedScene, createModelUrl } from './modelCache.js';
+
+const JET_MODEL_URL = createModelUrl('f35-small.glb');
 
 export default class FighterJet {
     constructor() {
         this.group = new THREE.Group();
-        this.loader = new GLTFLoader();
-
-        // DRACO Configuration
-        this.dracoLoader = new DRACOLoader();
-        this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        this.loader.setDRACOLoader(this.dracoLoader);
-
         this.init();
     }
 
     init() {
-        // Load the F-35 model
-        // Assuming the user has placed 'f35_fighter_jet.glb' in the public/models/ folder
-        // or directly in public/ if no models folder exists.
-        // Based on typical Vite structure, public assets are served at root.
-
-        const modelPath = import.meta.env.BASE_URL + 'f35-small.glb?v=compressed';
-
-        this.loader.load(
-            modelPath,
-            (gltf) => {
-                const model = gltf.scene;
+        cloneCachedScene(JET_MODEL_URL)
+            .then((model) => {
 
                 // Wireframe Material - dimmer for subtlety
                 const wireframeMat = new THREE.MeshBasicMaterial({
@@ -50,17 +35,13 @@ export default class FighterJet {
                 model.rotation.set(0, 0, 0);
 
                 this.group.add(model);
-
-                this.group.add(model);
                 console.log('F-35 Model Loaded');
-            },
-            undefined,
-            (error) => {
+            })
+            .catch((error) => {
                 console.error('An error occurred loading the F-35 model:', error);
                 // Fallback to simple geometry if load fails?
                 // For now, just log error.
-            }
-        );
+            });
     }
 
     // Get world position for bomb drop
@@ -89,6 +70,5 @@ export default class FighterJet {
                 }
             }
         });
-        if (this.dracoLoader) this.dracoLoader.dispose();
     }
 }

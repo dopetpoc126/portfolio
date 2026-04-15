@@ -1,18 +1,12 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { cloneCachedScene, createModelUrl } from './modelCache.js';
+
+const SATELLITE_MODEL_URL = createModelUrl('satellite.glb');
 
 export default class Satellites {
     constructor(glManager) {
         this.gl = glManager;
         this.satellites = [];
-        this.loader = new GLTFLoader();
-
-        // DRACO Configuration
-        this.dracoLoader = new DRACOLoader();
-        this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        this.loader.setDRACOLoader(this.dracoLoader);
-
         this.time = 0;
         this.init();
     }
@@ -36,7 +30,6 @@ export default class Satellites {
             { orbitRadius: baseRadius + 12, orbitSpeed: 0.005, orbitOffset: Math.PI * 1.16, zOffset: -12, scale: 0.52 },
         ].map(c => ({
             ...c,
-            path: import.meta.env.BASE_URL + 'satellite.glb?v=compressed',
             scale: isMobile ? c.scale * 0.6 : c.scale
         }));
 
@@ -48,47 +41,42 @@ export default class Satellites {
             opacity: 0.5
         });
 
-        satelliteConfigs.forEach((config, index) => {
-            this.loader.load(
-                config.path,
-                (gltf) => {
-                    const model = gltf.scene;
+        satelliteConfigs.forEach(async (config, index) => {
+            try {
+                const model = await cloneCachedScene(SATELLITE_MODEL_URL);
 
-                    model.traverse((child) => {
-                        if (child.isMesh) {
-                            child.material = wireframeMat.clone();
-                        }
-                    });
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = wireframeMat.clone();
+                    }
+                });
 
-                    model.scale.set(config.scale, config.scale, config.scale);
+                model.scale.set(config.scale, config.scale, config.scale);
 
-                    const orbitGroup = new THREE.Group();
-                    orbitGroup.add(model);
+                const orbitGroup = new THREE.Group();
+                orbitGroup.add(model);
 
-                    orbitGroup.userData = {
-                        orbitRadius: config.orbitRadius,
-                        orbitSpeed: config.orbitSpeed,
-                        orbitOffset: config.orbitOffset,
-                        zOffset: config.zOffset,
-                        spinSpeed: 0.15 + Math.random() * 0.2
-                    };
+                orbitGroup.userData = {
+                    orbitRadius: config.orbitRadius,
+                    orbitSpeed: config.orbitSpeed,
+                    orbitOffset: config.orbitOffset,
+                    zOffset: config.zOffset,
+                    spinSpeed: 0.15 + Math.random() * 0.2
+                };
 
-                    orbitGroup.traverse((obj) => {
-                        if (obj.isMesh) {
-                            obj.renderOrder = 1;
-                        }
-                    });
+                orbitGroup.traverse((obj) => {
+                    if (obj.isMesh) {
+                        obj.renderOrder = 1;
+                    }
+                });
 
-                    this.satellites.push({ group: orbitGroup, model });
-                    this.gl.scene.add(orbitGroup);
+                this.satellites.push({ group: orbitGroup, model });
+                this.gl.scene.add(orbitGroup);
 
-                    console.log(`Satellite ${index + 1} loaded`);
-                },
-                undefined,
-                (error) => {
-                    console.error(`Error loading satellite ${index + 1}:`, error);
-                }
-            );
+                console.log(`Satellite ${index + 1} loaded`);
+            } catch (error) {
+                console.error(`Error loading satellite ${index + 1}:`, error);
+            }
         });
     }
 
@@ -143,6 +131,5 @@ export default class Satellites {
                 this.gl.scene.remove(group);
             }
         });
-        if (this.dracoLoader) this.dracoLoader.dispose();
     }
 }

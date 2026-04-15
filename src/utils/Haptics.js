@@ -1,268 +1,281 @@
-/**
- * Haptics.js - Comprehensive Haptic Feedback Module
- * Provides intricate haptic feedback for scroll, tap, hover, and other interactions.
- * Uses the Vibration API where available.
- */
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 class Haptics {
     constructor() {
-        this.enabled = 'vibrate' in navigator;
-        this.lastScrollHaptic = 0;
-        this.scrollThrottleMs = 100;
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+        const hasWindow = typeof window !== 'undefined';
+
+        this.supportsVibration = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+        this.prefersReducedMotion = hasWindow
+            && typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        this.isTouchDevice = hasWindow
+            && (
+                (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches)
+                || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0)
+            );
+        this.isAndroid = /Android/i.test(ua);
+        this.isIOS = /iPad|iPhone|iPod/i.test(ua)
+            || (typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        this.intensityScale = this.isAndroid ? 1 : 0.85;
+        this.enabled = this.supportsVibration && this.isTouchDevice && !this.prefersReducedMotion;
+
         this.sectionBoundaries = [0, 0.25, 0.5, 0.75, 1.0];
-        this.lastSection = -1;
-        this.lastSectionIndex = -1;
+        this.lastSectionIndex = 0;
+        this.lastProgress = 0;
+        this.lastPulseAt = 0;
+        this.lastTouchFeedbackAt = 0;
+        this.scrollAccumulator = 0;
         this.hapticMode = 'neutral';
 
-        // Intensity presets (in ms)
-        this.patterns = {
-            // Basic taps
-            lightTap: [8],
-            tap: [15],
-            heavyTap: [25],
-            doubleTap: [10, 50, 10],
-
-            // Scroll feedback
-            scrollTick: [5],
-            scrollMomentum: [3, 20, 3],
-            sectionSnap: [20, 30, 40],
-
-            // Navigation
-            sectionEnter: [15, 40, 25],
-            sectionExit: [10, 30, 10],
-
-            // Card interactions
-            cardHover: [6],
-            cardSelect: [15, 20, 30],
-            cardDeselect: [10, 15, 8],
-
-            // System events
-            themeChange: [20, 50, 20, 50, 30],
-            error: [50, 30, 50, 30, 80],
-            success: [15, 40, 25, 60, 40],
-
-            // Immersive effects
-            rumble: [10, 10, 10, 10, 10, 10, 10, 10],
-            pulse: [30, 100, 30, 100, 30],
-            crescendo: [5, 20, 10, 20, 15, 20, 25, 20, 40],
+        this.patterns = this.buildPatterns();
+        this.scrollProfiles = {
+            neutral: { step: 0.024, light: 'scrollTick', heavy: 'scrollMomentum', minGap: 70 },
+            grid: { step: 0.014, light: 'gridDetent', heavy: 'gridRachet', minGap: 55 },
+            immersive: { step: 0.03, light: 'immersivePulse', heavy: 'immersiveWave', minGap: 90 }
         };
 
         this.init();
     }
 
+    buildPatterns() {
+        const basePatterns = {
+            microTap: [4],
+            lightTap: [6],
+            tap: [10],
+            heavyTap: [14],
+            navTap: [8, 22, 10],
+            scrollTick: [4],
+            scrollMomentum: [5, 18, 6],
+            gridDetent: [5],
+            gridRachet: [5, 16, 5],
+            immersivePulse: [4, 26, 5],
+            immersiveWave: [5, 20, 4, 22, 6],
+            sectionEnter: [8, 20, 12],
+            sectionExit: [6, 18, 8],
+            sectionSnap: [8, 20, 12],
+            cardHover: [4],
+            cardSelect: [8, 18, 12],
+            cardDeselect: [6, 18, 6],
+            themeChange: [8, 22, 10, 24, 14],
+            error: [18, 24, 18, 24, 28],
+            success: [6, 18, 8, 20, 12],
+            rumble: [8, 12, 8, 12, 8, 12],
+            crescendo: [4, 16, 6, 16, 8, 18, 10],
+            modeNeutral: [5],
+            modeGrid: [6, 20, 6],
+            modeImmersive: [4, 24, 8]
+        };
+
+        return Object.fromEntries(
+            Object.entries(basePatterns).map(([key, pattern]) => [key, this.scalePattern(pattern)])
+        );
+    }
+
+    scalePattern(pattern) {
+        return pattern.map((value, index) => {
+            const scaled = Math.round(value * this.intensityScale);
+            return index % 2 === 0 ? Math.max(1, scaled) : Math.max(8, scaled);
+        });
+    }
+
     init() {
         if (!this.enabled) {
-            console.log('Haptics: Vibration API not supported');
+            console.log('Haptics: Limited - mobile vibration unavailable in this browser/device');
             return;
         }
 
-        console.log('Haptics: Initialized');
-
-        // Setup scroll haptics
-        this.setupScrollHaptics();
-
-        // Setup tap haptics for interactive elements
+        console.log(`Haptics: Initialized (${this.isAndroid ? 'android' : this.isIOS ? 'ios-web' : 'mobile-web'})`);
         this.setupTapHaptics();
     }
 
-    /**
-     * Core vibration method with pattern support
-     */
-    vibrate(pattern) {
+    resolvePattern(pattern) {
+        if (Array.isArray(pattern)) return pattern;
+        if (typeof pattern === 'number') return [pattern];
+        if (typeof pattern === 'string') return this.patterns[pattern] || null;
+        return null;
+    }
+
+    emit(pattern, { minGap = 0, cancel = false } = {}) {
         if (!this.enabled) return false;
 
+        const now = performance.now();
+        if (now - this.lastPulseAt < minGap) return false;
+
+        const resolvedPattern = this.resolvePattern(pattern);
+        if (!resolvedPattern) return false;
+
         try {
-            if (Array.isArray(pattern)) {
-                navigator.vibrate(pattern);
-            } else if (typeof pattern === 'string' && this.patterns[pattern]) {
-                navigator.vibrate(this.patterns[pattern]);
-            } else if (typeof pattern === 'number') {
-                navigator.vibrate(pattern);
+            if (cancel) navigator.vibrate(0);
+            const didVibrate = navigator.vibrate(resolvedPattern);
+
+            if (didVibrate !== false) {
+                this.lastPulseAt = now;
             }
-            return true;
-        } catch (e) {
-            console.warn('Haptics: vibration failed', e);
+
+            return didVibrate !== false;
+        } catch (error) {
+            console.warn('Haptics: vibration failed', error);
             return false;
         }
     }
 
-    /**
-     * Setup scroll-based haptics
-     */
-    setupScrollHaptics() {
-        if (!this.enabled) return;
+    getInteractiveTarget(target) {
+        if (!(target instanceof Element)) return null;
+        return target.closest('button, a, [role="button"], .interactive, [data-haptic]');
+    }
 
-        let lastScrollY = window.scrollY;
-        this.hapticMode = 'neutral'; // 'grid', 'immersive', 'dense'
+    resolveSectionIndex(progress) {
+        let activeIndex = 0;
 
-        window.addEventListener('scroll', () => {
-            const now = performance.now();
-            const currentScrollY = window.scrollY;
-
-            // Calculate velocity
-            const delta = Math.abs(currentScrollY - lastScrollY);
-            lastScrollY = currentScrollY;
-
-            // Throttle haptic feedback
-            const baseThrottle = this.scrollThrottleMs;
-
-            // Dynamic Throttle based on speed: faster scroll = slightly faster ticks but capped
-            const currentThrottle = delta > 50 ? 60 : 120;
-            if (now - this.lastScrollHaptic < currentThrottle) return;
-
-            this.lastScrollHaptic = now;
-
-            // Situational Logic
-            if (this.hapticMode === 'grid') {
-                // High frequency "robotic" ticks for Archive
-                this.vibrate(delta > 40 ? 10 : 5);
-            } else if (this.hapticMode === 'immersive') {
-                // Softer, wider pulses for About
-                if (delta > 30) this.vibrate([2, 5, 2]);
-            } else {
-                // Neutral default
-                if (delta > 60) {
-                    this.vibrate('scrollMomentum');
-                } else if (delta > 20) {
-                    this.vibrate('scrollTick');
-                }
+        this.sectionBoundaries.forEach((boundary, index) => {
+            if (progress >= boundary - 0.002) {
+                activeIndex = index;
             }
+        });
+
+        return activeIndex;
+    }
+
+    setupTapHaptics() {
+        document.addEventListener('click', (event) => {
+            const target = this.getInteractiveTarget(event.target);
+            if (!target) return;
+
+            this.lastTouchFeedbackAt = performance.now();
+            this.emit(
+                target.matches('nav a, .nav-link') ? 'navTap' : 'tap',
+                { minGap: 90, cancel: true }
+            );
+        }, { passive: true });
+
+        document.addEventListener('touchstart', (event) => {
+            const target = this.getInteractiveTarget(event.target);
+            if (!target) return;
+
+            const now = performance.now();
+            if (now - this.lastTouchFeedbackAt < 90) return;
+
+            this.lastTouchFeedbackAt = now;
+            this.emit(
+                target.matches('nav a, .nav-link') ? 'lightTap' : 'microTap',
+                { minGap: 60 }
+            );
         }, { passive: true });
     }
 
-    /**
-     * Set situational mode (neutral, grid, immersive)
-     */
     setHapticMode(mode) {
         if (this.hapticMode === mode) return;
+
         this.hapticMode = mode;
-        // Subtle confirmation pulse
-        this.vibrate(this.patterns.lightTap);
+        this.scrollAccumulator = 0;
+
+        const modePattern = {
+            neutral: 'modeNeutral',
+            grid: 'modeGrid',
+            immersive: 'modeImmersive'
+        }[mode] || 'modeNeutral';
+
+        this.emit(modePattern, { minGap: 140, cancel: true });
     }
 
-    /**
-     * Register section boundaries for snap haptics
-     */
     setSectionBoundaries(boundaries) {
         this.sectionBoundaries = boundaries;
+        this.lastSectionIndex = this.resolveSectionIndex(this.lastProgress);
     }
 
-    /**
-     * Smoothly triggers haptics based on scroll progress
-     * @param {number} progress 0 to 1
-     */
-    onScrollProgress(progress) {
+    onScrollProgress(progress, velocity = 0) {
         if (!this.enabled) return;
 
-        // Vibrates when passing major section boundaries with precise timing
-        const sectionIndex = this.sectionBoundaries.findIndex(b => Math.abs(progress - b) < 0.005);
-        if (sectionIndex !== -1 && sectionIndex !== this.lastSectionIndex) {
-            this.lastSectionIndex = sectionIndex;
+        const clampedProgress = clamp(progress, 0, 1);
+        const speed = Math.abs(velocity || 0);
+        const nextSectionIndex = this.resolveSectionIndex(clampedProgress);
 
-            // Situational pulses on entry
-            if (this.hapticMode === 'grid') {
-                this.vibrate([10, 30, 10]); // Mechanical "clunk"
-            } else {
-                this.vibrate('sectionEntry');
-            }
+        if (nextSectionIndex !== this.lastSectionIndex) {
+            const movingForward = nextSectionIndex > this.lastSectionIndex;
+            this.lastSectionIndex = nextSectionIndex;
+
+            this.emit(
+                movingForward
+                    ? (this.hapticMode === 'grid' ? 'sectionEnter' : 'sectionSnap')
+                    : 'sectionExit',
+                { minGap: 220, cancel: true }
+            );
         }
+
+        const delta = Math.abs(clampedProgress - this.lastProgress);
+        this.lastProgress = clampedProgress;
+
+        if (!this.isTouchDevice || delta < 0.0025) return;
+
+        const profile = this.scrollProfiles[this.hapticMode] || this.scrollProfiles.neutral;
+        const step = speed > 1800
+            ? profile.step * 0.5
+            : speed > 900
+                ? profile.step * 0.72
+                : profile.step;
+
+        this.scrollAccumulator += delta;
+        if (this.scrollAccumulator < step) return;
+
+        this.scrollAccumulator = Math.max(0, this.scrollAccumulator - step);
+        this.emit(speed > 1200 ? profile.heavy : profile.light, { minGap: profile.minGap });
     }
 
-    /**
-     * Setup tap haptics on all interactive elements
-     */
-    setupTapHaptics() {
-        if (!this.enabled) return;
-
-        // Buttons and links
-        document.addEventListener('click', (e) => {
-            const target = e.target;
-
-            if (target.matches('button, a, [role="button"], .interactive')) {
-                this.vibrate('tap');
-            }
-
-            // Nav items
-            if (target.matches('nav a, .nav-link')) {
-                this.vibrate('heavyTap');
-            }
-        }, { passive: true });
-
-        // Touch start for immediate feedback
-        document.addEventListener('touchstart', (e) => {
-            const target = e.target;
-
-            if (target.matches('button, a, [role="button"], .interactive, canvas')) {
-                this.vibrate('lightTap');
-            }
-        }, { passive: true });
+    navigation() {
+        this.emit('navTap', { minGap: 100, cancel: true });
     }
 
-    // === PUBLIC API ===
-
-    /** Trigger when a card is hovered */
     cardHover() {
-        this.vibrate('cardHover');
+        this.emit('cardHover', { minGap: 90 });
     }
 
-    /** Trigger when a card is selected */
     cardSelect() {
-        this.vibrate('cardSelect');
+        this.emit('cardSelect', { minGap: 120, cancel: true });
     }
 
-    /** Trigger when a card is deselected */
     cardDeselect() {
-        this.vibrate('cardDeselect');
+        this.emit('cardDeselect', { minGap: 100, cancel: true });
     }
 
-    /** Trigger when entering a new section */
     sectionEnter() {
-        this.vibrate('sectionEnter');
+        this.emit('sectionEnter', { minGap: 180, cancel: true });
     }
 
-    /** Trigger when exiting a section */
     sectionExit() {
-        this.vibrate('sectionExit');
+        this.emit('sectionExit', { minGap: 180, cancel: true });
     }
 
-    /** Trigger for theme change */
     themeChange() {
-        this.vibrate('themeChange');
+        this.emit('themeChange', { minGap: 180, cancel: true });
     }
 
-    /** Trigger for success action */
     success() {
-        this.vibrate('success');
+        this.emit('success', { minGap: 200, cancel: true });
     }
 
-    /** Trigger for error */
     error() {
-        this.vibrate('error');
+        this.emit('error', { minGap: 220, cancel: true });
     }
 
-    /** Trigger a custom pattern */
     custom(pattern) {
-        this.vibrate(pattern);
+        this.emit(pattern, { cancel: true });
     }
 
-    /** Immersive rumble effect */
     rumble() {
-        this.vibrate('rumble');
+        this.emit('rumble', { minGap: 180, cancel: true });
     }
 
-    /** Crescendo effect (building intensity) */
     crescendo() {
-        this.vibrate('crescendo');
+        this.emit('crescendo', { minGap: 220, cancel: true });
     }
 
-    /** Stop all vibrations */
     stop() {
-        if (this.enabled) {
+        if (this.supportsVibration) {
             navigator.vibrate(0);
         }
     }
 }
 
-// Singleton instance
 const haptics = new Haptics();
 export default haptics;

@@ -29,16 +29,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ScrollManager = (await import('./managers/ScrollManager')).default;
         const GLManager = (await import('./gl/GLManager')).default;
         const Suns = (await import('./gl/Suns')).default;
-        const Fallout = (await import('./gl/Fallout')).default;
-        const City = (await import('./gl/City')).default;
-        const Satellites = (await import('./gl/Satellites')).default;
         const haptics = (await import('./utils/Haptics')).default;
         const CinematicManager = (await import('./utils/CinematicManager')).default;
-        const ProjectCards = (await import('./gl/ProjectCards')).default;
+        const loadFalloutModule = () => import('./gl/Fallout').then(({ default: Fallout }) => Fallout);
+        const loadCityModule = () => import('./gl/City').then(({ default: City }) => City);
+        const loadSatellitesModule = () => import('./gl/Satellites').then(({ default: Satellites }) => Satellites);
+        const loadProjectCardsModule = () => import('./gl/ProjectCards').then(({ default: ProjectCards }) => ProjectCards);
 
         console.log('4. Initializing Core Systems...');
         const scroll = new ScrollManager();
         const gl = new GLManager(canvas);
+        const cinematic = new CinematicManager();
 
         // --- LOADING SEQUENCE (ORCHESTRATION) ---
         const loader = document.getElementById('loader');
@@ -47,6 +48,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loaderText = document.getElementById('loader-text');
 
         let suns, city, satellites, fallout, projectCardsSystem;
+        let loaderFinished = false;
+        let introStarted = false;
+        let backgroundBootstrapStarted = false;
+        let warmupScheduled = false;
+        let cityLoadPromise = null;
+        let satellitesInitStarted = false;
+        let falloutInitStarted = false;
+        let projectCardsInitStarted = false;
+
+        const scheduleDeferredTask = (callback, delay = 0) => {
+            window.setTimeout(() => {
+                if (window.requestIdleCallback) {
+                    window.requestIdleCallback(() => callback(), { timeout: 1500 });
+                } else {
+                    window.setTimeout(callback, 0);
+                }
+            }, delay);
+        };
+
+        const getMaxScroll = () => Math.max(document.body.scrollHeight - window.innerHeight, 1);
+        const getScrollPct = () => Math.min((scroll.scroll || 0) / getMaxScroll(), 1.0);
 
         const setLoaderProgress = (pct, text) => {
             if (loaderBar) loaderBar.style.width = `${pct}%`;
@@ -55,11 +77,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const finishLoading = () => {
+            if (loaderFinished) return;
+            loaderFinished = true;
             setLoaderProgress(100, 'NEURAL_LINK_SYNCHRONIZED');
             setTimeout(() => {
                 if (loader) loader.classList.add('loader-hidden');
                 console.log('ZENITH SEQUENCE: SYSTEMS GO');
-            }, 800);
+            }, 500);
+        };
+
+        const beginIntro = () => {
+            if (introStarted) return;
+            introStarted = true;
+
+            console.log('5. Ignition...');
+            scroll.stop();
+            window.scrollTo(0, 0);
+            if (suns) suns.ignition();
+
+            setTimeout(() => {
+                scroll.start();
+            }, 2500);
+
+            console.log('SYSTEM ONLINE.');
         };
 
         // SHARED SCENE UPDATE LOGIC
@@ -200,6 +240,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gl.camera.rotation.y = lerp(startRot, -Math.PI / 6, norm);
             }
 
+            if (!isWarmup && scrollPct > 0.18 && !projectCardsInitStarted) {
+                ensureProjectCards().catch((error) => {
+                    console.error('ProjectCards bootstrap failed:', error);
+                });
+            }
+
             // Update components
             if (suns && suns.update) suns.update();
             if (fallout && fallout.update) fallout.update();
@@ -207,7 +253,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (city && city.update) city.update(scrollPct);
             if (satellites && satellites.update) satellites.update();
             if (satellites && satellites.setScrollProgress) satellites.setScrollProgress(scrollPct);
-            if (projectCardsSystem && projectCardsSystem.update) projectCardsSystem.update();
 
             // --- HAPTIC MODES ---
             // Only trigger haptics if NOT in warmup
@@ -220,7 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (haptics.hapticMode !== 'neutral') haptics.setHapticMode('neutral');
                 }
                 // Haptic feedback on scroll progress
-                haptics.onScrollProgress(scrollPct);
+                haptics.onScrollProgress(scrollPct, velocity);
             }
 
             if (cinematic && cinematic.update) {
@@ -242,77 +287,132 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        const runWarmupSequence = async () => {
-            console.log('ZENITH: INITIATING GPU_WARMUP');
-            setLoaderProgress(85, 'OPTIMIZING_TRANSITIONS');
+        const syncLoadedScene = () => {
+            const scrollPct = getScrollPct();
 
-            // Disable frustum culling globally for warmup to force GPU upload
-            gl.scene.traverse(child => {
-                if (child.isMesh) {
-                    child.userData.originalFrustumCulled = child.frustumCulled;
-                    child.frustumCulled = false;
-                }
-            });
+            if (city && city.setScrollProgress) city.setScrollProgress(scrollPct);
+            if (satellites && satellites.setScrollProgress) satellites.setScrollProgress(scrollPct);
 
-            // 1. Compile Shaders (Pre-compile all materials)
-            gl.compile(gl.scene, gl.camera);
-
-            // 2. Texture Upload & State Warmup (Multiple Render Passes)
-            // Render at different scroll points to ensure all variants (transparent vs opaque) 
-            // and textures are fully uploaded to the GPU.
-
-            // Warmup at 0.1 (City fading in, materials.transparent = true)
-            updateScene(0.1, 0, true);
+            updateScene(scrollPct, scroll.velocity || 0, true);
             gl.forceRender();
-
-            // Warmup at 0.3 (City fully visible, materials.transparent = false)
-            updateScene(0.3, 0, true);
-            gl.forceRender();
-
-            // Warmup at 0.9 (End of city, all components should be heavily cached)
-            updateScene(0.9, 0, true);
-            gl.forceRender();
-
-            // Restore frustum culling
-            gl.scene.traverse(child => {
-                if (child.isMesh && child.userData.originalFrustumCulled !== undefined) {
-                    child.frustumCulled = child.userData.originalFrustumCulled;
-                }
-            });
-
-            // 3. Reset Scene to start
-            updateScene(0, 0, true);
-            gl.forceRender();
-
-            console.log('ZENITH: WARMUP_COMPLETE');
-            setTimeout(finishLoading, 200);
         };
 
-        // PHASE 1: Earth (Suns)
+        const scheduleWarmupSequence = () => {
+            if (warmupScheduled) return;
+            warmupScheduled = true;
+
+            scheduleDeferredTask(() => {
+                console.log('ZENITH: INITIATING_BACKGROUND_WARMUP');
+
+                gl.scene.traverse(child => {
+                    if (child.isMesh) {
+                        child.userData.originalFrustumCulled = child.frustumCulled;
+                        child.frustumCulled = false;
+                    }
+                });
+
+                gl.compile(gl.scene, gl.camera);
+
+                [0, 0.1, 0.3, Math.max(0.3, getScrollPct())].forEach((sample) => {
+                    updateScene(sample, 0, true);
+                    gl.forceRender();
+                });
+
+                gl.scene.traverse(child => {
+                    if (child.isMesh && child.userData.originalFrustumCulled !== undefined) {
+                        child.frustumCulled = child.userData.originalFrustumCulled;
+                    }
+                });
+
+                updateScene(getScrollPct(), 0, true);
+                gl.forceRender();
+
+                console.log('ZENITH: BACKGROUND_WARMUP_COMPLETE');
+            }, 2600);
+        };
+
+        const ensureFallout = async () => {
+            if (falloutInitStarted) return fallout;
+            falloutInitStarted = true;
+
+            const Fallout = await loadFalloutModule();
+            fallout = new Fallout(gl);
+            return fallout;
+        };
+
+        const ensureSatellites = async () => {
+            if (satellitesInitStarted) return satellites;
+            satellitesInitStarted = true;
+
+            const Satellites = await loadSatellitesModule();
+            satellites = new Satellites(gl);
+            if (satellites.setScrollProgress) satellites.setScrollProgress(getScrollPct());
+            gl.forceRender();
+            return satellites;
+        };
+
+        const ensureProjectCards = async () => {
+            if (projectCardsInitStarted) return projectCardsSystem;
+            projectCardsInitStarted = true;
+
+            const ProjectCards = await loadProjectCardsModule();
+            projectCardsSystem = new ProjectCards(gl);
+            if (projectCardsSystem.resize) projectCardsSystem.resize();
+            gl.forceRender();
+            return projectCardsSystem;
+        };
+
+        const ensureCity = async () => {
+            if (cityLoadPromise) return cityLoadPromise;
+
+            cityLoadPromise = loadCityModule().then((City) => new Promise((resolve) => {
+                city = new City(gl);
+                city.onLoad = () => {
+                    syncLoadedScene();
+                    scheduleWarmupSequence();
+                    resolve(city);
+                };
+            }));
+
+            return cityLoadPromise;
+        };
+
+        const startBackgroundBootstrap = () => {
+            if (backgroundBootstrapStarted) return;
+            backgroundBootstrapStarted = true;
+
+            console.log('ZENITH: STARTING_ASYNC_SCENE_LOAD');
+            if (!loaderFinished) {
+                setLoaderProgress(45, 'STREAMING_CITY_GRID');
+            }
+
+            ensureCity().catch((error) => {
+                console.error('City bootstrap failed:', error);
+            });
+
+            scheduleDeferredTask(() => {
+                ensureSatellites().catch((error) => {
+                    console.error('Satellites bootstrap failed:', error);
+                });
+                ensureFallout().catch((error) => {
+                    console.error('Fallout bootstrap failed:', error);
+                });
+            }, 150);
+        };
+
         setLoaderProgress(10, 'ESTABLISHING_NEURAL_UPLINK');
         suns = new Suns(gl);
         suns.onLoad = () => {
-            // PHASE 2: City
-            setLoaderProgress(40, 'CALIBRATING_CITY_GRID');
-            city = new City(gl);
-            city.onLoad = () => {
-                // PHASE 3: Remaining Systems
-                setLoaderProgress(70, 'SCANNING_ORBITAL_OBJECTS');
-                satellites = new Satellites(gl);
-                fallout = new Fallout(gl);
-                projectCardsSystem = new ProjectCards(gl);
-
-                // NEW: GPU Warm-up sequence
-                runWarmupSequence();
-            };
+            finishLoading();
+            beginIntro();
+            startBackgroundBootstrap();
         };
-
-        const cinematic = new CinematicManager();
 
         // Setup haptic section boundaries
         haptics.setSectionBoundaries([0, 0.27, 0.5, 0.8, 1.0]);
 
         const fireNavPulse = () => {
+            haptics.navigation();
             if (suns.triggerPulse) {
                 suns.triggerPulse(0.9);
             }
@@ -329,7 +429,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const targetId = link.getAttribute('href');
                 if (targetId && targetId.startsWith('#')) {
                     if (targetId === '#work') {
-                        const maxScroll = document.body.scrollHeight - window.innerHeight;
+                        ensureProjectCards().catch((error) => {
+                            console.error('ProjectCards bootstrap failed:', error);
+                        });
+
+                        const maxScroll = getMaxScroll();
                         scroll.scrollTo(maxScroll * 0.27, {
                             duration: 1.5,
                             easing: (t) => 1 - Math.pow(1 - t, 3)
@@ -362,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Unified access (Works for both Lenis and Native)
             const velocity = scroll.velocity || 0;
             const progress = scroll.scroll || 0;
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const maxScroll = getMaxScroll();
             const scrollPct = Math.min(progress / maxScroll, 1.0); // 0 to 1
 
             // Call the shared update function
@@ -406,18 +510,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, 30);
             });
         }
-
-        // Ignition
-        console.log('5. Ignition...');
-        scroll.stop();
-        window.scrollTo(0, 0);
-        suns.ignition();
-
-        setTimeout(() => {
-            scroll.start();
-        }, 2500);
-
-        console.log('SYSTEM ONLINE.');
 
     } catch (e) {
         console.error('CRITICAL BOOT ERROR:', e);
