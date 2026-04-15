@@ -411,6 +411,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Setup haptic section boundaries
         haptics.setSectionBoundaries([0, 0.27, 0.5, 0.8, 1.0]);
 
+
         const fireNavPulse = () => {
             haptics.navigation();
             if (suns.triggerPulse) {
@@ -421,17 +422,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-
         // --- NAVBAR CLICKS ---
         document.querySelectorAll('.hud-nav a').forEach(link => {
-            link.addEventListener('click', (e) => {
+            link.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const targetId = link.getAttribute('href');
                 if (targetId && targetId.startsWith('#')) {
                     if (targetId === '#work') {
-                        ensureProjectCards().catch((error) => {
+                        try {
+                            await ensureProjectCards();
+                            ScrollTrigger.refresh();
+                        } catch (error) {
                             console.error('ProjectCards bootstrap failed:', error);
-                        });
+                        }
 
                         const maxScroll = getMaxScroll();
                         scroll.scrollTo(maxScroll * 0.27, {
@@ -458,7 +461,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (projectCardsSystem && projectCardsSystem.resize) {
                 projectCardsSystem.resize();
             }
-
         });
 
         // Hook Scroll Velocity and Position
