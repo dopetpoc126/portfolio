@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => {
                 if (loader) loader.classList.add('loader-hidden');
                 console.log('ZENITH SEQUENCE: SYSTEMS GO');
-            }, 500);
+            }, 2600);
         };
 
         const beginIntro = () => {
