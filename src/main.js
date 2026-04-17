@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Industry Standard Fix for Mobile/iOS thread jank
         if (window.innerWidth < 1025) {
-            ScrollTrigger.normalizeScroll(true);
+            // ScrollTrigger.normalizeScroll(true);
             ScrollTrigger.config({ ignoreMobileResize: true });
         }
 
@@ -91,13 +91,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             introStarted = true;
 
             console.log('5. Ignition...');
-            scroll.stop();
-            window.scrollTo(0, 0);
+            scroll.scrollTo(0, { immediate: true });
             if (suns) suns.ignition();
-
-            setTimeout(() => {
-                scroll.start();
-            }, 2500);
 
             console.log('SYSTEM ONLINE.');
         };
