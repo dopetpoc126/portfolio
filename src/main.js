@@ -3,6 +3,11 @@ import './styles/base.css';
 console.log('%c ZENITH BOOT SEQUENCE ', 'background: #222; color: #ff4d00');
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Prevent browser from trying to restore previous scroll position and fighting Lenis
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
     try {
         console.log('1. Loading Dependencies...');
         const gsap = (await import('gsap')).default;
@@ -91,7 +96,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             introStarted = true;
 
             console.log('5. Ignition...');
-            scroll.scrollTo(0, { immediate: true });
             if (suns) suns.ignition();
 
             console.log('SYSTEM ONLINE.');
