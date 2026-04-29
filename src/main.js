@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
 
         gsap.registerPlugin(ScrollTrigger);
+        ScrollTrigger.clearScrollMemory('manual');
 
         // Industry Standard Fix for Mobile/iOS thread jank
         if (window.innerWidth < 1025) {
@@ -43,6 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log('4. Initializing Core Systems...');
         const scroll = new ScrollManager();
+        scroll.scrollTo(0, { immediate: true });
+        scroll.stop(); // Block scrolling while loading
+        
         const gl = new GLManager(canvas);
         const cinematic = new CinematicManager();
 
@@ -85,9 +89,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (loaderFinished) return;
             loaderFinished = true;
             setLoaderProgress(100, 'NEURAL_LINK_SYNCHRONIZED');
+            
+            ScrollTrigger.refresh();
+            
             setTimeout(() => {
                 if (loader) loader.classList.add('loader-hidden');
                 console.log('ZENITH SEQUENCE: SYSTEMS GO');
+                scroll.start(); // Allow scrolling once loader is gone
+                ScrollTrigger.refresh(); // Final refresh just in case
             }, 2600);
         };
 
@@ -237,12 +246,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     aboutSection.style.pointerEvents = 'auto';
                 }
                 gl.camera.rotation.y = lerp(startRot, -Math.PI / 6, norm);
-            }
-
-            if (!isWarmup && scrollPct > 0.18 && !projectCardsInitStarted) {
-                ensureProjectCards().catch((error) => {
-                    console.error('ProjectCards bootstrap failed:', error);
-                });
             }
 
             // Update components
@@ -401,7 +404,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         setLoaderProgress(10, 'ESTABLISHING_NEURAL_UPLINK');
         suns = new Suns(gl);
-        suns.onLoad = () => {
+        suns.onLoad = async () => {
+            setLoaderProgress(30, 'LOADING_PROJECT_DATA');
+            try {
+                await ensureProjectCards();
+            } catch (e) {
+                console.error('Failed to load ProjectCards during boot:', e);
+            }
+            
             finishLoading();
             beginIntro();
             startBackgroundBootstrap();

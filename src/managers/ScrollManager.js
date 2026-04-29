@@ -36,26 +36,8 @@ export default class ScrollManager {
 
         // Optimize GSAP
         gsap.ticker.lagSmoothing(0);
-
-        // scrollerProxy for ScrollTrigger
-        ScrollTrigger.scrollerProxy(document.body, {
-            scrollTop: (value) => {
-                if (arguments.length) {
-                    this.lenis.scrollTo(value, { duration: 0, immediate: true });
-                }
-                return (this.lenis ? this.lenis.scroll : window.scrollY);
-            },
-            getBoundingClientRect: () => {
-                return {
-                    top: 0,
-                    left: 0,
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                };
-            },
-            pinType: isMobile ? 'fixed' : 'transform' // Fixed on mobile often prevents jitters
-        });
     }
+
 
     get scroll() {
         return this.lenis ? this.lenis.scroll : window.scrollY;

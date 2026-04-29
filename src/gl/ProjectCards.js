@@ -238,82 +238,129 @@ class ProjectCard {
 class DetailView {
     constructor() {
         this.group = new THREE.Group();
-        this.createPanels();
-        this.buttonBounds = { x: 0, y: 0, w: 0, h: 0 };
+        this.createMeshes();
     }
 
-    createPanels() {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = 1024;
-        this.canvas.height = 400;
-        this.ctx = this.canvas.getContext('2d');
+    createMeshes() {
+        // 1. Board Background
+        this.canvasBoard = document.createElement('canvas');
+        this.canvasBoard.width = 1024;
+        this.canvasBoard.height = 560;
+        this.ctxBoard = this.canvasBoard.getContext('2d');
+        this.texBoard = new THREE.CanvasTexture(this.canvasBoard);
+        this.texBoard.minFilter = THREE.LinearFilter;
 
-        this.texture = new THREE.CanvasTexture(this.canvas);
-        this.texture.minFilter = THREE.LinearFilter;
+        const geoBoard = new THREE.PlaneGeometry(10, 5.5);
+        const matBoard = new THREE.MeshBasicMaterial({ map: this.texBoard, transparent: true });
+        this.meshBoard = new THREE.Mesh(geoBoard, matBoard);
+        this.meshBoard.position.z = 0;
+        this.group.add(this.meshBoard);
 
-        const geo = new THREE.PlaneGeometry(10, 4);
-        const mat = new THREE.MeshBasicMaterial({
-            map: this.texture,
-            transparent: true,
-            opacity: 1
-        });
+        // 2. Left Page
+        this.canvasLeft = document.createElement('canvas');
+        this.canvasLeft.width = 460;
+        this.canvasLeft.height = 500;
+        this.ctxLeft = this.canvasLeft.getContext('2d');
+        this.texLeft = new THREE.CanvasTexture(this.canvasLeft);
+        this.texLeft.minFilter = THREE.LinearFilter;
+        
+        const geoPage = new THREE.PlaneGeometry(4.6, 5.0);
+        const matLeft = new THREE.MeshBasicMaterial({ map: this.texLeft, transparent: true });
+        this.meshLeft = new THREE.Mesh(geoPage, matLeft);
+        this.meshLeft.position.set(-2.38, 0, 0.01); 
+        this.group.add(this.meshLeft);
 
-        this.mesh = new THREE.Mesh(geo, mat);
-        this.mesh.renderOrder = 101; // Text on top
-        this.group.add(this.mesh);
+        // 3. Right Page
+        this.canvasRight = document.createElement('canvas');
+        this.canvasRight.width = 460;
+        this.canvasRight.height = 500;
+        this.ctxRight = this.canvasRight.getContext('2d');
+        this.texRight = new THREE.CanvasTexture(this.canvasRight);
+        this.texRight.minFilter = THREE.LinearFilter;
+
+        const matRight = new THREE.MeshBasicMaterial({ map: this.texRight, transparent: true });
+        this.meshRight = new THREE.Mesh(geoPage, matRight);
+        this.meshRight.position.set(2.38, 0, 0.01);
+        this.group.add(this.meshRight);
+
+        // 4. Flipping Page (Group acting as hinge)
+        this.flipGroup = new THREE.Group();
+        this.flipGroup.position.set(0, 0, 0.02); // Hinge at center
+        this.group.add(this.flipGroup);
+
+        this.canvasFlipFront = document.createElement('canvas');
+        this.canvasFlipFront.width = 460;
+        this.canvasFlipFront.height = 500;
+        this.ctxFlipFront = this.canvasFlipFront.getContext('2d');
+        this.texFlipFront = new THREE.CanvasTexture(this.canvasFlipFront);
+        this.texFlipFront.minFilter = THREE.LinearFilter;
+
+        this.canvasFlipBack = document.createElement('canvas');
+        this.canvasFlipBack.width = 460;
+        this.canvasFlipBack.height = 500;
+        this.ctxFlipBack = this.canvasFlipBack.getContext('2d');
+        this.texFlipBack = new THREE.CanvasTexture(this.canvasFlipBack);
+        this.texFlipBack.minFilter = THREE.LinearFilter;
+
+        // Front of flip page
+        const matFlipFront = new THREE.MeshBasicMaterial({ map: this.texFlipFront, transparent: true, side: THREE.FrontSide });
+        this.meshFlipFront = new THREE.Mesh(geoPage, matFlipFront);
+        this.meshFlipFront.position.set(2.38, 0, 0.001); 
+        this.flipGroup.add(this.meshFlipFront);
+
+        // Back of flip page
+        const matFlipBack = new THREE.MeshBasicMaterial({ map: this.texFlipBack, transparent: true, side: THREE.FrontSide });
+        this.meshFlipBack = new THREE.Mesh(geoPage, matFlipBack);
+        this.meshFlipBack.rotation.y = Math.PI;
+        this.meshFlipBack.position.set(2.38, 0, -0.001);
+        this.flipGroup.add(this.meshFlipBack);
+
+        this.flipGroup.visible = false;
+
+        this.drawBoard();
     }
 
-    updateContent(project) {
-        const ctx = this.ctx;
-        const canvas = this.canvas;
-        const isMobile = window.innerWidth < 768;
+    drawBoard() {
+        const ctx = this.ctxBoard;
+        const w = this.canvasBoard.width;
+        const h = this.canvasBoard.height;
 
-        // Clear
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, w, h);
 
-        // Title
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffffff';
-        const titleSize = isMobile ? '36px' : '60px'; // Reduced from 40px
-        ctx.font = `bold ${titleSize} "JetBrains Mono", monospace`;
-        ctx.fillText(project.title, 512, isMobile ? 50 : 80); // Moved up slightly
+        ctx.fillStyle = '#2c1e16';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(10, 10, w - 20, h - 20, 12);
+            ctx.fill();
+        } else {
+            ctx.fillRect(10, 10, w - 20, h - 20);
+        }
+        
+        ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = '#1a100b';
+        ctx.lineWidth = 2;
+        for(let i = 0; i < 30; i++) {
+            ctx.beginPath();
+            const y = Math.random() * h;
+            ctx.moveTo(10, y);
+            ctx.lineTo(w - 10, y + (Math.random() * 20 - 10));
+            ctx.stroke();
+        }
 
-        // Divider
-        ctx.strokeStyle = '#ffffff';
-        ctx.beginPath();
-        const divX1 = isMobile ? 262 : 112; // Narrower divider
-        const divX2 = isMobile ? 762 : 912;
-        ctx.moveTo(divX1, isMobile ? 80 : 110);
-        ctx.lineTo(divX2, isMobile ? 80 : 110);
-        ctx.stroke();
-
-        // Description
-        const descSize = isMobile ? '20px' : '24px'; // Slightly larger for readability? No, keep manageable.
-        ctx.font = `${descSize} "JetBrains Mono", monospace`;
-        ctx.fillStyle = '#cccccc';
-        const maxWidth = isMobile ? 700 : 850; // Tighter margins (was 800)
-        const lineHeight = isMobile ? 30 : 36;
-        let lastY = this.wrapText(ctx, project.longDesc || project.description, 512, isMobile ? 130 : 160, maxWidth, lineHeight);
-
-        // Tech stack
-        const techY = Math.max(lastY + (isMobile ? 25 : 50), isMobile ? 260 : 320);
-        ctx.fillStyle = '#888888';
-        const techSize = isMobile ? '16px' : '20px'; // Reduced from 18px
-        ctx.font = `bold ${techSize} "JetBrains Mono", monospace`;
-        ctx.fillText(`SYSTEMS: ${project.tech.join(' // ')}`, 512, techY);
-
-        this.texture.needsUpdate = true;
+        this.texBoard.needsUpdate = true;
     }
 
     wrapText(ctx, text, x, y, maxWidth, lineHeight) {
         const words = text.split(' ');
         let line = '';
-
         for (let n = 0; n < words.length; n++) {
             const testLine = line + words[n] + ' ';
             const metrics = ctx.measureText(testLine);
             const testWidth = metrics.width;
-
             if (testWidth > maxWidth && n > 0) {
                 ctx.fillText(line, x, y);
                 line = words[n] + ' ';
@@ -326,18 +373,94 @@ class DetailView {
         return y + lineHeight;
     }
 
-    // Check if UV coordinates are inside the button
-    checkButtonClick(uv) {
-        const x = uv.x * this.canvas.width;
-        const y = (1 - uv.y) * this.canvas.height;
-        return (
-            x >= this.buttonBounds.x &&
-            x <= this.buttonBounds.x + this.buttonBounds.w &&
-            y >= this.buttonBounds.y &&
-            y <= this.buttonBounds.y + this.buttonBounds.h
-        );
+    drawPage(ctx, project, isLeft, tex) {
+        const w = 460;
+        const h = 500;
+        
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.fillStyle = '#e8dfc8'; // Aged paper
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = isLeft ? 2 : -2;
+        ctx.shadowOffsetY = 2;
+        ctx.fillRect(10, 10, w - 20, h - 20);
+        ctx.shadowColor = 'transparent';
+
+        // Draw binding rings on the edge
+        ctx.fillStyle = '#111';
+        const ringX = isLeft ? w - 15 : 15;
+        for(let y = 40; y <= h - 40; y += 50) {
+            ctx.beginPath();
+            ctx.arc(ringX, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#888';
+            ctx.beginPath();
+            ctx.arc(ringX - 2, y - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#111';
+        }
+
+        const inkColor = '#2b211e'; 
+        const titleColor = '#8c2626';
+
+        if (isLeft) {
+            ctx.textAlign = 'center';
+            ctx.fillStyle = titleColor;
+            ctx.font = 'bold 46px "JetBrains Mono", monospace';
+            ctx.fillText(project.title, w/2, 80);
+
+            ctx.strokeStyle = inkColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(40, 115);
+            ctx.lineTo(w - 40, 115);
+            ctx.stroke();
+
+            ctx.fillStyle = inkColor;
+            ctx.font = 'bold 24px "JetBrains Mono", monospace';
+            ctx.fillText('INGREDIENTS / SYSTEMS:', w/2, 165);
+
+            ctx.textAlign = 'left';
+            ctx.font = '22px "JetBrains Mono", monospace';
+            let techY = 215;
+            project.tech.forEach(t => {
+                ctx.fillText("• " + t, 60, techY);
+                techY += 34;
+            });
+        } else {
+            ctx.textAlign = 'left';
+            ctx.fillStyle = inkColor;
+            ctx.font = 'bold 24px "JetBrains Mono", monospace';
+            ctx.fillText('DESCRIPTION:', 40, 80);
+            
+            ctx.font = '20px "JetBrains Mono", monospace';
+            const maxWidth = w - 80;
+            const lineHeight = 32;
+            this.wrapText(ctx, project.longDesc || project.description, 40, 130, maxWidth, lineHeight);
+
+            ctx.strokeStyle = 'rgba(140, 38, 38, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(w - 60, h - 60, 30, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.font = 'bold 16px "JetBrains Mono", monospace';
+            ctx.fillStyle = 'rgba(140, 38, 38, 0.6)';
+            ctx.textAlign = 'center';
+            ctx.fillText('NO.', w - 60, h - 68);
+            ctx.fillText(project.index, w - 60, h - 45);
+        }
+
+        if (tex) tex.needsUpdate = true;
+    }
+
+    updateContent(project) {
+        if (window.innerWidth < 768) return;
+        this.drawPage(this.ctxLeft, project, true, this.texLeft);
+        this.drawPage(this.ctxRight, project, false, this.texRight);
     }
 }
+
 
 export default class ProjectCards {
     constructor(glManager) {
@@ -367,8 +490,16 @@ export default class ProjectCards {
         this.detailView = new DetailView();
         this.detailView.group.position.set(-5.0, 2.2, 0.1);
         this.detailView.updateContent(PROJECTS[0]);
-        this.detailView.mesh.renderOrder = 100;
-        this.detailView.mesh.material.depthTest = false;
+        this.detailView.meshBoard.renderOrder = 100;
+        this.detailView.meshBoard.material.depthTest = false;
+        this.detailView.meshLeft.renderOrder = 101;
+        this.detailView.meshLeft.material.depthTest = false;
+        this.detailView.meshRight.renderOrder = 101;
+        this.detailView.meshRight.material.depthTest = false;
+        this.detailView.meshFlipFront.renderOrder = 102;
+        this.detailView.meshFlipFront.material.depthTest = false;
+        this.detailView.meshFlipBack.renderOrder = 102;
+        this.detailView.meshFlipBack.material.depthTest = false;
         this.hudContainer.add(this.detailView.group);
 
         // Create all cards at left-center position (-5.0, -3.2, 0)
@@ -407,17 +538,33 @@ export default class ProjectCards {
             canvas.width = 256;
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#00ffff';
+
+            // Draw red stamp background
+            ctx.fillStyle = 'rgba(140, 38, 38, 0.9)';
+            ctx.beginPath();
+            ctx.arc(128, 128, 115, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner circle
+            ctx.strokeStyle = '#e8dfc8';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(128, 128, 100, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = '#e8dfc8';
             ctx.font = 'bold 120px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(char, 128, 128);
+            ctx.fillText(char, 128, 120); // slightly offset Y for Arial
+
             const tex = new THREE.CanvasTexture(canvas);
             tex.minFilter = THREE.LinearFilter;
             return tex;
         };
 
-        const arrowGeo = new THREE.PlaneGeometry(0.8, 0.8);
+        const arrowGeo = new THREE.PlaneGeometry(1.5, 1.5);
 
         // Left Arrow
         const leftMat = new THREE.MeshBasicMaterial({
@@ -458,16 +605,46 @@ export default class ProjectCards {
         canvas.height = 128;
         const ctx = canvas.getContext('2d');
 
-        // Background
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
-        ctx.fillRect(0, 0, 512, 128);
-        ctx.strokeStyle = '#00ffff';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0, 0, 512, 128);
+        // Wooden Plank Background
+        ctx.fillStyle = '#2c1e16'; // Dark wood
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 3;
+        ctx.fillRect(4, 4, 504, 120);
+        ctx.shadowColor = 'transparent';
+
+        // Border
+        ctx.strokeStyle = '#1a100b';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(4, 4, 504, 120);
+
+        // Wood grain
+        ctx.strokeStyle = '#1a100b';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 15; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, Math.random() * 128);
+            ctx.lineTo(512, Math.random() * 128);
+            ctx.stroke();
+        }
+
+        // Screws in corners
+        ctx.fillStyle = '#111';
+        [[24, 24], [488, 24], [24, 104], [488, 104]].forEach(([x, y]) => {
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#555';
+            ctx.beginPath();
+            ctx.arc(x - 1, y - 1, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#111';
+        });
 
         // Text
-        ctx.fillStyle = '#00ffff';
-        ctx.font = 'bold 40px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#e8dfc8'; // Aged paper color
+        ctx.font = 'bold 36px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('VISIT GITHUB REPO', 256, 64);
@@ -475,7 +652,7 @@ export default class ProjectCards {
         const texture = new THREE.CanvasTexture(canvas);
         texture.minFilter = THREE.LinearFilter;
 
-        const geo = new THREE.PlaneGeometry(3, 0.75);
+        const geo = new THREE.PlaneGeometry(4.2, 1.05);
         const mat = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
@@ -535,15 +712,65 @@ export default class ProjectCards {
             y: 1,
             z: 1,
             duration: 0.3,
-            delay: 0.15,
-            onComplete: () => {
-                this.isTransitioning = false;
-            }
+            delay: 0.15
         });
+
+        // PAGE FLIP ANIMATION FOR MENU CARD (Desktop only)
+        const isMobile = window.innerWidth < 768;
+        if (!isMobile && this.detailView && this.detailView.flipGroup) {
+            const direction = newIndex > this.currentIndex ? 1 : -1;
+            
+            const currentProj = PROJECTS[this.currentIndex];
+            const nextProj = PROJECTS[newIndex];
+
+            this.detailView.flipGroup.visible = true;
+
+            if (direction === 1) {
+                // Moving forward (Right to Left turn)
+                this.detailView.drawPage(this.detailView.ctxLeft, currentProj, true, this.detailView.texLeft);
+                this.detailView.drawPage(this.detailView.ctxRight, nextProj, false, this.detailView.texRight);
+                
+                this.detailView.drawPage(this.detailView.ctxFlipFront, currentProj, false, this.detailView.texFlipFront);
+                this.detailView.drawPage(this.detailView.ctxFlipBack, nextProj, true, this.detailView.texFlipBack);
+                
+                this.detailView.flipGroup.rotation.y = 0;
+                gsap.to(this.detailView.flipGroup.rotation, {
+                    y: Math.PI, // Flip right to left
+                    duration: 0.6,
+                    ease: "power2.inOut",
+                    onComplete: () => {
+                        this.detailView.flipGroup.visible = false;
+                        this.detailView.updateContent(nextProj);
+                        this.isTransitioning = false;
+                    }
+                });
+            } else {
+                // Moving backward (Left to Right turn)
+                this.detailView.drawPage(this.detailView.ctxLeft, nextProj, true, this.detailView.texLeft);
+                this.detailView.drawPage(this.detailView.ctxRight, currentProj, false, this.detailView.texRight);
+                
+                this.detailView.drawPage(this.detailView.ctxFlipFront, nextProj, false, this.detailView.texFlipFront);
+                this.detailView.drawPage(this.detailView.ctxFlipBack, currentProj, true, this.detailView.texFlipBack);
+                
+                this.detailView.flipGroup.rotation.y = Math.PI; // Start flipped left
+                gsap.to(this.detailView.flipGroup.rotation, {
+                    y: 0, // Flip left to right
+                    duration: 0.6,
+                    ease: "power2.inOut",
+                    onComplete: () => {
+                        this.detailView.flipGroup.visible = false;
+                        this.detailView.updateContent(nextProj);
+                        this.isTransitioning = false;
+                    }
+                });
+            }
+        } else {
+            this.detailView.updateContent(PROJECTS[newIndex]);
+            setTimeout(() => { this.isTransitioning = false; }, 300);
+        }
 
         this.currentIndex = newIndex;
         this.selectedIndex = newIndex;
-        this.detailView.updateContent(PROJECTS[newIndex]);
         this.updateMobileOverlay(newIndex); // Sync mobile HTML
         this.updateArrowVisibility();
 
@@ -744,23 +971,20 @@ export default class ProjectCards {
             this.baseScale = 0.95;
             this.hudContainer.scale.set(0.95, 0.95, 0.95);
 
-            // Hide Glass Backing on Desktop
-            if (this.detailView.glassBacking) {
-                this.detailView.glassBacking.visible = false;
-            }
+            // No glass backing in new menu board design
 
             // Restore desktop positions
             this.detailView.group.visible = true;
-            this.detailView.group.position.set(-5.0, 2.2, 0.1);
+            this.detailView.group.position.set(-7.0, 1.0, 0.1);
 
             if (this.githubButton) {
-                this.githubButton.position.set(-5.0, -0.6, 0.2);
+                this.githubButton.position.set(-7.0, -2.3, 0.2);
             }
             if (this.leftArrow) {
-                this.leftArrow.position.set(-7.5, -0.6, 0.2);
+                this.leftArrow.position.set(-10.0, -2.3, 0.2);
             }
             if (this.rightArrow) {
-                this.rightArrow.position.set(-2.5, -0.6, 0.2);
+                this.rightArrow.position.set(-4.0, -2.3, 0.2);
             }
 
             this.cards.forEach(card => {
