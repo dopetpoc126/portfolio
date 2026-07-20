@@ -2,9 +2,9 @@
 .mobile-project-card {
     display: none;
     position: absolute;
-    top: 20%;
+    top: 50%;
     left: 50%;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, -50%);
     /* Simple centering at 25% height */
     width: 92%;
     max-width: 480px;

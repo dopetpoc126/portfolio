@@ -71,10 +71,72 @@
     </section>
 
     <section id="work" class="content-section work-section">
-      <!-- Header overlay - static -->
-      <div class="work-header">
-        <h2 class="display-huge">ARCHIVE</h2>
-        <div class="mono-label">[ SYSTEM_ONLINE ]</div>
+      <!-- The battlefield HUD overlay -->
+      <div class="battlefield-hud">
+        <!-- Header overlay - static -->
+        <div class="work-header">
+          <h2 class="display-huge">ABOUT</h2>
+          <div class="mono-label">[ SYSTEM_ONLINE ]</div>
+        </div>
+
+        <!-- Tactical Grid Overlay -->
+        <div class="tactical-grid"></div>
+
+        <!-- Scanning Line Animation -->
+        <div class="scan-line"></div>
+
+        <!-- HUD Main Container -->
+        <div class="hud-container">
+          <!-- Main HUD Grid -->
+          <div class="hud-grid">
+            <!-- Center Panel: Mission Brief -->
+            <div class="hud-panel mission-panel">
+              <div class="panel-header">
+                <span class="bracket">[</span>
+                <span class="panel-title">PROFILE</span>
+                <span class="bracket">]</span>
+              </div>
+              <div class="panel-content mission-content">
+                <div class="mission-text typing-effect">
+                  <div class="bio-summary">
+                    <div class="bio-item">
+                      <span class="bio-label">NAME</span>
+                      <span class="bio-value glitch-text">SHRIYAN</span>
+                    </div>
+                    <div class="bio-item">
+                      <span class="bio-label">FOCUS</span>
+                      <span class="bio-value">Android & Web</span>
+                    </div>
+                    <div class="bio-item">
+                      <span class="bio-label">LOCATION</span>
+                      <span class="bio-value">VIT CHENNAI</span>
+                    </div>
+                    <div class="bio-item">
+                      <span class="bio-label">STATUS</span>
+                      <span class="bio-value online"><span class="status-dot"></span>AVAILABLE</span>
+                    </div>
+                  </div>
+                  <p class="objective" style="margin-top: 2rem;">&gt; Building responsive, optimized applications.</p>
+                  <p class="description">I develop for Android and the web with a focus on efficiency. As someone who
+                    roots every device I own to maximize performance, I obsess over how software runs on the metal. I
+                    don't just write code; I optimize it.</p>
+                  <p class="mandate">&gt;&gt; Performance is paramount.<br>&gt;&gt; User experience is priority.</p>
+                </div>
+              </div>
+              <div class="corner-bracket top-left"></div>
+              <div class="corner-bracket top-right"></div>
+              <div class="corner-bracket bottom-left"></div>
+              <div class="corner-bracket bottom-right"></div>
+            </div>
+          </div>
+
+          <!-- Bottom Command Line -->
+          <div class="hud-command-line">
+            <span class="prompt">&gt;_</span>
+            <span class="command-text">READY</span>
+            <span class="cursor blink">|</span>
+          </div>
+        </div>
       </div>
 
       <!-- Mobile Project Detail Overlay -->
@@ -93,123 +155,8 @@
       <!-- 3D Cards render via WebGL canvas -->
     </section>
 
-    <section id="about" class="content-section battlefield-hud">
-      <!-- Tactical Grid Overlay -->
-      <div class="tactical-grid"></div>
-
-      <!-- Scanning Line Animation -->
-      <div class="scan-line"></div>
-
-      <!-- HUD Main Container -->
-      <div class="hud-container">
-
-
-
-        <!-- Main HUD Grid -->
-        <div class="hud-grid">
-
-
-
-          <!-- Center Panel: Mission Brief -->
-          <div class="hud-panel mission-panel">
-            <div class="panel-header">
-              <span class="bracket">[</span>
-              <span class="panel-title">PROFILE</span>
-              <span class="bracket">]</span>
-            </div>
-            <div class="panel-content mission-content">
-              <div class="mission-text typing-effect">
-                <div class="bio-summary">
-                  <div class="bio-item">
-                    <span class="bio-label">NAME</span>
-                    <span class="bio-value glitch-text">SHRIYAN</span>
-                  </div>
-                  <div class="bio-item">
-                    <span class="bio-label">FOCUS</span>
-                    <span class="bio-value">Android & Web</span>
-                  </div>
-                  <div class="bio-item">
-                    <span class="bio-label">LOCATION</span>
-                    <span class="bio-value">VIT CHENNAI</span>
-                  </div>
-                  <div class="bio-item">
-                    <span class="bio-label">STATUS</span>
-                    <span class="bio-value online">AVAILABLE</span>
-                  </div>
-                </div>
-                <p class="objective" style="margin-top: 2rem;">&gt; Building responsive, optimized applications.
-                </p>
-                <p class="description">I develop for Android and the web with a focus on efficiency. As someone who
-                  roots every device I own to maximize performance, I obsess over how software runs on the metal. I
-                  don't just write code; I optimize it.</p>
-                <p class="mandate">&gt;&gt; Performance is paramount.<br>&gt;&gt; User experience is priority.</p>
-              </div>
-            </div>
-            <div class="corner-bracket top-left"></div>
-            <div class="corner-bracket top-right"></div>
-            <div class="corner-bracket bottom-left"></div>
-            <div class="corner-bracket bottom-right"></div>
-          </div>
-
-          <!-- Right Panel: Skills/Arsenal -->
-          <div class="hud-panel arsenal-panel">
-            <div class="panel-header">
-              <span class="bracket">[</span>
-              <span class="panel-title">SKILLSET</span>
-              <span class="bracket">]</span>
-            </div>
-            <div class="panel-content">
-              <div class="skill-bar">
-                <span class="skill-name">Android / Kotlin</span>
-                <div class="skill-meter">
-                  <div class="skill-fill" style="width: 95%"></div>
-                </div>
-              </div>
-              <div class="skill-bar">
-                <span class="skill-name">Web / React</span>
-                <div class="skill-meter">
-                  <div class="skill-fill" style="width: 90%"></div>
-                </div>
-              </div>
-              <div class="skill-bar">
-                <span class="skill-name">Python / ML</span>
-                <div class="skill-meter">
-                  <div class="skill-fill" style="width: 85%"></div>
-                </div>
-              </div>
-              <div class="skill-bar">
-                <span class="skill-name">Java</span>
-                <div class="skill-meter">
-                  <div class="skill-fill" style="width: 88%"></div>
-                </div>
-              </div>
-              <div class="skill-bar">
-                <span class="skill-name">UI/UX Design</span>
-                <div class="skill-meter">
-                  <div class="skill-fill" style="width: 85%"></div>
-                </div>
-              </div>
-            </div>
-            <div class="corner-bracket top-left"></div>
-            <div class="corner-bracket top-right"></div>
-            <div class="corner-bracket bottom-left"></div>
-            <div class="corner-bracket bottom-right"></div>
-          </div>
-
-        </div>
-
-        <!-- Bottom Command Line -->
-        <div class="hud-command-line">
-          <span class="prompt">&gt;_</span>
-          <span class="command-text">READY</span>
-          <span class="cursor blink">|</span>
-        </div>
-
-      </div>
-    </section>
-
-    <section id="contact" class="content-section"
-      style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <section id="contact" class="content-section contact-section"
+      style="display: none;">
       <h2 style="margin-bottom: 2rem;">/// CONTACT</h2>
 
       <div class="glass-panel" style="width: 100%; max-width: 450px; padding: 2rem;">
@@ -246,6 +193,243 @@
       </div>
     </section>
   </main>
+
+  <!-- Drive section — cockpit driving + tyre rack projects wall -->
+  <div id="drive" style="min-height: 1800vh; pointer-events: none;"></div>
+
+  <!-- Impact flash overlay (full-screen orange burst on gate hit) -->
+  <div id="impact-flash"></div>
+
+  <!-- Lock-on HUD — appears as jet approaches a gate -->
+  <div id="lock-hud" aria-hidden="true">
+    <!-- Targeting reticle (corner brackets that close in) -->
+    <div class="lk-reticle">
+      <div class="lk-corner lk-tl"></div>
+      <div class="lk-corner lk-tr"></div>
+      <div class="lk-corner lk-bl"></div>
+      <div class="lk-corner lk-br"></div>
+      <div class="lk-cross lk-cross-h"></div>
+      <div class="lk-cross lk-cross-v"></div>
+    </div>
+    <!-- Status lines -->
+    <div class="lk-status-tl">
+      <span class="lk-label">RNG</span>
+      <span class="lk-value" id="lk-range">---</span>
+    </div>
+    <div class="lk-status-tr">
+      <span class="lk-label">TGT</span>
+      <span class="lk-value" id="lk-target">---</span>
+    </div>
+    <div class="lk-status-bl">
+      <span class="lk-locked-text" id="lk-locked">ACQUIRING</span>
+    </div>
+  </div>
+
+  <!-- Experience node cards — horizontal strip, one slot per obstacle, persistent once hit -->
+  <div id="exp-strip" aria-live="polite">
+    <div class="exp-slot" id="exp-slot-0" data-index="0">
+      <div class="exp-slot-inner">
+        <div class="exp-slot-meta">
+          <span class="exp-slot-index">01</span>
+          <span class="exp-slot-type">PROJECT</span>
+          <span class="exp-slot-year">2024</span>
+        </div>
+        <h3 class="exp-slot-title">BEAKAN</h3>
+        <p class="exp-slot-role">Android Developer</p>
+        <div class="exp-slot-divider"></div>
+        <p class="exp-slot-stack">Kotlin · Android · Firebase · BLE</p>
+        <p class="exp-slot-desc">Beacon-based attendance system for VIT Chennai using BLE hardware.</p>
+        <span class="exp-slot-status">● DEPLOYED</span>
+      </div>
+      <div class="exp-slot-corner exp-sc-tl"></div>
+      <div class="exp-slot-corner exp-sc-tr"></div>
+      <div class="exp-slot-corner exp-sc-bl"></div>
+      <div class="exp-slot-corner exp-sc-br"></div>
+    </div>
+
+    <div class="exp-slot" id="exp-slot-1" data-index="1">
+      <div class="exp-slot-inner">
+        <div class="exp-slot-meta">
+          <span class="exp-slot-index">02</span>
+          <span class="exp-slot-type">PROJECT</span>
+          <span class="exp-slot-year">2024</span>
+        </div>
+        <h3 class="exp-slot-title">ANADROME</h3>
+        <p class="exp-slot-role">Graphics Engineer</p>
+        <div class="exp-slot-divider"></div>
+        <p class="exp-slot-stack">Android · OpenGL ES · GLSL</p>
+        <p class="exp-slot-desc">GPU-accelerated live wallpaper engine with a fully custom shader pipeline.</p>
+        <span class="exp-slot-status">● ACTIVE</span>
+      </div>
+      <div class="exp-slot-corner exp-sc-tl"></div>
+      <div class="exp-slot-corner exp-sc-tr"></div>
+      <div class="exp-slot-corner exp-sc-bl"></div>
+      <div class="exp-slot-corner exp-sc-br"></div>
+    </div>
+
+    <div class="exp-slot" id="exp-slot-2" data-index="2">
+      <div class="exp-slot-inner">
+        <div class="exp-slot-meta">
+          <span class="exp-slot-index">03</span>
+          <span class="exp-slot-type">PROJECT</span>
+          <span class="exp-slot-year">2024</span>
+        </div>
+        <h3 class="exp-slot-title">ANADROME</h3>
+        <p class="exp-slot-role">Graphics Engineer</p>
+        <div class="exp-slot-divider"></div>
+        <p class="exp-slot-stack">Android · OpenGL ES · GLSL</p>
+        <p class="exp-slot-desc">GPU-accelerated live wallpaper engine with a fully custom shader pipeline.</p>
+        <span class="exp-slot-status">● ACTIVE</span>
+      </div>
+      <div class="exp-slot-corner exp-sc-tl"></div>
+      <div class="exp-slot-corner exp-sc-tr"></div>
+      <div class="exp-slot-corner exp-sc-bl"></div>
+      <div class="exp-slot-corner exp-sc-br"></div>
+    </div>
+
+    <div class="exp-slot" id="exp-slot-3" data-index="3">
+      <div class="exp-slot-inner">
+        <div class="exp-slot-meta">
+          <span class="exp-slot-index">04</span>
+          <span class="exp-slot-type">PROJECT</span>
+          <span class="exp-slot-year">2025</span>
+        </div>
+        <h3 class="exp-slot-title">ZENITH</h3>
+        <p class="exp-slot-role">Frontend Engineer</p>
+        <div class="exp-slot-divider"></div>
+        <p class="exp-slot-stack">Three.js · GSAP · WebGL · Vite</p>
+        <p class="exp-slot-desc">This portfolio. A fully scroll-driven cinematic WebGL experience.</p>
+        <span class="exp-slot-status">● LIVE</span>
+      </div>
+      <div class="exp-slot-corner exp-sc-tl"></div>
+      <div class="exp-slot-corner exp-sc-tr"></div>
+      <div class="exp-slot-corner exp-sc-bl"></div>
+      <div class="exp-slot-corner exp-sc-br"></div>
+    </div>
+  </div>
+
+  <!-- Smash flash overlay -->
+  <div id="smash-flash" style="position:fixed;inset:0;z-index:999;background:#fff;opacity:0;pointer-events:none;transition:opacity 0.08s ease;"></div>
+
+  <!-- Cockpit HUD overlay — shown during Sub-E and Sub-F -->
+  <div id="cockpit-hud" style="position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0;transition:opacity 0.6s ease;">
+
+    <!-- Corner brackets -->
+    <div class="hud-corner hud-tl"></div>
+    <div class="hud-corner hud-tr"></div>
+    <div class="hud-corner hud-bl"></div>
+    <div class="hud-corner hud-br"></div>
+
+    <!-- Center reticle -->
+    <div class="hud-reticle">
+      <div class="hud-reticle-ring"></div>
+      <div class="hud-reticle-cross hud-reticle-h"></div>
+      <div class="hud-reticle-cross hud-reticle-v"></div>
+      <div class="hud-reticle-dot"></div>
+    </div>
+
+    <!-- Horizon line -->
+    <div class="hud-horizon">
+      <div class="hud-horizon-line"></div>
+      <div class="hud-horizon-label">HORIZON</div>
+    </div>
+
+    <!-- Speed (bottom left) -->
+    <div class="hud-panel hud-speed">
+      <div class="hud-label">SPD</div>
+      <div class="hud-value" id="hud-speed-val">000</div>
+      <div class="hud-unit">KTS</div>
+    </div>
+
+    <!-- Altitude (bottom right) -->
+    <div class="hud-panel hud-alt">
+      <div class="hud-label">ALT</div>
+      <div class="hud-value" id="hud-alt-val">0000</div>
+      <div class="hud-unit">FT</div>
+    </div>
+
+    <!-- Heading tape (top center) -->
+    <div class="hud-heading">
+      <div class="hud-heading-tape">
+        <span id="hud-hdg-tape">270&nbsp;&nbsp;280&nbsp;&nbsp;290&nbsp;&nbsp;300&nbsp;&nbsp;310</span>
+      </div>
+      <div class="hud-heading-bug">▼</div>
+      <div class="hud-value" id="hud-hdg-val">270°</div>
+    </div>
+
+    <!-- Status strip (top left) -->
+    <div class="hud-status">
+      <div class="hud-status-line">ZENITH SYS.01</div>
+      <div class="hud-status-line blink-slow" id="hud-mode">■ COCKPIT LOCKED</div>
+      <div class="hud-status-line" id="hud-g-force">G-FORCE: 1.0g</div>
+    </div>
+
+    <!-- Target (top right) -->
+    <div class="hud-target">
+      <div class="hud-status-line">TARGET</div>
+      <div class="hud-value" id="hud-target-id">RB7 // F1</div>
+      <div class="hud-status-line blink-slow" id="hud-target-dist">ACQUIRING</div>
+    </div>
+
+    <!-- Scanline vignette -->
+    <div class="hud-scanlines"></div>
+  </div>
+
+  <!-- Projects fullscreen overlay — triggered by clicking the computer screen -->
+  <div id="projects-fullscreen" class="projects-fullscreen hidden">
+    <button id="projects-back" class="projects-back">
+      <span>◀</span> BACK TO COCKPIT
+    </button>
+    <div class="projects-content">
+      <div class="projects-header">
+        <h2>PROJECTS</h2>
+        <span class="projects-subtitle">SYS.01 // STRATEGY_BOARD</span>
+      </div>
+      <div class="projects-grid">
+
+        <div class="project-card">
+          <div class="project-card-top">
+            <span class="project-num">01</span>
+            <span class="project-status deployed">● DEPLOYED</span>
+          </div>
+          <h3 class="project-name">BEAKAN</h3>
+          <p class="project-type">Android App</p>
+          <div class="project-divider"></div>
+          <p class="project-stack">Kotlin · Android · Firebase</p>
+          <p class="project-desc">Beacon-based attendance system using BLE hardware. Built for VIT Chennai. Maximizes performance on rooted devices.</p>
+          <a href="https://github.com/dopetpoc126/BEAKAN" target="_blank" class="project-link">>> github.com/dopetpoc126/BEAKAN</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-card-top">
+            <span class="project-num">02</span>
+            <span class="project-status active">● ACTIVE</span>
+          </div>
+          <h3 class="project-name">ANADROME</h3>
+          <p class="project-type">Live Wallpaper</p>
+          <div class="project-divider"></div>
+          <p class="project-stack">Android · OpenGL ES · GLSL</p>
+          <p class="project-desc">GPU-accelerated live wallpaper engine with a custom shader pipeline. Runs entirely on the GPU.</p>
+          <a href="https://github.com/dopetpoc126/Anadrome" target="_blank" class="project-link">>> github.com/dopetpoc126/Anadrome</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-card-top">
+            <span class="project-num">03</span>
+            <span class="project-status active">● ACTIVE</span>
+          </div>
+          <h3 class="project-name">ANADROME</h3>
+          <p class="project-type">Live Wallpaper</p>
+          <div class="project-divider"></div>
+          <p class="project-stack">Android · OpenGL ES · GLSL</p>
+          <p class="project-desc">GPU-accelerated live wallpaper engine with a custom shader pipeline. Runs entirely on the GPU.</p>
+          <a href="https://github.com/dopetpoc126/Anadrome" target="_blank" class="project-link">>> github.com/dopetpoc126/Anadrome</a>
+        </div>
+
+      </div>
+      <p class="projects-footer">NEURAL_UPLINK: ACTIVE // ZENITH SYS.01</p>
+    </div>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

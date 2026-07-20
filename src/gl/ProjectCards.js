@@ -29,12 +29,12 @@ const PROJECTS = [
         index: '02'
     },
     {
-        title: 'NIDAN AI',
-        description: 'Hybrid ML/LLM diagnosis tool.',
-        tech: ['Machine Learning', 'Python', 'LLM', 'Healthcare'],
-        longDesc: "A diagnostic tool combining traditional ML probability models with LLM reasoning to analyze symptoms and provide comprehensive health risk assessments.",
-        status: 'EXPERIMENTAL',
-        link: 'https://github.com/dopetpoc126/htpss---Dataset-2.0---Nidan-AI',
+        title: 'ANADROME',
+        description: 'High-performance live wallpaper engine.',
+        tech: ['Android', 'Video Rendering', 'Performance', 'Kotlin'],
+        longDesc: "A wallpaper engine that renders local video files as live backgrounds with minimal battery impact. Features hardware-accelerated rendering and audio visualization.",
+        status: 'OPERATIONAL',
+        link: 'https://github.com/dopetpoc126/Anadrome',
         index: '03'
     }
 ];
@@ -814,79 +814,88 @@ export default class ProjectCards {
             }
         };
 
-        const endValue = window.innerWidth < 768 ? '+=350%' : '+=400%';
+        const setHeaderOpacity = workHeader ? gsap.quickSetter(workHeader, "opacity") : null;
+        const setOverlayOpacity = mobileOverlay ? gsap.quickSetter(mobileOverlay, "opacity") : null;
 
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: '#work',
-                start: 'top top',
-                end: endValue,
-                pin: true,
-                scrub: 1,
-                anticipatePin: 1,
-                onEnter: () => {
-                    this.hudContainer.visible = true;
-                    toggleHeader(true);
-                },
-                onLeave: () => {
-                    this.hudContainer.visible = false;
-                    toggleHeader(false);
-                },
-                onEnterBack: () => {
-                    this.hudContainer.visible = true;
-                    toggleHeader(true);
-                },
-                onLeaveBack: () => {
-                    this.hudContainer.visible = false;
-                    toggleHeader(false);
-                },
-                onUpdate: (self) => {
-                    const header = document.querySelector('.work-header');
+        const mm = gsap.matchMedia();
 
-                    if (self.progress > 0.5) {
-                        const disintegrateProgress = (self.progress - 0.5) / 0.5;
+        mm.add({
+            isMobile: "(max-width: 767px)",
+            isDesktop: "(min-width: 768px)"
+        }, (context) => {
+            const { isMobile } = context.conditions;
+            const endValue = isMobile ? '+=350%' : '+=400%';
 
-                        if (disintegrateProgress < 0.5) {
-                            const squashProgress = disintegrateProgress / 0.5;
-                            this.hudContainer.scale.y = this.baseScale * (1 - squashProgress * 0.98);
-                            this.hudContainer.scale.x = this.baseScale;
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#work',
+                    start: 'top top',
+                    end: endValue,
+                    pin: true,
+                    scrub: true,
+                    anticipatePin: 1,
+                    onEnter: () => {
+                        this.hudContainer.visible = true;
+                        toggleHeader(true);
+                    },
+                    onLeave: () => {
+                        this.hudContainer.visible = false;
+                        toggleHeader(false);
+                    },
+                    onEnterBack: () => {
+                        this.hudContainer.visible = true;
+                        toggleHeader(true);
+                    },
+                    onLeaveBack: () => {
+                        this.hudContainer.visible = false;
+                        toggleHeader(false);
+                    },
+                    onUpdate: (self) => {
+                        if (self.progress > 0.5) {
+                            const disintegrateProgress = (self.progress - 0.5) / 0.5;
+
+                            if (disintegrateProgress < 0.5) {
+                                const squashProgress = disintegrateProgress / 0.5;
+                                this.hudContainer.scale.y = this.baseScale * (1 - squashProgress * 0.98);
+                                this.hudContainer.scale.x = this.baseScale;
+                            } else {
+                                const shrinkProgress = (disintegrateProgress - 0.5) / 0.5;
+                                this.hudContainer.scale.y = this.baseScale * 0.02;
+                                this.hudContainer.scale.x = this.baseScale * (1 - shrinkProgress * 1);
+                            }
+
+                            this.cards.forEach(card => card.setDisintegration(disintegrateProgress));
+
+                            if (setHeaderOpacity) setHeaderOpacity(1 - disintegrateProgress);
+                            if (isMobile && setOverlayOpacity) setOverlayOpacity(1 - disintegrateProgress);
                         } else {
-                            const shrinkProgress = (disintegrateProgress - 0.5) / 0.5;
-                            this.hudContainer.scale.y = this.baseScale * 0.02;
-                            this.hudContainer.scale.x = this.baseScale * (1 - shrinkProgress * 1);
-                        }
+                            const baseScale = this.baseScale || 1;
+                            this.hudContainer.scale.set(baseScale, baseScale, baseScale);
+                            this.cards.forEach(card => card.setDisintegration(0));
 
-                        this.cards.forEach(card => card.setDisintegration(disintegrateProgress));
-
-                        if (header) {
-                            gsap.set(header, { autoAlpha: 1 - disintegrateProgress });
-                        }
-                        if (mobileOverlay && window.innerWidth < 768) {
-                            gsap.set(mobileOverlay, { autoAlpha: 1 - disintegrateProgress });
-                        }
-                    } else {
-                        const baseScale = this.baseScale || 1;
-                        this.hudContainer.scale.set(baseScale, baseScale, baseScale);
-                        this.cards.forEach(card => card.setDisintegration(0));
-
-                        if (self.progress > 0.25) {
-                            if (header) gsap.set(header, { autoAlpha: 1 });
-                            if (mobileOverlay && window.innerWidth < 768) gsap.set(mobileOverlay, { autoAlpha: 1 });
+                            if (self.progress > 0.25) {
+                                if (setHeaderOpacity) setHeaderOpacity(1);
+                                if (isMobile && setOverlayOpacity) setOverlayOpacity(1);
+                            }
                         }
                     }
                 }
+            });
+
+            tl.to(this.hudContainer.position, { y: 0, duration: 1, ease: 'power2.out' })
+                .to('.work-header', { autoAlpha: 1, duration: 1, ease: 'power2.out' }, '<');
+
+            if (isMobile && mobileOverlay) {
+                tl.to(mobileOverlay, { autoAlpha: 1, y: 0, duration: 1, ease: 'power2.out' }, '<');
             }
+
+            tl.to(this.hudContainer.position, { y: 0, duration: 2 });
+            tl.to(this.hudContainer.position, { y: 0, duration: 1 });
+
+            return () => {
+                tl.kill();
+            };
         });
-
-        tl.to(this.hudContainer.position, { y: 0, duration: 1, ease: 'power2.out' })
-            .to('.work-header', { autoAlpha: 1, duration: 1, ease: 'power2.out' }, '<');
-
-        if (mobileOverlay && window.innerWidth < 768) {
-            tl.to(mobileOverlay, { autoAlpha: 1, y: 0, duration: 1, ease: 'power2.out' }, '<');
-        }
-
-        tl.to(this.hudContainer.position, { y: 0, duration: 2 });
-        tl.to(this.hudContainer.position, { y: 0, duration: 1 });
     }
 
     onMouseMove(e) {

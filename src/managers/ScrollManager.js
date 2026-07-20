@@ -12,16 +12,19 @@ export default class ScrollManager {
         const isMobile = window.innerWidth < 1025;
         this.isMobile = isMobile;
 
+        // Lerp mode (no duration/easing) gives exponential-decay inertia that is frame-rate
+        // independent and never "hard stops" — ideal for scroll-driven WebGL cameras.
+        // Setting duration would override lerp and produce a fixed-time ease-out that feels
+        // stop-and-go when sub-phases apply their own easing on top.
         this.lenis = new Lenis({
-            duration: 1.5, // Fixed duration for consistent speed
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Smooth easing
+            lerp: 0.08,           // ~0.08 = comfortable inertia; raise toward 0.12 for snappier feel
             smoothWheel: true,
-            wheelMultiplier: 1,
+            wheelMultiplier: 0.45, // lower = slower overall scroll speed
             orientation: 'vertical',
             gestureOrientation: 'vertical',
-            smoothTouch: true, // Crucial for 60fps feel on touch
-            syncTouch: true,   // Essential for GSAP ScrollTrigger sync
-            touchMultiplier: 2,
+            smoothTouch: true,
+            syncTouch: true,
+            touchMultiplier: 0.70, // lower = slower touch scroll speed
             infinite: false,
         });
 
@@ -45,6 +48,14 @@ export default class ScrollManager {
 
     get velocity() {
         return this.lenis ? this.lenis.velocity : 0;
+    }
+
+    /** Max scroll distance; prefers Lenis `limit` (no layout read) per Lenis scroll model. */
+    getMaxScroll() {
+        if (this.lenis && typeof this.lenis.limit === 'number') {
+            return Math.max(this.lenis.limit, 1);
+        }
+        return Math.max(document.body.scrollHeight - window.innerHeight, 1);
     }
 
     scrollTo(target, options) {
