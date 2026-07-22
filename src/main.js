@@ -515,9 +515,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 for (let i = 0; i < 10; i++) pathPoints.push(wpArchive);
                 for (let i = 0; i < 7; i++) connectPathPoints.push(wpAbout);
+            }
+
             // Tilt Adjustment: Works (Archive) P1 rotation (Restored to a spacious 60 degrees)
             const rotP1 = Math.PI * (60 / 180);
             const cityTurnRot = Math.PI / 8 + (Math.PI / 2);
+            const aboutTurnRot = cityTurnRot - Math.PI;
             const setCameraFov = (targetFov) => {
                 const aspect = gl.camera.aspect || (window.innerWidth / window.innerHeight);
                 let effectiveFov = targetFov;
