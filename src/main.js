@@ -1482,7 +1482,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const glToWZ = (glz) => finalCamWorldZ + (glz - carrierZ);
 
                         // Phase progress norm calculation
-                        const diveNorm = scrollMath.clamp01((flyNorm - 0.27) / 0.18); // 0→1 Deck Spectator Transition (0.27 → 0.45)
+                        // Dynamic phase thresholds based on exact experience gate positions & clearance
+                        const spacing = isMobileScreen ? 20.0 : 16.0;
+                        const totalGateSpan = spacing * 4.0 + (isMobileScreen ? 16.0 : 15.0);
+                        const PHASE1_END = totalGateSpan / FLY_X_TRAVEL; // ~0.33 desktop / ~0.40 mobile (clears all 4 gates completely)
+                        const PHASE2_END = PHASE1_END + 0.18; // Spectator transition phase (0.33→0.51 desktop / 0.40→0.58 mobile)
+
+                        const diveNorm = scrollMath.clamp01((flyNorm - PHASE1_END) / 0.18);
                         const easeDive = scrollMath.smoothstep(diveNorm);
 
                         speedLineOpacity = 0;
@@ -1490,8 +1496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         let jX, jY, jZ, jYaw, jPitch = 0;
 
-                        if (flyNorm < 0.27) {
-                            // Phase 1: Top-down overhead flight through experience gates (clears ZENITH gate at 0.27)
+                        if (flyNorm < PHASE1_END) {
+                            // Phase 1: Top-down overhead flight through experience gates (clears ALL 4 gates cleanly)
                             const curJetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL;
 
                             jX = curJetFlyX - CKPT_OX;
@@ -1505,9 +1511,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             pitchX = -Math.PI / 2;
                             yawY = Math.PI / 2;
                             targetFov = 72;
-                        } else if (flyNorm < 0.45) {
-                            // Phase 2: Deck Spectator Transition — Camera swoops from overhead into spectator station while jet transitions to glide slope entry
-                            const startPhase2X = finalCamX - 0.27 * FLY_X_TRAVEL - CKPT_OX;
+                        } else if (flyNorm < PHASE2_END) {
+                            // Phase 2: Deck Spectator Transition — Camera swoops into spectator station after passing all gates
+                            const startPhase2X = finalCamX - PHASE1_END * FLY_X_TRAVEL - CKPT_OX;
                             const startPhase2Y = cockpitY - CKPT_OY;
                             const startPhase2Z = finalCamWorldZ - GROUP_Z - CKPT_OZ;
 
@@ -1531,8 +1537,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             if (city && city.cockpitHUDCanvas) city.cockpitHUDCanvas.style.opacity = '0';
                         } else {
-                            // Phase 3: Spectator Carrier Landing — Pure 3° glide slope descent starting EXACTLY from td.x + 100.0 down to td.x
-                            const landNorm = scrollMath.clamp01((flyNorm - 0.45) / 0.55);
+                            // Phase 3: Spectator Carrier Landing — Pure 3° glide slope descent down to carrier deck
+                            const landNorm = scrollMath.clamp01((flyNorm - PHASE2_END) / (1.0 - PHASE2_END));
                             const appNorm = scrollMath.clamp01(landNorm / 0.50);
                             const appT = scrollMath.smoothstep(appNorm);
 
@@ -1567,8 +1573,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         // ALWAYS set rescue jet position and opacity = 1
                         if (city && city.rescueJet) {
-                            const flyScaleNorm = scrollMath.clamp01((flyNorm - 0.45) / 0.175);
-                            const scaleVal = flyNorm < 0.45 ? 0.008 : scrollMath.lerp(0.008, 0.0032, flyScaleNorm);
+                            const flyScaleNorm = scrollMath.clamp01((flyNorm - PHASE2_END) / 0.175);
+                            const scaleVal = flyNorm < PHASE2_END ? 0.008 : scrollMath.lerp(0.008, 0.0032, flyScaleNorm);
                             city.rescueJet.scale.setScalar(scaleVal);
                             city.rescueJet.position.set(jX, jY, jZ);
                             city.rescueJet.rotation.set(jPitch, jYaw, 0);
@@ -1672,7 +1678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
 
                             // ── Visibility across camera frustum ──
-                            const inTurnaround = !isPullingUp && flyNorm > 0.53;
+                            const inTurnaround = !isPullingUp && flyNorm > PHASE2_END;
                             if (inTurnaround) {
                                 obs.group.visible = false;
                                 obs.label.visible = false;
