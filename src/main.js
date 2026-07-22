@@ -523,8 +523,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const aboutTurnRot = cityTurnRot - Math.PI;
 
             const setCameraFov = (targetFov) => {
-                if (Math.abs(gl.camera.fov - targetFov) < 0.01) return;
-                gl.camera.fov = scrollMath.lerp(gl.camera.fov, targetFov, 0.12);
+                const aspect = gl.camera.aspect || (window.innerWidth / window.innerHeight);
+                const refAspect = 1.777; // Desktop 16:9 reference
+                let effectiveFov = targetFov;
+
+                if (aspect < refAspect) {
+                    const radV = (targetFov * Math.PI) / 360;
+                    const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
+                    const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(aspect, 0.35));
+                    effectiveFov = (mobileVRad * 180) / Math.PI;
+                    effectiveFov = Math.min(Math.max(effectiveFov, targetFov), 110);
+                }
+
+                if (Math.abs(gl.camera.fov - effectiveFov) < 0.01) return;
+                gl.camera.fov = scrollMath.lerp(gl.camera.fov, effectiveFov, 0.14);
                 gl.camera.updateProjectionMatrix();
             };
             const speedFov = scrollMath.clamp01(Math.abs(velocity) * 0.018) * 5;

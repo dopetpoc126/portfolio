@@ -2241,34 +2241,90 @@ h3 {
   }
 
   /* Projects Fullscreen Modal Mobile Grid */
+  .projects-fullscreen {
+    padding: 4.5rem 1rem 1.5rem 1rem;
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .projects-back {
+    top: 1rem;
+    left: 1rem;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    padding: 0.4rem 0.8rem;
+    z-index: 100;
+  }
+
   .projects-content {
-    padding: 1.5rem 1rem;
-    width: 95%;
-    max-height: 88vh;
+    padding: 0.5rem 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .projects-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 170, 68, 0.3);
+    padding-bottom: 0.6rem;
+  }
+
+  .projects-header h2 {
+    font-size: clamp(1.75rem, 7vw, 2.4rem);
+    line-height: 1;
+    color: #ffaa44;
+  }
+
+  .projects-subtitle {
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    color: rgba(255, 170, 68, 0.6);
   }
 
   .projects-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 1.25rem;
+    margin-top: 1rem;
   }
 
   .project-card {
     padding: 1.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .projects-header h2 {
-    font-size: 1.75rem;
+  /* Profile & Bio HUD Section Mobile Fixes */
+  .battlefield-hud {
+    width: 92vw;
+    max-width: 95vw;
+    min-width: 0;
+    bottom: 3vh;
+    padding: 0;
   }
 
-  /* Profile & Bio HUD */
   .hud-panel.mission-panel {
-    width: 95%;
-    padding: 1rem;
+    width: 100%;
+    padding: 1rem 0.75rem;
+    box-sizing: border-box;
   }
 
   .bio-summary {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+  }
+
+  .bio-summary .bio-value {
+    font-size: clamp(0.7rem, 3vw, 0.85rem);
+    word-break: break-word;
+  }
+
+  .mission-text p {
+    font-size: clamp(0.75rem, 3vw, 0.88rem);
+    line-height: 1.5;
+    word-break: break-word;
   }
 
   /* Cockpit HUD Mobile Scaling */
