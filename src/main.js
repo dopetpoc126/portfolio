@@ -1111,75 +1111,75 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.beginPath(); lx.moveTo(20, CH - 20 - bl); lx.lineTo(20, CH - 20); lx.lineTo(20 + bl, CH - 20); lx.stroke();
 
                                 // Header
-                                lx.font = 'bold 16px "JetBrains Mono", monospace';
-                                lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff7700';
                                 lx.textAlign = 'left';
-                                lx.fillText(`SYS.01 // TGT [0${i + 1}]`, 28, 40);
+                                lx.fillText(`SYS.01 // TGT [0${i + 1}]`, 28, 44);
 
-                                lx.font = 'bold 15px "JetBrains Mono", monospace';
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
                                 lx.textAlign = 'right';
-                                lx.fillText(`YR: ${node.year}`, CW - 28, 40);
+                                lx.fillText(`YR: ${node.year}`, CW - 28, 44);
 
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.4)';
                                 lx.lineWidth = 2;
-                                lx.beginPath(); lx.moveTo(28, 52); lx.lineTo(CW - 28, 52); lx.stroke();
+                                lx.beginPath(); lx.moveTo(28, 58); lx.lineTo(CW - 28, 58); lx.stroke();
 
-                                // Title & Role
+                                // Title & Role — Large, Bold, High-Contrast White & Cyan
                                 lx.fillStyle = '#ffffff';
-                                lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
-                                lx.shadowBlur = 10;
-                                lx.font = 'bold 62px "JetBrains Mono", monospace';
+                                lx.shadowColor = 'rgba(255, 77, 0, 0.8)';
+                                lx.shadowBlur = 14;
+                                lx.font = 'bold 74px "JetBrains Mono", monospace';
                                 lx.textAlign = 'left';
-                                lx.fillText(node.title, 28, 126);
+                                lx.fillText(node.title, 28, 135);
                                 lx.shadowBlur = 0;
 
-                                lx.fillStyle = '#00ffcc';
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
-                                lx.fillText(`// ${node.role.toUpperCase()}`, 28, 164);
+                                lx.fillStyle = '#00ffea';
+                                lx.font = 'bold 26px "JetBrains Mono", monospace';
+                                lx.fillText(`// ${node.role.toUpperCase()}`, 28, 178);
 
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
                                 lx.lineWidth = 1.5;
-                                lx.beginPath(); lx.moveTo(28, 184); lx.lineTo(CW - 28, 184); lx.stroke();
+                                lx.beginPath(); lx.moveTo(28, 198); lx.lineTo(CW - 28, 198); lx.stroke();
 
-                                // Stack Pills
+                                // Stack Pills — Vibrant Orange Border & Solid High-Contrast Text
                                 const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
-                                let stackX = 28, stackY = 204;
-                                lx.font = 'bold 15px "JetBrains Mono", monospace';
+                                let stackX = 28, stackY = 218;
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
                                 stackItems.forEach(item => {
                                     const tw = lx.measureText(item).width;
-                                    const pw = tw + 18;
-                                    const ph = 28;
+                                    const pw = tw + 22;
+                                    const ph = 34;
                                     if (stackX + pw > CW - 28) {
                                         stackX = 28;
-                                        stackY += 34;
+                                        stackY += 42;
                                     }
-                                    lx.fillStyle = 'rgba(255, 77, 0, 0.12)';
+                                    lx.fillStyle = 'rgba(255, 77, 0, 0.22)';
                                     lx.fillRect(stackX, stackY, pw, ph);
-                                    lx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
-                                    lx.lineWidth = 1;
+                                    lx.strokeStyle = '#ff6600';
+                                    lx.lineWidth = 1.5;
                                     lx.strokeRect(stackX, stackY, pw, ph);
-                                    lx.fillStyle = '#ffaa77';
+                                    lx.fillStyle = '#ffffff';
                                     lx.textAlign = 'left';
-                                    lx.fillText(item, stackX + 9, stackY + 19);
-                                    stackX += pw + 8;
+                                    lx.fillText(item, stackX + 11, stackY + 24);
+                                    stackX += pw + 10;
                                 });
 
-                                // Mission Brief
-                                const briefY = stackY + 50;
-                                lx.font = 'bold 17px "JetBrains Mono", monospace';
-                                lx.fillStyle = '#ff4d00';
+                                // Mission Brief Header & Text — 100% Solid Pure White for Max Legibility
+                                const briefY = stackY + 58;
+                                lx.font = 'bold 22px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff5500';
                                 lx.fillText('>> MISSION_BRIEF:', 28, briefY);
 
-                                lx.fillStyle = 'rgba(240, 245, 255, 0.88)';
-                                lx.font = '20px "Inter", sans-serif';
+                                lx.fillStyle = '#ffffff';
+                                lx.font = 'bold 24px "Inter", sans-serif';
                                 const descWords = node.desc.split(' ');
-                                let descLine = '', descY = briefY + 32;
+                                let descLine = '', descY = briefY + 36;
                                 for (const w of descWords) {
                                     const test = descLine + w + ' ';
                                     if (lx.measureText(test).width > CW - 56 && descLine) {
                                         lx.fillText(descLine.trim(), 28, descY);
                                         descLine = w + ' ';
-                                        descY += 28;
+                                        descY += 34;
                                         if (descY > CH - 80) break;
                                     } else {
                                         descLine = test;
@@ -1188,16 +1188,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 if (descLine.trim() && descY <= CH - 80) lx.fillText(descLine.trim(), 28, descY);
 
                                 // Footer
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.4)';
                                 lx.lineWidth = 1.5;
-                                lx.beginPath(); lx.moveTo(28, CH - 44); lx.lineTo(CW - 28, CH - 44); lx.stroke();
+                                lx.beginPath(); lx.moveTo(28, CH - 48); lx.lineTo(CW - 28, CH - 48); lx.stroke();
 
-                                lx.fillStyle = '#00ff88';
-                                lx.beginPath(); lx.arc(38, CH - 22, 5, 0, Math.PI * 2); lx.fill();
-                                lx.font = 'bold 15px "JetBrains Mono", monospace';
-                                lx.fillStyle = '#ff4d00';
+                                lx.fillStyle = '#44ff88';
+                                lx.beginPath(); lx.arc(38, CH - 24, 6, 0, Math.PI * 2); lx.fill();
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff5500';
                                 lx.textAlign = 'left';
-                                lx.fillText(`${node.status} // NOMINAL`, 50, CH - 17);
+                                lx.fillText(`${node.status} // NOMINAL`, 54, CH - 18);
                             } else {
                                 // ── DESKTOP LANDSCAPE CARD CANVAS DRAWING ──
                                 const ch = 24;
