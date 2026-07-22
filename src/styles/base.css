@@ -294,33 +294,7 @@ h3 {
     /* Less padding on sides */
   }
 
-  .hud-nav {
-    padding: 0.9rem 1rem;
-    font-size: 0.68rem;
-    mix-blend-mode: difference;
-    gap: 0.75rem;
-    align-items: flex-start;
-  }
 
-  .hud-nav a {
-    margin-left: 0;
-    font-size: 0.64rem;
-  }
-
-  .hud-nav .logo {
-    font-size: 0.62rem;
-    line-height: 1.2;
-    white-space: nowrap;
-    padding-top: 0.15rem;
-  }
-
-  .hud-nav .links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.25rem 0.75rem;
-    max-width: 62%;
-  }
 
   .hero-section {
     height: 100dvh;
@@ -966,22 +940,7 @@ h3 {
 /* Mobile Responsive */
 @media (max-width: 768px) {
 
-  /* Navigation */
-  .hud-nav {
-    padding: 1rem;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
 
-  .hud-nav a {
-    margin-left: 1rem;
-    font-size: 0.7rem;
-  }
-
-  .hud-nav .logo {
-    font-size: 0.7rem;
-  }
 
   /* Hero Text */
   .split-text {
@@ -1143,19 +1102,7 @@ h3 {
     font-size: 2.8rem;
   }
 
-  .hud-nav {
-    padding: 0.75rem 0.5rem;
-  }
 
-  .hud-nav .links {
-    display: flex;
-    gap: 0;
-  }
-
-  .hud-nav a {
-    margin-left: 0.5rem;
-    font-size: 0.6rem;
-  }
 
   .battlefield-hud .hud-container {
     padding: 0;
@@ -2193,26 +2140,75 @@ h3 {
 /* ── COMPREHENSIVE RESPONSIVE MOBILE OPTIMIZATIONS ── */
 @media (max-width: 768px) {
   .hud-nav {
-    padding: 0.75rem 1rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: rgba(5, 5, 5, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 77, 0, 0.25);
+    mix-blend-mode: normal;
+    z-index: 1000;
   }
 
   .hud-nav .logo {
-    font-size: 0.75rem;
-    letter-spacing: 1px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--color-accent);
+    text-shadow: 0 0 10px rgba(255, 77, 0, 0.4);
+    line-height: 1;
+    white-space: nowrap;
+    text-align: center;
   }
 
   .hud-nav .links {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 100%;
     gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0;
+  }
+
+  .hud-nav .links::-webkit-scrollbar {
+    display: none;
   }
 
   .hud-nav a {
-    font-size: 0.7rem;
-    padding: 6px 10px;
-    min-height: 40px;
+    margin-left: 0;
+    font-size: clamp(0.58rem, 2.6vw, 0.68rem);
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 4px 6px;
+    min-height: auto;
+    border-radius: 4px;
+    transition: color 0.2s ease, background 0.2s ease;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+  }
+
+  .hud-nav a:hover,
+  .hud-nav a:active {
+    color: var(--color-accent);
+    background: rgba(255, 77, 0, 0.12);
   }
 
   .hero-content {
@@ -2283,19 +2279,7 @@ h3 {
 }
 
 @media (max-width: 480px) {
-  .hud-nav {
-    padding: 0.5rem 0.75rem;
-  }
 
-  .hud-nav .logo {
-    font-size: 0.68rem;
-  }
-
-  .hud-nav a {
-    font-size: 0.65rem;
-    padding: 4px 8px;
-    min-height: 36px;
-  }
 
   .hero-content h1.split-text {
     font-size: 2rem;
