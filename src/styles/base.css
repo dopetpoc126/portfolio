@@ -2327,10 +2327,15 @@ h3 {
     word-break: break-word;
   }
 
-  /* Cockpit HUD Mobile Scaling */
+  /* Lock-on HUD Mobile Scaling & Text Clean-up */
   #cockpit-hud {
     transform: scale(0.88);
     transform-origin: center center;
+  }
+
+  .lk-status-tl,
+  .lk-status-tr {
+    display: none !important; /* Hide floating 2D text overlay on mobile to prevent card overlap */
   }
 }
 

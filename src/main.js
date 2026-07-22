@@ -515,24 +515,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 for (let i = 0; i < 10; i++) pathPoints.push(wpArchive);
                 for (let i = 0; i < 7; i++) connectPathPoints.push(wpAbout);
-            }
-
             // Tilt Adjustment: Works (Archive) P1 rotation (Restored to a spacious 60 degrees)
             const rotP1 = Math.PI * (60 / 180);
             const cityTurnRot = Math.PI / 8 + (Math.PI / 2);
-            const aboutTurnRot = cityTurnRot - Math.PI;
-
             const setCameraFov = (targetFov) => {
                 const aspect = gl.camera.aspect || (window.innerWidth / window.innerHeight);
-                const refAspect = 1.777; // Desktop 16:9 reference
                 let effectiveFov = targetFov;
 
-                if (aspect < refAspect) {
-                    const radV = (targetFov * Math.PI) / 360;
-                    const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
-                    const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(aspect, 0.35));
-                    effectiveFov = (mobileVRad * 180) / Math.PI;
-                    effectiveFov = Math.min(Math.max(effectiveFov, targetFov), 115);
+                // Precise FOV sweet spot for mobile portrait screens (caps max FOV at 81.5 deg)
+                if (aspect < 1.0) {
+                    const factor = Math.pow(1.0 - Math.max(aspect, 0.35), 1.2) * 12.0;
+                    effectiveFov = Math.min(targetFov + factor, 81.5);
                 }
 
                 if (Math.abs(gl.camera.fov - effectiveFov) < 0.01) return;
@@ -1002,7 +995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!window._expObstacles && gl && gl.scene) {
                         const spacing = isMobileScreen ? 20.0 : 16.0; // comfortable spacing on mobile
                         const GATE_Y = cockpitY + 0.05;
-                        const GATE_SPAN = isMobileScreen ? 1.8 : 7.0; // tight gate span on mobile
+                        const GATE_SPAN = isMobileScreen ? 3.8 : 7.0; // clear gate span on mobile
 
                         // ── Clean Space Flight Path ──
                         window._runwayGroup = null;
@@ -1050,10 +1043,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             // ── Tactical MFD Label Panel ──
                             // Desktop: 24w x 10.5h (Landscape 1024x512)
-                            // Mobile: 8.5w x 15.0h (Compact Vertical Portrait 512x800 - sits inside viewport)
-                            const PANEL_W = isMobileScreen ? 8.5 : 24.0;
-                            const PANEL_H = isMobileScreen ? 15.0 : 10.5;
-                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + (isMobileScreen ? 0.3 : 2.5));
+                            // Mobile: 7.5w x 13.5h (Compact Vertical Portrait 512x800 - clear of jet wingtips & frustum)
+                            const PANEL_W = isMobileScreen ? 7.5 : 24.0;
+                            const PANEL_H = isMobileScreen ? 13.5 : 10.5;
+                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + (isMobileScreen ? 0.4 : 2.5));
 
                             const CW = isMobileScreen ? 512 : 1024;
                             const CH = isMobileScreen ? 800 : 512;
