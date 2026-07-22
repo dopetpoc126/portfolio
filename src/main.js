@@ -950,9 +950,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? 0
                         : (drivePct - SUB_G_END) / (1.0 - SUB_G_END); // 0→1 straight flight
 
-                    // ── Flight Path to Aircraft Carrier Landing (240u desktop / 380u mobile) ──
+                    // ── Flight Path to Aircraft Carrier Landing (240u) ──
                     const isMobileScreen = window.innerWidth < 768;
-                    const FLY_X_TRAVEL = isMobileScreen ? 380.0 : 240.0; // extended flight path for mobile pacing
+                    const FLY_X_TRAVEL = 240.0; // snappy, responsive flight path for all viewports
                     const jetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL; // jet advances in -X
 
                     // ── Experience obstacle data ──
@@ -997,9 +997,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // ── Lazy-init obstacle meshes ──
                     if (!window._expObstacles && gl && gl.scene) {
-                        const spacing = isMobileScreen ? 28.0 : 16.0; // increased spacing on mobile for portrait cards
+                        const spacing = isMobileScreen ? 20.0 : 16.0; // comfortable spacing on mobile
                         const GATE_Y = cockpitY + 0.05;
-                        const GATE_SPAN = isMobileScreen ? 4.2 : 7.0; // tighter gate span on mobile
+                        const GATE_SPAN = isMobileScreen ? 1.8 : 7.0; // tight gate span on mobile
 
                         // ── Clean Space Flight Path ──
                         window._runwayGroup = null;
@@ -1014,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const labelSide = (i % 2 === 0) ? 1 : -1; // +Z = left on screen, -Z = right
 
                             // ── Gate: target lock bar starting OUTSIDE wingtips ──
-                            const WING_CLEAR = isMobileScreen ? 2.8 : 3.6;
+                            const WING_CLEAR = isMobileScreen ? 1.4 : 3.6;
                             const gateBarPts = [
                                 new THREE.Vector3(0, 0, labelSide * WING_CLEAR),
                                 new THREE.Vector3(0, 0, labelSide * GATE_SPAN),
@@ -1047,13 +1047,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             // ── Tactical MFD Label Panel ──
                             // Desktop: 24w x 10.5h (Landscape 1024x512)
-                            // Mobile: 12w x 19.5h (Vertical Portrait 512x832)
-                            const PANEL_W = isMobileScreen ? 12.0 : 24.0;
-                            const PANEL_H = isMobileScreen ? 19.5 : 10.5;
-                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + (isMobileScreen ? 0.8 : 2.5));
+                            // Mobile: 8.5w x 15.0h (Compact Vertical Portrait 512x800 - sits inside viewport)
+                            const PANEL_W = isMobileScreen ? 8.5 : 24.0;
+                            const PANEL_H = isMobileScreen ? 15.0 : 10.5;
+                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + (isMobileScreen ? 0.3 : 2.5));
 
                             const CW = isMobileScreen ? 512 : 1024;
-                            const CH = isMobileScreen ? 832 : 512;
+                            const CH = isMobileScreen ? 800 : 512;
                             const lc = document.createElement('canvas');
                             lc.width = CW;
                             lc.height = CH;

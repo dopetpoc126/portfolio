@@ -942,62 +942,65 @@ export default class City {
             ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + dy * bLen); ctx.stroke();
         });
 
+        // ── Left-padding for safe 3D framing ──
+        const leftOffset = pad + 120;
+
         // ── Section tag — top left ──
-        ctx.font = '500 28px "JetBrains Mono", monospace';
-        ctx.fillStyle = 'rgba(255,77,0,0.5)';
+        ctx.font = '500 24px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255,77,0,0.6)';
         ctx.textAlign = 'left';
-        ctx.fillText('[ OPERATIVE_PROFILE ]', pad + 14, pad + 38);
+        ctx.fillText('[ OPERATIVE_PROFILE ]', leftOffset, pad + 38);
 
         // ── Horizontal rule ──
         const rule1Y = pad + 52;
-        const grad = ctx.createLinearGradient(pad + 14, 0, CW - pad, 0);
+        const grad = ctx.createLinearGradient(leftOffset, 0, CW - pad - 60, 0);
         grad.addColorStop(0,   'rgba(255,77,0,0.6)');
         grad.addColorStop(0.4, 'rgba(255,77,0,0.2)');
         grad.addColorStop(1,   'rgba(255,77,0,0)');
         ctx.strokeStyle = grad;
         ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(pad + 14, rule1Y); ctx.lineTo(CW - pad, rule1Y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(leftOffset, rule1Y); ctx.lineTo(CW - pad - 60, rule1Y); ctx.stroke();
 
-        // ── Name — large, dominant ──
-        ctx.font = 'bold 112px "JetBrains Mono", monospace';
+        // ── Name — crisp & well-padded ──
+        ctx.font = 'bold 84px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText('SHRIYAN', pad + 14, rule1Y + 108);
+        ctx.fillText('SHRIYAN', leftOffset, rule1Y + 90);
 
         // ── Title/role line ──
-        ctx.font = '500 34px "JetBrains Mono", monospace';
+        ctx.font = '500 26px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ff4d00';
-        ctx.fillText('CS UNDERGRADUATE  ·  SYSTEMS BUILDER', pad + 14, rule1Y + 155);
+        ctx.fillText('CS UNDERGRADUATE  ·  SYSTEMS BUILDER', leftOffset, rule1Y + 135);
 
         // ── Bio data grid ──
-        const bioY = rule1Y + 200;
+        const bioY = rule1Y + 180;
         const bioItems = [
             { label: 'FOCUS',    value: 'Android & Web'  },
             { label: 'BASE',     value: 'VIT Chennai'    },
             { label: 'STATUS',   value: '● AVAILABLE',  accent: true },
         ];
-        const colStep = (CW - pad * 2 - 14) / 3;
+        const colStep = (CW - leftOffset - pad - 40) / 3;
         bioItems.forEach((item, i) => {
-            const bx = pad + 14 + i * colStep;
-            ctx.font = '500 22px "JetBrains Mono", monospace';
+            const bx = leftOffset + i * colStep;
+            ctx.font = '500 20px "JetBrains Mono", monospace';
             ctx.fillStyle = 'rgba(255,77,0,0.5)';
             ctx.textAlign = 'left';
             ctx.fillText(item.label, bx, bioY);
-            ctx.font = 'bold 32px "JetBrains Mono", monospace';
+            ctx.font = 'bold 26px "JetBrains Mono", monospace';
             ctx.fillStyle = item.accent ? '#44ff88' : 'rgba(255,255,255,0.88)';
-            ctx.fillText(item.value, bx, bioY + 40);
+            ctx.fillText(item.value, bx, bioY + 35);
         });
 
         // ── Divider ──
-        const rule2Y = bioY + 90;
+        const rule2Y = bioY + 80;
         ctx.strokeStyle = 'rgba(255,255,255,0.07)';
         ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(pad + 14, rule2Y); ctx.lineTo(CW - pad, rule2Y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(leftOffset, rule2Y); ctx.lineTo(CW - pad - 60, rule2Y); ctx.stroke();
 
         // ── Core statement ──
-        ctx.font = 'bold 36px "JetBrains Mono", monospace';
+        ctx.font = 'bold 28px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.92)';
-        ctx.fillText('> Building high-performance interfaces.', pad + 14, rule2Y + 52);
+        ctx.fillText('> Building high-performance interfaces.', leftOffset, rule2Y + 44);
 
         // ── Description lines ──
         const descLines = [
@@ -1005,19 +1008,23 @@ export default class City {
             'Roots every device to maximize performance.',
             'I don\'t just write code — I optimize it.',
         ];
-        ctx.font = '28px "Inter", sans-serif';
+        ctx.font = '24px "Inter", sans-serif';
         descLines.forEach((line, i) => {
             ctx.fillStyle = `rgba(255,235,215,${0.55 - i * 0.08})`;
-            ctx.fillText(line, pad + 14, rule2Y + 52 + 52 + i * 42);
+            ctx.fillText(line, leftOffset, rule2Y + 44 + 44 + i * 36);
         });
 
         // ── Mandate pills ──
-        const mandateY = rule2Y + 52 + 52 + descLines.length * 42 + 24;
+        const mandateY = rule2Y + 44 + 44 + descLines.length * 36 + 20;
         ['>  Performance is paramount.', '>  User experience is priority.'].forEach((txt, i) => {
-            const tx = pad + 14 + i * 460;
+            const tx = leftOffset + i * 400;
             ctx.fillStyle = 'rgba(255,77,0,0.12)';
-            const tw = ctx.measureText(txt).width + 24;
-            ctx.fillRect(tx - 8, mandateY - 24, tw, 34);
+            const tw = ctx.measureText(txt).width + 20;
+            ctx.fillRect(tx - 6, mandateY - 20, tw, 30);
+            ctx.fillStyle = '#ffaa77';
+            ctx.font = 'bold 18px "JetBrains Mono", monospace';
+            ctx.fillText(txt, tx, mandateY);
+        });
             ctx.strokeStyle = 'rgba(255,77,0,0.3)';
             ctx.lineWidth = 1;
             ctx.strokeRect(tx - 8, mandateY - 24, tw, 34);
