@@ -524,12 +524,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const setCameraFov = (targetFov) => {
                 const aspect = gl.camera.aspect || (window.innerWidth / window.innerHeight);
+                const refAspect = 1.777; // Desktop 16:9 reference
                 let effectiveFov = targetFov;
 
-                // Subtle mobile FOV adjustment (keeps subjects close & prevents wide distortion)
-                if (aspect < 1.0) {
-                    const mobileFactor = (1.0 - Math.max(aspect, 0.45)) * 10;
-                    effectiveFov = Math.min(targetFov + mobileFactor, targetFov + 8);
+                if (aspect < refAspect) {
+                    const radV = (targetFov * Math.PI) / 360;
+                    const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
+                    const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(aspect, 0.35));
+                    effectiveFov = (mobileVRad * 180) / Math.PI;
+                    effectiveFov = Math.min(Math.max(effectiveFov, targetFov), 115);
                 }
 
                 if (Math.abs(gl.camera.fov - effectiveFov) < 0.01) return;

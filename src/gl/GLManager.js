@@ -54,11 +54,14 @@ export default class GLManager {
         this.height = window.innerHeight;
         this.camera.aspect = this.width / this.height;
 
-        // Subtle FOV scaling for mobile portrait screens (prevents wide/fisheye distortion)
+        // Preserve horizontal field of view across desktop & mobile portrait screens
         const baseFOV = 75;
-        if (this.camera.aspect < 1.0) {
-            const mobileFactor = (1.0 - Math.max(this.camera.aspect, 0.45)) * 10;
-            this.camera.fov = Math.min(baseFOV + mobileFactor, 82);
+        const refAspect = 1.777; // 16:9 desktop baseline
+        if (this.camera.aspect < refAspect) {
+            const radV = (baseFOV * Math.PI) / 360;
+            const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
+            const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(this.camera.aspect, 0.35));
+            this.camera.fov = Math.min(Math.max((mobileVRad * 180) / Math.PI, baseFOV), 115);
         } else {
             this.camera.fov = baseFOV;
         }
