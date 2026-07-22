@@ -484,6 +484,7 @@ export default class City {
                 screenPlane.position.set(6.636, 130.0, -15.5);
                 // normal is +Z so default PlaneGeometry (facing +Z) is correct — no rotation needed
                 scene.add(screenPlane);
+                this.computerScreenMesh = screenPlane;
                 this.computerScreenMat = screenPlane.material;
                 this.computerMaterials.push(screenPlane.material);
 

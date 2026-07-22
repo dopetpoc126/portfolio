@@ -198,6 +198,8 @@ h3 {
   text-shadow: 0 4px 12px rgba(0, 0, 0, 1);
 }
 
+
+
 .hero-section {
   height: 100vh;
   display: flex;
@@ -2187,3 +2189,131 @@ h3 {
   transition: opacity 0.3s ease;
 }
 #lock-hud.lk-visible::before { opacity: 1; }
+
+/* ── COMPREHENSIVE RESPONSIVE MOBILE OPTIMIZATIONS ── */
+@media (max-width: 768px) {
+  .hud-nav {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .hud-nav .logo {
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  .hud-nav .links {
+    gap: 0.25rem;
+  }
+
+  .hud-nav a {
+    font-size: 0.7rem;
+    padding: 6px 10px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .hero-content {
+    padding: 0 1rem;
+  }
+
+  .hero-content h1.split-text {
+    font-size: clamp(2.2rem, 8vw, 3.5rem);
+    line-height: 1.1;
+  }
+
+  .manifesto {
+    font-size: 0.85rem;
+    margin-top: 1rem;
+  }
+
+  .hud-element {
+    font-size: 0.55rem;
+    padding: 6px 10px;
+  }
+
+  .hud-element.top-left {
+    top: 70px;
+    left: 12px;
+  }
+
+  .hud-element.bottom-right {
+    bottom: 12px;
+    right: 12px;
+  }
+
+  /* Projects Fullscreen Modal Mobile Grid */
+  .projects-content {
+    padding: 1.5rem 1rem;
+    width: 95%;
+    max-height: 88vh;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .project-card {
+    padding: 1.25rem;
+  }
+
+  .projects-header h2 {
+    font-size: 1.75rem;
+  }
+
+  /* Profile & Bio HUD */
+  .hud-panel.mission-panel {
+    width: 95%;
+    padding: 1rem;
+  }
+
+  .bio-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Cockpit HUD Mobile Scaling */
+  #cockpit-hud {
+    transform: scale(0.88);
+    transform-origin: center center;
+  }
+}
+
+@media (max-width: 480px) {
+  .hud-nav {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .hud-nav .logo {
+    font-size: 0.68rem;
+  }
+
+  .hud-nav a {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    min-height: 36px;
+  }
+
+  .hero-content h1.split-text {
+    font-size: 2rem;
+  }
+
+  .manifesto {
+    font-size: 0.78rem;
+  }
+
+  .hud-element {
+    display: none; /* Hide non-essential HUD overlays on extra-small mobile screens */
+  }
+
+  .bio-summary {
+    grid-template-columns: 1fr;
+  }
+
+  #cockpit-hud {
+    transform: scale(0.78);
+  }
+}

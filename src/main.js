@@ -1313,27 +1313,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const startCamY = cockpitY + 0.3;
                     const targetCamY = cockpitY + OVERHEAD_HEIGHT;
 
-                    // ── 3-Stage Hyperspace & 180° Turnaround Sequence (flyNorm 0.53 -> 1.00) ──
-                    // Stage 1 (0.53 -> 0.70): Cockpit Dive from overhead
-                    // Stage 2 (0.70 -> 0.85): 180° High-G Banking Turnaround
-                    // Stage 3 (0.85 -> 1.00): Jet travels from 50u ahead straight up to camera lens!
-                    const isDivingToCockpit = !isPullingUp && flyNorm > 0.53;
-                    const diveNorm          = isDivingToCockpit ? scrollMath.clamp01((flyNorm - 0.53) / 0.17) : 0;
-                    const easeDive          = scrollMath.smoothstep(diveNorm);
-
-                    const isTurningAround   = !isPullingUp && flyNorm > 0.70;
-                    const turnNorm          = isTurningAround ? scrollMath.clamp01((flyNorm - 0.70) / 0.15) : 0;
-                    const easeTurn          = scrollMath.smoothstep(turnNorm);
-
-                    const isApproachingCam  = !isPullingUp && flyNorm > 0.85;
-                    const approachNorm     = isApproachingCam ? scrollMath.clamp01((flyNorm - 0.85) / 0.15) : 0;
-                    const easeApproach     = scrollMath.smoothstep(approachNorm);
-
                     // Remove landing strip if present
                     if (window._landingStrip) {
                         window._landingStrip.visible = false;
                     }
-
                     let camX, camY, camZ, pitchX, yawY, bankZ, targetFov, speedLineOpacity;
 
                     if (isPullingUp) {
@@ -1345,28 +1328,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         speedLineOpacity = scrollMath.lerp(0.85, 0.0, easeG);
                         camX = finalCamX;
                         camZ = finalCamWorldZ;
-                    } else if (isDivingToCockpit) {
-                        // ── Sub-Phase 1: Cockpit Seat Dive (flyNorm 0.50 → 0.65) ──
-                        const diveNorm = scrollMath.clamp01((flyNorm - 0.50) / 0.15);
-                        const easeDive = scrollMath.smoothstep(diveNorm);
+                    } else {
+                        // ── Sub-H: Experience Gates → Cockpit Dive → Cockpit Carrier Landing → Carrier Hotspot ──
+                        //
+                        // flyNorm 0.00 → 0.45: Top-down flight through 4 experience gates (BEAKAN, ANADROME, ZENITH)
+                        // flyNorm 0.45 → 0.60: Cockpit Dive — Camera dives from overhead directly into pilot cockpit seat
+                        // flyNorm 0.60 → 0.85: Cockpit Landing — Pilot inside cockpit flies down glide slope, touches down & stops at wp2
+                        // flyNorm 0.85 → 1.00: Seamless Hotspot Transition — Camera glides from cockpit seat to carrier deck station POV (pov / h2)
 
-                        // ── Sub-Phase 2: Camera Fly-Out to Carrier Deck POV (flyNorm 0.65 → 0.80) ──
-                        const exitNorm = scrollMath.clamp01((flyNorm - 0.65) / 0.15);
-                        const easeExit = scrollMath.smoothstep(exitNorm);
-
-                        // ── Sub-Phase 3: Landing & Taxi (flyNorm 0.80 → 1.00) ──
-                        const landPhaseNorm = scrollMath.clamp01((flyNorm - 0.80) / 0.20);
-                        const appNorm       = scrollMath.clamp01((flyNorm - 0.75) / 0.15); // jet approach starts during transition
-                        const easeApp       = scrollMath.smoothstep(appNorm);
-                        const taxiNorm      = scrollMath.clamp01((flyNorm - 0.90) / 0.10);
-
-                        speedLineOpacity = 0;
-                        bankZ = 0;
-
-                        // ── Carrier Model Positioning (Visible whenever flyNorm > 0.55) ──
                         const cScale = 0.008;
                         const turnEndX = finalCamX - 0.80 * FLY_X_TRAVEL;
-                        const carrierX = turnEndX + 60.0;
+                        const carrierX = finalCamX - 220.0;
                         const carrierY = cockpitY - 1.0;
                         const carrierZ = finalCamWorldZ - GROUP_Z;
 
@@ -1374,131 +1346,133 @@ document.addEventListener('DOMContentLoaded', async () => {
                             city.carrierModel.position.set(carrierX, carrierY, carrierZ);
                             city.carrierModel.rotation.y = -Math.PI / 2;
                             city.carrierModel.scale.setScalar(cScale);
-                            city.carrierModel.visible = flyNorm > 0.55;
+                            city.carrierModel.visible = flyNorm > 0.20;
                         }
 
-                        // ── Hotspot offsets from carrier origin after R_y(-PI/2) ──
+                        // Hotspots on carrier deck (mapped for -Math.PI / 2 carrier Y-rotation: ox=localZ*S, oz=-localX*S)
                         const S = cScale;
-                        // H1 "landing coords":     local(-39.0343,   128.2941, -2044.7567)
-                        const h1 = { ox:  2044.7567*S, oy: 128.2941*S, oz: -39.0343*S  };
-                        // H2 "camera POV":         local(-249.5586,  128.2945,  207.4993)
-                        const h2 = { ox: -207.4993*S,  oy: 128.2945*S, oz: -249.5586*S };
-                        // H3 "path after landing 1": local(11.4416,  128.2941, -1676.6043)
-                        const h3 = { ox:  1676.6043*S, oy: 128.2941*S, oz:  11.4416*S  };
-                        // H4 "path after landing 2": local(87.2635,  128.2942, -1232.9289)
-                        const h4 = { ox:  1232.9289*S, oy: 128.2942*S, oz:  87.2635*S  };
-                        // H5 "path after landing 3": local(161.1160, 128.2943,  -633.5623)
-                        const h5 = { ox:  633.5623*S,  oy: 128.2943*S, oz:  161.1160*S };
+                        const h1 = { ox: 2044.7567 * S, oy: 128.2941 * S, oz: -39.0343 * S };
+                        // Hotspot 3 (Spectator POV on Carrier Deck): 223.9672076423808m 128.29475646977212m 2063.7494398648123m
+                        const h2 = { ox: 2063.74944 * S, oy: 128.294756 * S, oz: -223.967208 * S };
+                        const h3 = { ox: 1676.6043 * S, oy: 128.2941 * S, oz: 11.4416 * S };
+                        const h4 = { ox: 87.2635 * S, oy: 128.2942 * S, oz: 87.2635 * S };
 
-                        // Group-local positions
-                        const td  = { x: carrierX+h1.ox, y: carrierY+h1.oy,      z: carrierZ+h1.oz };
-                        // Reduced POV height offset from +5.0 to +2.0 (2/5 of 5.0)
-                        const pov = { x: carrierX+h2.ox, y: carrierY+h2.oy+2.0,  z: carrierZ+h2.oz };
-                        const wp1 = { x: carrierX+h3.ox, y: carrierY+h3.oy,       z: carrierZ+h3.oz };
-                        const wp2 = { x: carrierX+h4.ox, y: carrierY+h4.oy,       z: carrierZ+h4.oz };
-                        const wp3 = { x: carrierX+h5.ox, y: carrierY+h5.oy,       z: carrierZ+h5.oz };
+                        const JET_DECK_Y_OFFSET = -0.35; // Raises jet height flush onto carrier flight deck surface
+                        const RUNWAY_Z_OFFSET = -1.35; // Center jet onto main runway lane (to the right)
+
+                        const td = { x: carrierX + h1.ox, y: carrierY + h1.oy - JET_DECK_Y_OFFSET, z: carrierZ + h1.oz + RUNWAY_Z_OFFSET };
+                        // Spectator POV: Pushed further back on carrier deck looking down the runway at approaching jet
+                        const pov = { x: carrierX - 8.0, y: carrierY + h2.oy + 2.2, z: carrierZ + h2.oz + 2.5 };
+                        const rawWp1 = { x: carrierX + h3.ox, y: carrierY + h3.oy - JET_DECK_Y_OFFSET, z: carrierZ + h3.oz + RUNWAY_Z_OFFSET };
+                        const wp1 = { x: td.x, y: td.y, z: td.z };
+                        const rawWp2 = { x: carrierX + h4.ox, y: carrierY + h4.oy - JET_DECK_Y_OFFSET, z: carrierZ + h4.oz + RUNWAY_Z_OFFSET };
+                        const wp2 = { x: td.x, y: td.y, z: td.z };
 
                         const glToWZ = (glz) => finalCamWorldZ + (glz - carrierZ);
 
-                        // ── Continuous Camera Flight: Seat -> Hotspot 2 on Carrier ──
-                        const seatX = jetFlyX;
-                        const seatY = scrollMath.lerp(targetCamY, startCamY, easeDive);
-                        const seatZ = finalCamWorldZ;
+                        // Phase progress norm calculation
+                        const diveNorm = scrollMath.clamp01((flyNorm - 0.27) / 0.18); // 0→1 Deck Spectator Transition (0.27 → 0.45)
+                        const easeDive = scrollMath.smoothstep(diveNorm);
 
-                        const deckX = pov.x;
-                        const deckY = pov.y;
-                        const deckZ = glToWZ(pov.z);
+                        speedLineOpacity = 0;
+                        bankZ = 0;
 
-                        camX = scrollMath.lerp(seatX, deckX, easeExit);
-                        camY = scrollMath.lerp(seatY, deckY, easeExit);
-                        camZ = scrollMath.lerp(seatZ, deckZ, easeExit);
+                        let jX, jY, jZ, jYaw, jPitch = 0;
 
-                        // ── Jet Position Calculation ──
-                        let jX, jY, jZ, jYaw;
+                        if (flyNorm < 0.27) {
+                            // Phase 1: Top-down overhead flight through experience gates (clears ZENITH gate at 0.27)
+                            const curJetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL;
 
-                        if (taxiNorm <= 0) {
-                            // Approach & Touchdown at H1 (glide slope low above deck)
-                            const farX = carrierX + 80.0;
-                            const farY = td.y + 1.2;
-                            const farZ = td.z;
-
-                            jX = scrollMath.lerp(farX, td.x, easeApp);
-                            jY = scrollMath.lerp(farY, td.y, easeApp);
-                            jZ = scrollMath.lerp(farZ, td.z, easeApp);
+                            jX = curJetFlyX - CKPT_OX;
+                            jY = cockpitY - CKPT_OY;
+                            jZ = finalCamWorldZ - GROUP_Z - CKPT_OZ;
                             jYaw = Math.PI / 2;
 
-                            const noseDown = scrollMath.lerp(-0.08, 0, easeApp);
-                            if (city && city.rescueJet) {
-                                city.rescueJet.position.set(jX, jY, jZ);
-                                city.rescueJet.rotation.set(noseDown, jYaw, 0);
-                                if (city.rescueJetMat) city.rescueJetMat.opacity = flyNorm > 0.65 ? 1 : 0;
-                            }
+                            camX = curJetFlyX;
+                            camY = targetCamY;
+                            camZ = finalCamWorldZ;
+                            pitchX = -Math.PI / 2;
+                            yawY = Math.PI / 2;
+                            targetFov = 72;
+                        } else if (flyNorm < 0.45) {
+                            // Phase 2: Deck Spectator Transition — Camera swoops from overhead into spectator station while jet transitions to glide slope entry
+                            const startPhase2X = finalCamX - 0.27 * FLY_X_TRAVEL - CKPT_OX;
+                            const startPhase2Y = cockpitY - CKPT_OY;
+                            const startPhase2Z = finalCamWorldZ - GROUP_Z - CKPT_OZ;
+
+                            const entryX = td.x + 100.0;
+                            const entryY = td.y + 10.0;
+                            const entryZ = td.z;
+
+                            jX = scrollMath.lerp(startPhase2X, entryX, easeDive);
+                            jY = scrollMath.lerp(startPhase2Y, entryY, easeDive);
+                            jZ = scrollMath.lerp(startPhase2Z, entryZ, easeDive);
+                            jYaw = Math.PI / 2;
+                            jPitch = scrollMath.lerp(0.0, -0.06, easeDive);
+
+                            camX = scrollMath.lerp(finalCamX - flyNorm * FLY_X_TRAVEL, pov.x, easeDive);
+                            camY = scrollMath.lerp(targetCamY, pov.y, easeDive);
+                            camZ = scrollMath.lerp(finalCamWorldZ, glToWZ(pov.z), easeDive);
+
+                            pitchX = scrollMath.lerp(-Math.PI / 2, -0.08, easeDive);
+                            yawY = scrollMath.lerp(Math.PI / 2, -75 * Math.PI / 180, easeDive);
+                            targetFov = scrollMath.lerp(72, 60, easeDive);
+
+                            if (city && city.cockpitHUDCanvas) city.cockpitHUDCanvas.style.opacity = '0';
                         } else {
-                            // Taxi H1 -> H3 -> H4 -> H5
-                            const path = [td, wp1, wp2, wp3];
-                            const nSeg = path.length - 1;
-                            const sf = scrollMath.clamp01(taxiNorm) * nSeg;
-                            const si = Math.min(Math.floor(sf), nSeg - 1);
-                            const st = scrollMath.smoothstep(sf - si);
-                            const from = path[si];
-                            const to   = path[Math.min(si + 1, path.length - 1)];
+                            // Phase 3: Spectator Carrier Landing — Pure 3° glide slope descent starting EXACTLY from td.x + 100.0 down to td.x
+                            const landNorm = scrollMath.clamp01((flyNorm - 0.45) / 0.55);
+                            const appNorm = scrollMath.clamp01(landNorm / 0.50);
+                            const appT = scrollMath.smoothstep(appNorm);
 
-                            jX = scrollMath.lerp(from.x, to.x, st);
-                            jY = scrollMath.lerp(from.y, to.y, st);
-                            jZ = scrollMath.lerp(from.z, to.z, st);
+                            const curJetScale = scrollMath.lerp(0.008, 0.0032, appNorm);
 
-                            const ddx = to.x - from.x;
-                            const ddz = to.z - from.z;
-                            jYaw = Math.atan2(-ddx, -ddz);
-
-                            if (city && city.rescueJet) {
-                                city.rescueJet.position.set(jX, jY, jZ);
-                                city.rescueJet.rotation.set(0, jYaw, 0);
-                                if (city.rescueJetMat) city.rescueJetMat.opacity = 1;
+                            if (landNorm < 0.50) {
+                                // Strictly monotonic forward 3° glide slope descent (td.x + 100.0 -> td.x)
+                                jX = scrollMath.lerp(td.x + 100.0, td.x, appT);
+                                jY = scrollMath.lerp(td.y + 10.0, td.y, appT);
+                                jZ = td.z;
+                                jPitch = scrollMath.lerp(-0.06, 0.0, appT);
+                            } else {
+                                // Arrestor cable trap flush on flight deck
+                                jX = td.x;
+                                jY = td.y;
+                                jZ = td.z;
+                                jPitch = 0.0;
                             }
+                            jYaw = Math.PI / 2;
+
+                            // Camera anchored at spectator station on carrier deck
+                            camX = pov.x;
+                            camY = pov.y;
+                            camZ = glToWZ(pov.z);
+
+                            pitchX = -0.08;
+                            yawY = -75 * Math.PI / 180;
+                            targetFov = 60;
+
+                            if (city && city.cockpitHUDCanvas) city.cockpitHUDCanvas.style.opacity = '0';
                         }
 
-                        // ── Camera Look-At Calculation ──
-                        const jwX = jX;
-                        const jwY = jY;
-                        const jwZ = glToWZ(jZ);
-
-                        const ldx = jwX - camX;
-                        const ldz = jwZ - camZ;
-                        const ldy = jwY - camY;
-                        const hd  = Math.sqrt(ldx * ldx + ldz * ldz);
-
-                        let targetLookYaw = Math.atan2(-ldx, -ldz);
-                        const seatPitch = scrollMath.lerp(-Math.PI / 2, 0.04, easeDive);
-                        const seatYaw = Math.PI / 2;
-
-                        // Smoothly transition camera orientation from cockpit view to jet look-at
-                        yawY   = scrollMath.lerp(seatYaw, targetLookYaw, easeExit);
-                        pitchX = scrollMath.lerp(seatPitch, Math.atan2(ldy, Math.max(hd, 0.1)), easeExit);
-                        targetFov = scrollMath.lerp(72, 58, easeExit);
-
-                        // Cockpit HUD canvas while diving inside seat
-                        if (flyNorm < 0.65) {
-                            drawCockpitHUDCanvas(city, easeDive, 0);
-                        }
-                    } else {
-                        // Cruising top-down over experience cards
-                        camX = jetFlyX;
-                        camY = targetCamY;
-                        camZ = finalCamWorldZ;
-                        pitchX = -Math.PI / 2;
-                        yawY = Math.PI / 2;
-                        bankZ = 0;
-                        targetFov = 72;
-                        speedLineOpacity = 0;
-
+                        // ALWAYS set rescue jet position and opacity = 1
                         if (city && city.rescueJet) {
-                            const jX = jetFlyX - CKPT_OX;
-                            const jY = cockpitY - CKPT_OY;
-                            const jZ = finalCamWorldZ - GROUP_Z - CKPT_OZ;
+                            const flyScaleNorm = scrollMath.clamp01((flyNorm - 0.45) / 0.175);
+                            const scaleVal = flyNorm < 0.45 ? 0.008 : scrollMath.lerp(0.008, 0.0032, flyScaleNorm);
+                            city.rescueJet.scale.setScalar(scaleVal);
                             city.rescueJet.position.set(jX, jY, jZ);
-                            city.rescueJet.rotation.set(0, Math.PI / 2, 0);
-                            if (city.rescueJetMat) city.rescueJetMat.opacity = 1;
+                            city.rescueJet.rotation.set(jPitch, jYaw, 0);
+                            if (city.rescueJetMat) city.rescueJetMat.opacity = 1.0;
+                        }
+
+                        // Debug logging for camera and jet positions
+                        if (!window._dbgSubH) window._dbgSubH = 0;
+                        if (++window._dbgSubH % 15 === 0) {
+                            const phaseStr = flyNorm < 0.27 ? 'PHASE1_GATES' : flyNorm < 0.45 ? 'PHASE2_TRANSITION' : flyNorm < 0.80 ? 'PHASE3_LANDING' : 'PHASE4_HOTSPOT';
+                            console.log(`[SUB-H DEBUG] ${phaseStr} flyNorm=${flyNorm.toFixed(3)}\n` +
+                                `  jet=(${jX.toFixed(2)}, ${jY.toFixed(2)}, ${jZ.toFixed(2)})\n` +
+                                `  cam=(${camX.toFixed(2)}, ${camY.toFixed(2)}, ${camZ.toFixed(2)})\n` +
+                                `  rot=(pitch:${pitchX.toFixed(2)}, yaw:${yawY.toFixed(2)}) fov=${targetFov.toFixed(1)}`
+                            );
                         }
                     }
 
@@ -1514,9 +1488,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (speedLines) {
                         speedLines.lineMat.opacity = speedLineOpacity;
                         if (speedLineOpacity > 0.01) {
-                            const speedBoost = 1.0 + easeApproach * 1.5;
+                            const speedBoost = 1.0;
                             const elapsed = Date.now() * 0.14 * speedBoost;
-                            const speedDir = isDivingToCockpit ? -1 : 1;
+                            const speedDir = 1;
                             speedLines.lines.forEach(l => {
                                 let relX = (l.baseX - speedDir * elapsed) % 40;
                                 if (relX < -20) relX += 40;
@@ -2044,6 +2018,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (satellites && satellites.update) satellites.update();
             if (satellites && satellites.setScrollProgress) satellites.setScrollProgress(scenePct);
 
+            const calibPctEl = document.getElementById('calib-pct');
+            if (calibPctEl && !isWarmup) {
+                calibPctEl.textContent = `${(scenePct * 100).toFixed(1)}%`;
+            }
+
             // --- HAPTIC MODES ---
             if (!isWarmup) {
                 if (scenePct > 0.36 && scenePct < 0.55) {
@@ -2213,34 +2192,75 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
+        // --- NAV TARGETS MAP & PERSISTENCE ---
+        const defaultTargets = {
+            hero: 0.00,
+            about: 0.05,
+            projects: 0.27,
+            experience: 0.70,
+            contact: 1.00
+        };
+
+        const savedTargets = localStorage.getItem('zenith_nav_targets');
+        window._navTargets = savedTargets ? JSON.parse(savedTargets) : defaultTargets;
+
+        // Update button labels with stored percentages
+        const updateCalibLabels = () => {
+            document.querySelectorAll('.calib-buttons button').forEach(btn => {
+                const navKey = btn.getAttribute('data-nav');
+                if (navKey && window._navTargets[navKey] !== undefined) {
+                    const pctVal = (window._navTargets[navKey] * 100).toFixed(0);
+                    const labelName = navKey === 'hero' ? 'Start' : navKey === 'about' ? 'About' : navKey === 'projects' ? 'Projects' : navKey === 'experience' ? 'Exp' : 'Links';
+                    btn.textContent = `Set ${labelName} [${pctVal}%]`;
+                }
+            });
+        };
+        updateCalibLabels();
+
+        // Register calibrator button clicks
+        document.querySelectorAll('.calib-buttons button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const navKey = btn.getAttribute('data-nav');
+                if (navKey) {
+                    const curPct = getScrollPct();
+                    window._navTargets[navKey] = curPct;
+                    localStorage.setItem('zenith_nav_targets', JSON.stringify(window._navTargets));
+                    updateCalibLabels();
+
+                    btn.style.borderColor = '#00ffcc';
+                    btn.style.color = '#00ffcc';
+                    setTimeout(() => {
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                    }, 500);
+
+                    console.log(`[NAV CALIBRATOR] Target '${navKey}' calibrated to ${(curPct * 100).toFixed(2)}% (scroll: ${Math.round(scroll.getMaxScroll() * curPct)}px)`);
+                }
+            });
+        });
+
         // --- NAVBAR CLICKS ---
         document.querySelectorAll('.hud-nav a').forEach(link => {
             link.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const targetId = link.getAttribute('href');
                 if (targetId && targetId.startsWith('#')) {
-                    if (targetId === '#work' || targetId === '#about') {
-                        const maxScroll = scroll.getMaxScroll();
-                        scroll.scrollTo(maxScroll * 0.16, {
-                            duration: 1.5,
-                            easing: (t) => 1 - Math.pow(1 - t, 3)
-                        });
-                    } else if (targetId === '#contact') {
-                        const maxScroll = scroll.getMaxScroll();
-                        scroll.scrollTo(maxScroll * 1.0, {
-                            duration: 2.0,
-                            easing: (t) => 1 - Math.pow(1 - t, 3)
-                        });
-                    } else {
-                        const target = document.querySelector(targetId);
-                        if (target) {
-                            scroll.scrollTo(target, {
-                                offset: 0,
-                                duration: 1.5,
-                                easing: (t) => 1 - Math.pow(1 - t, 3)
-                            });
-                        }
-                    }
+                    const maxScroll = scroll.getMaxScroll();
+                    let navKey = 'hero';
+
+                    if (targetId === '#hero') navKey = 'hero';
+                    else if (targetId === '#about') navKey = 'about';
+                    else if (targetId === '#projects' || targetId === '#work') navKey = 'projects';
+                    else if (targetId === '#experience') navKey = 'experience';
+                    else if (targetId === '#contact' || targetId === '#signal') navKey = 'contact';
+
+                    const targetPct = window._navTargets[navKey] !== undefined ? window._navTargets[navKey] : defaultTargets[navKey] || 0;
+
+                    scroll.scrollTo(maxScroll * targetPct, {
+                        duration: 1.8,
+                        easing: (t) => 1 - Math.pow(1 - t, 3)
+                    });
+
                     fireNavPulse();
                 }
             });
@@ -2256,9 +2276,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // --- PROJECTS FULLSCREEN ---
+        // --- PROJECTS FULLSCREEN (Raycast trigger on computer screen monitor ONLY) ---
         const projectsFullscreen = document.getElementById('projects-fullscreen');
         const projectsBack = document.getElementById('projects-back');
+        const compRaycaster = new THREE.Raycaster();
+        const compMouse = new THREE.Vector2();
 
         const openProjects = () => {
             if (!projectsFullscreen) return;
@@ -2272,14 +2294,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             scroll.start();
         };
 
-        // Click anywhere opens projects when in driving phase
-        // (canvas is z-index:-1, so we listen on document to catch all clicks)
+        // ONLY open projects screen if clicking directly on the 3D computer monitor in the loft
         document.addEventListener('click', (e) => {
-            // Don't trigger if clicking the overlay itself or back button
-            if (e.target.closest('#projects-fullscreen')) return;
+            // 1. Ignore clicks on HTML UI elements (navbar links, buttons, overlays)
+            if (e.target.closest('a, button, nav, .hud-nav, #projects-fullscreen, .social-button, input')) return;
+
+            // 2. Only check when in the Loft / Projects section
             const currentScrollPct = getScrollPct();
-            if (currentScrollPct >= DRIVE_START) {
-                openProjects();
+            if (currentScrollPct < 0.18 || currentScrollPct > 0.55) return;
+
+            // 3. Perform 3D raycast targeting computer screen mesh
+            compMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            compMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            compRaycaster.setFromCamera(compMouse, gl.camera);
+
+            const targets = [];
+            if (city) {
+                if (city.computerScreenMesh) targets.push(city.computerScreenMesh);
+                if (city.computerModel) targets.push(city.computerModel);
+            }
+
+            if (targets.length > 0) {
+                const intersects = compRaycaster.intersectObjects(targets, true);
+                if (intersects.length > 0) {
+                    openProjects();
+                }
             }
         });
 
