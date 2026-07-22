@@ -17,14 +17,14 @@ export default class ScrollManager {
         // Setting duration would override lerp and produce a fixed-time ease-out that feels
         // stop-and-go when sub-phases apply their own easing on top.
         this.lenis = new Lenis({
-            lerp: 0.08,           // ~0.08 = comfortable inertia; raise toward 0.12 for snappier feel
+            lerp: 0.07,           // silky smooth camera inertia
             smoothWheel: true,
-            wheelMultiplier: 0.45, // lower = slower overall scroll speed
+            wheelMultiplier: 0.70, // smooth, controlled wheel speed
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             smoothTouch: true,
             syncTouch: true,
-            touchMultiplier: 0.70, // lower = slower touch scroll speed
+            touchMultiplier: 0.90, // comfortable touch scroll speed
             infinite: false,
         });
 

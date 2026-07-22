@@ -7,6 +7,7 @@ const TRAIN_MODEL_URL = createModelUrl('sci-fi_train-optimized.glb');
 const F1_MODEL_URL = createModelUrl('2011_redbull_rb7-optimized.glb');
 const TYRES_MODEL_URL = createModelUrl('f1_tyres_pack_2022_-_hard_-_medium_-_soft-optimized.glb');
 const COMPUTER_MODEL_URL = createModelUrl('computer_1-optimized.glb');
+const CARRIER_MODEL_URL = createModelUrl('charles_de_gaulle_french_aircraft_carrier-optimized.glb');
 
 const PORTAL_VERTEX_SHADER = `
     varying vec2 vUv;
@@ -114,6 +115,10 @@ export default class City {
         this.rescueJetMat = null;
         this.rescueJetReady = false;
 
+        this.carrierModel = null;
+        this.carrierMaterials = [];
+        this.carrierReady = false;
+
         this.hologramGroup = null;
         this.hologramBeam = null;
         this.hologramParticles = null;
@@ -131,6 +136,7 @@ export default class City {
         this.initLights();
         this.loadCityModel();
         this.loadTrainModel();
+        this.loadCarrierModel();
     }
 
     initLights() {
@@ -578,6 +584,39 @@ export default class City {
             })
             .catch((err) => {
                 console.error('Rescue jet failed to load:', err);
+            });
+    }
+
+    loadCarrierModel() {
+        cloneCachedScene(CARRIER_MODEL_URL)
+            .then((scene) => {
+                this.carrierMaterials = [];
+                scene.traverse((child) => {
+                    child.frustumCulled = false;
+                    if (child.isMesh) {
+                        child.renderOrder = 2;
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(mat => {
+                            if (!this.carrierMaterials.includes(mat)) {
+                                mat.transparent = true;
+                                mat.opacity = 1.0;
+                                this.carrierMaterials.push(mat);
+                            }
+                        });
+                    }
+                });
+
+                scene.rotation.y = Math.PI / 2;
+                scene.scale.setScalar(0.008);
+                scene.position.set(-999, -999, -999);
+
+                this.carrierModel = scene;
+                this.carrierReady = true;
+                this.group.add(scene);
+                console.log('Loft System: Aircraft Carrier Model Loaded (Charles De Gaulle)');
+            })
+            .catch((err) => {
+                console.warn('Aircraft Carrier model failed to load:', err);
             });
     }
 

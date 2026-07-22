@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             ctx.strokeStyle = 'rgba(0, 255, 136, 0.5)';
             ctx.lineWidth = 3;
-            
+
             // Horizon line
             ctx.beginPath();
             ctx.moveTo(-130, 0); ctx.lineTo(-45, 0);
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.beginPath();
             ctx.arc(0, 0, 30, 0, Math.PI * 2);
             ctx.stroke();
-            
+
             // Central dot
             ctx.fillStyle = '#00ff88';
             ctx.beginPath();
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (norm >= 0.40 && norm < 0.72) tgtStatus = 'LOCKED';
             else if (norm >= 0.72 && norm < 0.84) tgtStatus = 'COLLISION';
             else if (norm >= 0.84) tgtStatus = 'DESTROYED';
-            
+
             ctx.font = 'bold 14px "JetBrains Mono", monospace';
             ctx.fillStyle = (tgtStatus === 'COLLISION' || tgtStatus === 'DESTROYED') ? '#ff3300' : '#00ff88';
             ctx.fillText(`TGT STATUS: ${tgtStatus}`, rx, ry + rad + 24);
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isRedAlert) {
                 ctx.fillStyle = 'rgba(255, 30, 0, 0.2)';
                 ctx.fillRect(0, 0, w, h);
-                
+
                 ctx.fillStyle = '#ff1100';
                 ctx.font = 'bold 36px "JetBrains Mono", monospace';
                 ctx.textAlign = 'center';
@@ -357,24 +357,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 transparent: true,
                 opacity: 0
             });
-            
+
             const numLines = 45; // Fewer, distinct speed lines
             const lines = [];
-            
+
             // Shared geometry for thin white box "sticks" (1.6m long, 3cm thick)
             const boxGeo = new THREE.BoxGeometry(1.6, 0.03, 0.03);
             const GROUP_Z = -25;
-            
+
             for (let i = 0; i < numLines; i++) {
                 const mesh = new THREE.Mesh(boxGeo, lineMat);
-                
+
                 const x = (Math.random() - 0.5) * 40;
                 const y = cockpitY + 0.3 + (Math.random() - 0.5) * 3.5;
                 // Safety corridor of 0.9m on both sides: prevents lines from bleeding inside the cockpit
                 const side = Math.random() < 0.5 ? -1 : 1;
                 const zOffset = 0.9 + Math.random() * 2.2; // Spans from 0.9m to 3.1m away from cockpit centerline
                 const z = cockpitZ + GROUP_Z + side * zOffset;
-                
+
                 mesh.position.set(x, y, z);
                 group.add(mesh);
                 lines.push({
@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     z
                 });
             }
-            
+
             scene.add(group);
             return { group, lineMat, lines, numLines };
         };
@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 transparent: true,
                 opacity: 1.0
             });
-            
+
             const particles = [];
             const numShards = 40;
             for (let i = 0; i < numShards; i++) {
@@ -408,10 +408,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const d = 0.15 + Math.random() * 0.45;
                 const geo = new THREE.BoxGeometry(w, h, d);
                 const mesh = new THREE.Mesh(geo, debrisMat);
-                
+
                 mesh.position.set(0, 0, 0);
                 group.add(mesh);
-                
+
                 particles.push({
                     mesh,
                     vx: (Math.random() - 0.5) * 35 - 15, // strong outward blast
@@ -451,30 +451,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (speedLines) {
                     speedLines.lineMat.opacity = 0;
                 }
-                // exp-strip slots are persistent — no hide needed outside driving phase
                 // Hide runway
                 if (window._runwayGroup) window._runwayGroup.visible = false;
                 if (window._pathTube) window._pathTube.visible = false;
                 // Reset obstacle meshes so they replay when re-entering
                 if (window._expObstacles) {
                     window._expObstacles.forEach(obs => {
-                        obs.hit        = false;
-                        obs.hitT       = 0;
-                        obs.locked     = false;
+                        obs.hit = false;
+                        obs.hitT = 0;
+                        obs.locked = false;
                         obs.lockFlashT = 0;
                         obs.gateLines.visible = true;
-                        obs.dot.visible       = true;
-                        obs.label.visible     = true;
-                        obs.conn.visible      = true;
-                        obs.ring1.visible     = true;
-                        obs.ring2.visible     = true;
-                        obs.gateMat.opacity   = 0;
-                        obs.tickMat.opacity   = 0;
-                        obs.dotMat.opacity    = 0;
-                        obs.labelMat.opacity  = 0;
-                        obs.connMat.opacity   = 0;
-                        obs.ringMat1.opacity  = 0;
-                        obs.ringMat2.opacity  = 0;
+                        obs.dot.visible = true;
+                        obs.label.visible = true;
+                        obs.conn.visible = true;
+                        obs.ring1.visible = true;
+                        obs.ring2.visible = true;
+                        obs.gateMat.opacity = 0;
+                        obs.tickMat.opacity = 0;
+                        obs.dotMat.opacity = 0;
+                        obs.labelMat.opacity = 0;
+                        obs.connMat.opacity = 0;
+                        obs.ringMat1.opacity = 0;
+                        obs.ringMat2.opacity = 0;
                         obs.ring1.scale.setScalar(1);
                         obs.ring2.scale.setScalar(1);
                         obs.shards.forEach(s => {
@@ -540,7 +539,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const portalX = trainX - 9.48;  // tunnel portal world X (trainX + -9.48)
                 const smashFlash = document.getElementById('smash-flash');
 
-                const SUB_A = 0.15, SUB_B = 0.30, SUB_C = 0.62, SUB_D = 0.67, SUB_E = 0.78, SUB_F = 0.86;
+                const SUB_A = 0.06, SUB_B = 0.12, SUB_C = 0.24, SUB_D = 0.29, SUB_E = 0.41, SUB_F = 0.57;
 
                 // ── Cockpit HUD (keep fullscreen DOM hidden; we now render onto the 3D plane) ──
                 const cockpitHud = document.getElementById('cockpit-hud');
@@ -709,7 +708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         curCamX = scrollMath.lerp(portalX - 3.0, entryCamX, t);
                         curCamY = scrollMath.lerp(trainY + 0.3, entryCamY, t);
                         curCamZ = scrollMath.lerp(trainZ - 0.15858486492682247 + GROUP_Z, entryCamZ, t); // Smooth world Z from -24.32 to -49.40
-                        
+
                         // Look down and slightly forward during the leap
                         targetRotationX = scrollMath.lerp(cockpitRotX, 0.35, t);
                     } else {
@@ -718,7 +717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         curCamX = scrollMath.lerp(entryCamX, seatCamX, t);
                         curCamY = scrollMath.lerp(entryCamY, seatCamY, t);
                         curCamZ = scrollMath.lerp(entryCamZ, seatCamZ, t);
-                        
+
                         // Level out rotation to seated pitch (0.04)
                         targetRotationX = scrollMath.lerp(0.35, 0.04, t);
                     }
@@ -728,7 +727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.y = cockpitRotY;
                     gl.camera.rotation.x = targetRotationX;
                     gl.camera.rotation.z = 0;
-                    
+
                     // Smooth FOV transition (lerps from Sub-D's 55 to seated 110)
                     setCameraFov(scrollMath.lerp(55, 110, norm));
 
@@ -748,22 +747,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const startY = trainY + 0.11602419564293629;
                         const endX = portalX - 21.0; // Fly further ahead so it lands in front of the jet!
                         const endY = cockpitY + 0.3; // Match Sub-F eye level height!
- 
+
                         // Cubic ease-out curve for fast launch ahead of the camera!
                         const tCar = 1 - Math.pow(1 - norm, 3);
                         const tSpin = scrollMath.smoothstep(scrollMath.clamp01((norm - 0.3) / 0.7));
- 
+
                         const carX = scrollMath.lerp(startX, endX, tCar);
                         const carY = scrollMath.lerp(startY, endY, tCar) + Math.sin(norm * Math.PI) * 1.5;
                         // Tied to the camera's local Z coordinate inside city.group to prevent double-transformation glitches
                         const carZ = curCamZ - GROUP_Z + 1.6 * tCar;
- 
+
                         city.f1Model.position.set(carX, carY, carZ);
- 
+
                         // Seamless scale up from 80.0 (original) to 120.0 to counteract perspective compression
                         const carScale = scrollMath.lerp(80.0, 120.0, norm);
                         city.f1Model.scale.setScalar(carScale);
- 
+
                         // Rotation: stays flat until spin phase kicks in
                         city.f1Model.rotation.y = -Math.PI / 2 + tSpin * 1.5 + Math.sin(tSpin * Math.PI * 2) * 0.4;
                         city.f1Model.rotation.x = tSpin * 0.6 + Math.sin(tSpin * Math.PI * 3) * 0.2;
@@ -790,13 +789,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // ── Collision check & shake choreography ──
                     const isColliding = norm >= 0.72 && norm <= 0.84; // Perfect alignment with crossing at norm=0.78
-                    
+
                     if (smashFlash) {
                         smashFlash.style.opacity = '0'; // Completely disable full-screen red flashbang
                     }
 
-                    // Jet advances aggressively: 35 units total, accelerates through the pass
-                    const jetAdvance = norm * norm * 35.0; // quadratic — slow at start, blasts through at end
+                    // Jet advances at a smooth, steady cinematic speed (26 units total)
+                    const jetAdvance = scrollMath.smoothstep(norm) * 26.0;
                     const camX = portalX - 3.0 - jetAdvance;
 
                     // Straight path flight (no lateral swoop to avoid the car - we fly directly through it!)
@@ -838,7 +837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const cockpitWorldY = jetWP.y + CKPT_OY;
                         const cockpitWorldZ = jetWP.z + CKPT_OZ;
                         console.log(
-                            `[SUB-F DEBUG] norm=${norm.toFixed(2)} cam=(${camX.toFixed(2)}, ${(camY+PILOT_Y).toFixed(2)}, ${camWorldZ.toFixed(2)})\n` +
+                            `[SUB-F DEBUG] norm=${norm.toFixed(2)} cam=(${camX.toFixed(2)}, ${(camY + PILOT_Y).toFixed(2)}, ${camWorldZ.toFixed(2)})\n` +
                             `[SUB-F DEBUG] cockpit=(${cockpitWorldX.toFixed(2)}, ${cockpitWorldY.toFixed(2)}, ${cockpitWorldZ.toFixed(2)})\n` +
                             `[SUB-F DEBUG] f1car=(${carWP.x.toFixed(2)}, ${carWP.y.toFixed(2)}, ${carWP.z.toFixed(2)})`
                         );
@@ -854,7 +853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.y = cockpitRotY + Math.sin(norm * Math.PI * 2) * 0.018 + (isColliding ? (Math.random() - 0.5) * 0.04 : 0);
                     gl.camera.rotation.x = 0.04 + bankAngle * 0.25 + (isColliding ? (Math.random() - 0.5) * 0.04 : 0);
                     gl.camera.rotation.z = bankAngle;
-                    
+
                     // Fov lerps from 110 (seated) to 100 to keep view cinematic and wide
                     setCameraFov(scrollMath.lerp(110, 100, scrollMath.smoothstep(norm)));
                     drawCockpitHUDCanvas(city, norm, bankAngle);
@@ -870,7 +869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             opacity = scrollMath.lerp(0.85, 0, (norm - 0.84) / 0.16);
                         }
                         speedLines.lineMat.opacity = opacity;
-                        
+
                         // Shift each thick white line individually past the camera (flowing backwards cleanly)
                         const elapsed = Date.now() * 0.08; // smooth backwards speed
                         speedLines.lines.forEach(l => {
@@ -887,20 +886,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (norm >= 0.78) {
                             // Hide original F1 car
                             city.f1Model.visible = false;
-                            
+
                             if (debris) {
                                 debris.group.visible = true;
-                                
+
                                 const crashX = portalX - 24.0;
                                 const crashY = cockpitY + 0.3;
                                 const crashZ = carFixedZ;
                                 debris.group.position.set(crashX, crashY, crashZ);
-                                
+
                                 const tExplode = (norm - 0.78) / 0.22;
                                 debris.particles.forEach(p => {
                                     p.mesh.position.set(p.vx * tExplode * 0.4, p.vy * tExplode * 0.4, p.vz * tExplode * 0.4);
                                     p.mesh.rotation.set(p.rx * tExplode, p.ry * tExplode, p.rz * tExplode);
-                                    
+
                                     const scale = scrollMath.clamp01(1.0 - tExplode);
                                     p.mesh.scale.setScalar(scale);
                                 });
@@ -911,7 +910,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             city.f1Model.position.set(carX, cockpitY + 0.3, carFixedZ); // Eye-level height
                             city.f1Model.scale.setScalar(120.0);
                             city.f1Model.rotation.set(0, 0, 0); // Sideways blocking the track
-                            
+
                             if (debris) {
                                 debris.group.visible = false;
                             }
@@ -923,7 +922,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Sub-G  0.86 → 0.92  camera rises from cockpit to overhead view, jet stationary
                     // Sub-H  0.92 → 1.00  jet flies straight in -X, crashing through 4 experience obstacle boxes
 
-                    const SUB_G_END = 0.92;
+                    const SUB_G_END = 0.63;
                     if (smashFlash) smashFlash.style.opacity = '0';
 
                     const GROUP_Z = -25;
@@ -940,13 +939,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const pullNorm = isPullingUp
                         ? (drivePct - SUB_F) / (SUB_G_END - SUB_F)
                         : 1.0;
-                    const easeG   = scrollMath.smoothstep(pullNorm);
+                    const easeG = scrollMath.smoothstep(pullNorm);
                     const flyNorm = isPullingUp
                         ? 0
                         : (drivePct - SUB_G_END) / (1.0 - SUB_G_END); // 0→1 straight flight
 
-                    // ── Straight flight path ──
-                    const FLY_X_TRAVEL = 80.0; // wider spacing — one gate visible at a time
+                    // ── Flight Path to Aircraft Carrier Landing (240.0 units) ──
+                    const FLY_X_TRAVEL = 240.0; // snappy flight path for responsive scroll pacing
                     const jetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL; // jet advances in -X
 
                     // ── Experience obstacle data ──
@@ -998,52 +997,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Gates span Z (left-right), thin in X. All geometry flat on XZ plane.
                     // Theme: #ff4d00 orange accent + white text on near-black, matching site palette.
                     if (!window._expObstacles && gl && gl.scene) {
-                        const spacing   = FLY_X_TRAVEL / (EXP_NODES.length + 1);
-                        const GATE_Y    = cockpitY + 0.05;
+                        const spacing = 16.0; // 16u spacing for 4 cards (finishes at 64u / 53% flyNorm)
+                        const GATE_Y = cockpitY + 0.05;
                         const GATE_SPAN = 7; // Z half-width of gate — just past jet wingspan
 
-                        // ── Dashed centre-line runway ──
-                        const runwayGroup = new THREE.Group();
-                        runwayGroup.renderOrder = 1;
-                        const DASH_TOTAL  = FLY_X_TRAVEL;
-                        const DASH_W      = 1.2;
-                        const DASH_GAP    = 2.8;
-                        const DASH_STEP   = DASH_W + DASH_GAP;
-                        const dashMat     = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.06 });
-                        for (let dx = 0; dx < DASH_TOTAL; dx += DASH_STEP) {
-                            const d = new THREE.Mesh(new THREE.PlaneGeometry(DASH_W, 0.07), dashMat);
-                            d.rotation.x = -Math.PI / 2;
-                            d.position.set(finalCamX - dx - DASH_W / 2, GATE_Y - 3.5, finalCamWorldZ);
-                            runwayGroup.add(d);
-                        }
-                        gl.scene.add(runwayGroup);
-                        window._runwayGroup = runwayGroup;
-
-                        // ── Thick flight path — solid line connecting all gate dots ──
-                        // One continuous line from start → through each gate centre → to end.
-                        // Uses a tube so it has real thickness visible from top-down.
-                        {
-                            const pathPoints = [];
-                            // Start: just behind the jet's starting position
-                            pathPoints.push(new THREE.Vector3(finalCamX + 4, GATE_Y - 3.5, finalCamWorldZ));
-                            // Each gate centre in order
-                            for (let gi = 0; gi < EXP_NODES.length; gi++) {
-                                const gx = finalCamX - spacing * (gi + 1);
-                                pathPoints.push(new THREE.Vector3(gx, GATE_Y - 3.5, finalCamWorldZ));
-                            }
-                            // End: past the last gate
-                            pathPoints.push(new THREE.Vector3(finalCamX - FLY_X_TRAVEL - 4, GATE_Y - 3.5, finalCamWorldZ));
-
-                            const pathCurve  = new THREE.CatmullRomCurve3(pathPoints);
-                            const tubeGeo    = new THREE.TubeGeometry(pathCurve, 64, 0.22, 6, false);
-                            const tubeMat    = new THREE.MeshBasicMaterial({
-                                color: 0xff4d00, transparent: true, opacity: 0.55,
-                            });
-                            const pathTube   = new THREE.Mesh(tubeGeo, tubeMat);
-                            pathTube.renderOrder = 2;
-                            gl.scene.add(pathTube);
-                            window._pathTube = pathTube;
-                        }
+                        // ── Clean Space Flight Path (Lines behind jet removed per user request) ──
+                        window._runwayGroup = null;
+                        window._pathTube = null;
 
                         window._expObstacles = EXP_NODES.map((node, i) => {
                             const obsWorldX = finalCamX - spacing * (i + 1);
@@ -1051,25 +1011,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                             group.position.set(obsWorldX, GATE_Y, finalCamWorldZ);
 
                             // ── Label side: alternating left/right, offset well clear of runway ──
-                            const labelSide  = (i % 2 === 0) ? 1 : -1; // +Z = left on screen, -Z = right
+                            const labelSide = (i % 2 === 0) ? 1 : -1; // +Z = left on screen, -Z = right
 
-                            // ── Gate: asymmetric bar — full span toward label side, short stub opposite ──
-                            // Extends GATE_SPAN units toward label, 2 units opposite, centered at offset.
-                            // We build it as a LineSegments from explicit points so we control each end.
-                            const STUB = 2.0; // short stub on the blank side
+                            // ── Gate: target lock bar starting OUTSIDE wingtips so no lines cross the jet ──
+                            const WING_CLEAR = 3.6; // Clear of F-15/F-35 wingtip span
                             const gateBarPts = [
-                                new THREE.Vector3(0, 0, -labelSide * STUB),   // short end
-                                new THREE.Vector3(0, 0,  labelSide * GATE_SPAN), // long end toward label
+                                new THREE.Vector3(0, 0, labelSide * WING_CLEAR),
+                                new THREE.Vector3(0, 0, labelSide * GATE_SPAN),
                             ];
-                            const gateBarGeo  = new THREE.BufferGeometry().setFromPoints(gateBarPts);
-                            const gateMat     = new THREE.LineBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0 });
-                            const gateLines   = new THREE.Line(gateBarGeo, gateMat);
+                            const gateBarGeo = new THREE.BufferGeometry().setFromPoints(gateBarPts);
+                            const gateMat = new THREE.LineBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0 });
+                            const gateLines = new THREE.Line(gateBarGeo, gateMat);
                             group.add(gateLines);
 
-                            // Tick marks on the label side only (at 1/3, 2/3, full span)
+                            // Tick marks on the label side only (at 1/2, full span)
                             const tickMat = new THREE.LineBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0 });
                             const tickGroup = new THREE.Group();
-                            for (const tz of [labelSide * GATE_SPAN * 0.4, labelSide * GATE_SPAN * 0.75, labelSide * GATE_SPAN]) {
+                            for (const tz of [labelSide * (GATE_SPAN * 0.6), labelSide * GATE_SPAN]) {
                                 const pts = [
                                     new THREE.Vector3(0, 0, tz),
                                     new THREE.Vector3(0.5, 0, tz),
@@ -1079,137 +1037,228 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                             group.add(tickGroup);
 
-                            // Centre impact dot
+                            // Target lock impact dot at gate lock point
                             const dotGeo = new THREE.PlaneGeometry(0.5, 0.5);
                             const dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-                            const dot    = new THREE.Mesh(dotGeo, dotMat);
+                            const dot = new THREE.Mesh(dotGeo, dotMat);
                             dot.rotation.x = -Math.PI / 2;
+                            dot.position.z = labelSide * GATE_SPAN;
                             group.add(dot);
 
-                            // ── Label panel — flat on XZ, readable from top-down camera ──
-                            const PANEL_W    = 32;  // world-Z extent (screen left↔right) — wider for desc
-                            const PANEL_H    = 13;  // world-X extent (screen up↕down) — taller for all fields
-                            const LABEL_Z    = labelSide * (GATE_SPAN + PANEL_W * 0.5 + 2);
+                            // ── Tactical MFD Label Panel — Scaled Up & 4K Crisp Canvas ──
+                            const PANEL_W = 24;   // world-Z extent — increased size
+                            const PANEL_H = 10.5; // world-X extent — increased size
+                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + 2.5);
 
-                            const CW = 640, CH = 320;
+                            const CW = 1024, CH = 512;
                             const lc = document.createElement('canvas');
-                            lc.width  = CW;
+                            lc.width = CW;
                             lc.height = CH;
                             const lx = lc.getContext('2d');
 
-                            // Background — solid near-black
-                            lx.fillStyle = '#08080a';
+                            // 1. Dark Cockpit MFD Glass Background
+                            lx.fillStyle = '#06070a';
                             lx.fillRect(0, 0, CW, CH);
 
-                            // Left accent bar
-                            lx.fillStyle = '#ff4d00';
-                            lx.fillRect(0, 0, 5, CH);
+                            // Subtle tactical grid background pattern
+                            lx.strokeStyle = 'rgba(255, 77, 0, 0.04)';
+                            lx.lineWidth = 1;
+                            const gSize = 32;
+                            for (let gx = 0; gx < CW; gx += gSize) {
+                                lx.beginPath(); lx.moveTo(gx, 0); lx.lineTo(gx, CH); lx.stroke();
+                            }
+                            for (let gy = 0; gy < CH; gy += gSize) {
+                                lx.beginPath(); lx.moveTo(0, gy); lx.lineTo(CW, gy); lx.stroke();
+                            }
 
-                            // Corner brackets
-                            const bl = 28;
-                            lx.strokeStyle = 'rgba(255,77,0,0.6)';
+                            // 2. Chamfered Outer Tactical Outer & Inner Borders
+                            const ch = 24; // chamfer size
+                            lx.strokeStyle = '#ff4d00';
+                            lx.lineWidth = 4;
+                            lx.beginPath();
+                            lx.moveTo(ch, 4);
+                            lx.lineTo(CW - 4, 4);
+                            lx.lineTo(CW - 4, CH - ch);
+                            lx.lineTo(CW - ch, CH - 4);
+                            lx.lineTo(4, CH - 4);
+                            lx.lineTo(4, ch);
+                            lx.closePath();
+                            lx.stroke();
+
+                            // Secondary inner rim
+                            lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
+                            lx.lineWidth = 1.5;
+                            lx.beginPath();
+                            lx.moveTo(ch + 6, 12);
+                            lx.lineTo(CW - 12, 12);
+                            lx.lineTo(CW - 12, CH - ch - 6);
+                            lx.lineTo(CW - ch - 6, CH - 12);
+                            lx.lineTo(12, CH - 12);
+                            lx.lineTo(12, ch + 6);
+                            lx.closePath();
+                            lx.stroke();
+
+                            // Left Tactical Battery/Signal Stripe
+                            const barSegs = 6;
+                            const barX = 18;
+                            const barStartY = 64;
+                            const barH = CH - 128;
+                            const segH = (barH - (barSegs - 1) * 4) / barSegs;
+                            for (let sb = 0; sb < barSegs; sb++) {
+                                lx.fillStyle = sb < 4 ? '#ff4d00' : 'rgba(255, 77, 0, 0.25)';
+                                lx.fillRect(barX, barStartY + sb * (segH + 4), 6, segH);
+                            }
+
+                            // 3. Corner Brackets & Crosshairs
+                            const bl = 36;
+                            lx.strokeStyle = 'rgba(255, 77, 0, 0.85)';
+                            lx.lineWidth = 3;
+                            // Top-Left Crosshair
+                            lx.beginPath(); lx.moveTo(14, 28); lx.lineTo(14 + bl, 28); lx.stroke();
+                            lx.beginPath(); lx.moveTo(28, 14); lx.lineTo(28, 14 + bl); lx.stroke();
+                            // Top-Right Corner
+                            lx.beginPath(); lx.moveTo(CW - 14 - bl, 24); lx.lineTo(CW - 24, 24); lx.lineTo(CW - 24, 24 + bl); lx.stroke();
+                            // Bottom-Right Corner
+                            lx.beginPath(); lx.moveTo(CW - 24, CH - 24 - bl); lx.lineTo(CW - 24, CH - 24); lx.lineTo(CW - 24 - bl, CH - 24); lx.stroke();
+                            // Bottom-Left Corner
+                            lx.beginPath(); lx.moveTo(24, CH - 24 - bl); lx.lineTo(24, CH - 24); lx.lineTo(24 + bl, CH - 24); lx.stroke();
+
+                            // 4. Header Bar — Telemetry & Badges
+                            lx.font = 'bold 20px "JetBrains Mono", monospace';
+                            lx.fillStyle = 'rgba(255, 77, 0, 0.7)';
+                            lx.textAlign = 'left';
+                            lx.fillText(`SYS.01 // TGT_LOCK [0${i + 1}]`, 42, 44);
+
+                            // [TYPE] Tactical Badge
+                            const typeLabel = node.type || 'PROJECT';
+                            lx.font = 'bold 16px "JetBrains Mono", monospace';
+                            const badgeX = 360, badgeY = 24, badgeW = 125, badgeH = 26;
+                            lx.fillStyle = 'rgba(255, 77, 0, 0.15)';
+                            lx.fillRect(badgeX, badgeY, badgeW, badgeH);
+                            lx.strokeStyle = '#ff4d00';
+                            lx.lineWidth = 1.5;
+                            lx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+                            lx.fillStyle = '#ff4d00';
+                            lx.textAlign = 'center';
+                            lx.fillText(`[ ${typeLabel.toUpperCase()} ]`, badgeX + badgeW / 2, badgeY + 18);
+
+                            // Year & Coordinates (Right Aligned)
+                            lx.font = 'bold 20px "JetBrains Mono", monospace';
+                            lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
+                            lx.textAlign = 'right';
+                            lx.fillText(`YR: ${node.year}  |  LOC: 13.08°N`, CW - 32, 44);
+
+                            // Header Line
+                            lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
                             lx.lineWidth = 2;
-                            [[8,8,1,1],[CW-8,8,-1,1],[8,CH-8,1,-1],[CW-8,CH-8,-1,-1]].forEach(([x,y,dx,dy]) => {
-                                lx.beginPath(); lx.moveTo(x,y); lx.lineTo(x+dx*bl,y); lx.stroke();
-                                lx.beginPath(); lx.moveTo(x,y); lx.lineTo(x,y+dy*bl); lx.stroke();
+                            lx.beginPath(); lx.moveTo(42, 60); lx.lineTo(CW - 32, 60); lx.stroke();
+
+                            // 5. Main Title & Role
+                            lx.fillStyle = '#ffffff';
+                            lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
+                            lx.shadowBlur = 12;
+                            lx.font = 'bold 96px "JetBrains Mono", monospace';
+                            lx.textAlign = 'left';
+                            lx.fillText(node.title, 42, 160);
+                            lx.shadowBlur = 0; // reset glow
+
+                            lx.fillStyle = '#00ffcc'; // High-tech cyan role indicator
+                            lx.font = 'bold 28px "JetBrains Mono", monospace';
+                            lx.fillText(`// ${node.role.toUpperCase()}`, 42, 204);
+
+                            // Divider Line
+                            lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
+                            lx.lineWidth = 1.5;
+                            lx.beginPath(); lx.moveTo(42, 224); lx.lineTo(CW - 32, 224); lx.stroke();
+
+                            // 6. Tech Stack HUD Badges
+                            const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
+                            let stackX = 42;
+                            const stackY = 244;
+                            lx.font = 'bold 18px "JetBrains Mono", monospace';
+                            stackItems.forEach(item => {
+                                const tw = lx.measureText(item).width;
+                                const pw = tw + 24;
+                                const ph = 30;
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.12)';
+                                lx.fillRect(stackX, stackY, pw, ph);
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
+                                lx.lineWidth = 1;
+                                lx.strokeRect(stackX, stackY, pw, ph);
+                                lx.fillStyle = '#ffaa77';
+                                lx.textAlign = 'left';
+                                lx.fillText(item, stackX + 12, stackY + 21);
+                                stackX += pw + 12;
                             });
 
-                            // ── Row 1: index  [TYPE]  year ──
-                            lx.font = '500 18px "JetBrains Mono", monospace';
-                            lx.fillStyle = 'rgba(255,77,0,0.5)';
-                            lx.textAlign = 'left';
-                            lx.fillText(String(i + 1).padStart(2,'0'), 18, 28);
-
-                            // [TYPE] badge
-                            const typeLabel = node.type || 'PROJECT';
-                            lx.font = '500 14px "JetBrains Mono", monospace';
-                            lx.strokeStyle = 'rgba(255,77,0,0.35)';
-                            lx.lineWidth = 1;
-                            const badgeX = 52, badgeY = 10, badgeW = 90, badgeH = 22;
-                            lx.strokeRect(badgeX, badgeY, badgeW, badgeH);
-                            lx.fillStyle = 'rgba(255,77,0,0.45)';
-                            lx.textAlign = 'center';
-                            lx.fillText(typeLabel.toUpperCase(), badgeX + badgeW / 2, badgeY + 15);
-
-                            // year — right aligned
-                            lx.font = '500 18px "JetBrains Mono", monospace';
-                            lx.fillStyle = 'rgba(255,77,0,0.35)';
-                            lx.textAlign = 'right';
-                            lx.fillText(node.year, CW - 18, 28);
-
-                            // ── Title ──
-                            lx.fillStyle = '#ffffff';
-                            lx.font = 'bold 72px "JetBrains Mono", monospace';
-                            lx.textAlign = 'left';
-                            lx.fillText(node.title, 18, 108);
-
-                            // ── Role ──
+                            // 7. Mission Brief / Description
+                            lx.font = 'bold 20px "JetBrains Mono", monospace';
                             lx.fillStyle = '#ff4d00';
-                            lx.font = '500 22px "JetBrains Mono", monospace';
-                            lx.fillText(node.role.toUpperCase(), 18, 140);
+                            lx.fillText('>> MISSION_BRIEF:', 42, 318);
 
-                            // ── Divider ──
-                            lx.strokeStyle = 'rgba(255,77,0,0.22)';
-                            lx.lineWidth = 1;
-                            lx.beginPath(); lx.moveTo(18, 156); lx.lineTo(CW - 18, 156); lx.stroke();
-
-                            // ── Stack ──
-                            lx.fillStyle = 'rgba(255,180,130,0.8)';
-                            lx.font = '18px "JetBrains Mono", monospace';
-                            lx.fillText(node.stack, 18, 182);
-
-                            // ── Desc — word-wrap into 2 lines max ──
-                            lx.fillStyle = 'rgba(255,235,215,0.45)';
-                            lx.font = '16px "Inter", sans-serif';
+                            lx.fillStyle = 'rgba(240, 245, 255, 0.85)';
+                            lx.font = '22px "Inter", sans-serif';
                             const descWords = node.desc.split(' ');
-                            let descLine = '', descY = 212;
+                            let descLine = '', descY = 352;
                             for (const w of descWords) {
                                 const test = descLine + w + ' ';
-                                if (lx.measureText(test).width > CW - 36 && descLine) {
-                                    lx.fillText(descLine.trim(), 18, descY);
+                                if (lx.measureText(test).width > CW - 84 && descLine) {
+                                    lx.fillText(descLine.trim(), 42, descY);
                                     descLine = w + ' ';
-                                    descY += 24;
-                                    if (descY > 236) break; // hard cap at 2 lines
+                                    descY += 32;
+                                    if (descY > 410) break; // hard cap at 3 lines
                                 } else {
                                     descLine = test;
                                 }
                             }
-                            if (descLine.trim()) lx.fillText(descLine.trim(), 18, descY);
+                            if (descLine.trim()) lx.fillText(descLine.trim(), 42, descY);
 
-                            // ── Status ──
+                            // 8. Footer Telemetry & Status
+                            lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                            lx.lineWidth = 1.5;
+                            lx.beginPath(); lx.moveTo(42, CH - 54); lx.lineTo(CW - 32, CH - 54); lx.stroke();
+
+                            // Status Dot & Badge
+                            lx.fillStyle = '#00ff88';
+                            lx.beginPath(); lx.arc(52, CH - 28, 6, 0, Math.PI * 2); lx.fill();
+                            lx.font = 'bold 20px "JetBrains Mono", monospace';
                             lx.fillStyle = '#ff4d00';
-                            lx.font = '500 17px "JetBrains Mono", monospace';
-                            lx.fillText(node.status, 18, 302);
+                            lx.textAlign = 'left';
+                            lx.fillText(`${node.status} // NOMINAL`, 68, CH - 21);
+
+                            // Telemetry Code (Right Aligned)
+                            lx.font = '18px "JetBrains Mono", monospace';
+                            lx.fillStyle = 'rgba(255, 77, 0, 0.55)';
+                            lx.textAlign = 'right';
+                            lx.fillText(`SIGNAL: ENCRYPTED // LINK_STATION_0${i + 1}`, CW - 32, CH - 21);
 
                             lx.setTransform(1, 0, 0, 1, 0, 0);
 
-                            const lTex    = new THREE.CanvasTexture(lc);
-                            // flipY=false: no vertical flip. rotation.x=-PI/2 + rotation.z=PI together
-                            // map the canvas correctly onto the flat XZ plane readable from top-down camera.
+                            const lTex = new THREE.CanvasTexture(lc);
                             lTex.flipY = true;
                             const labelGeo = new THREE.PlaneGeometry(PANEL_W, PANEL_H);
                             const labelMat = new THREE.MeshBasicMaterial({
                                 map: lTex, transparent: true, depthWrite: false, side: THREE.DoubleSide,
                             });
                             const label = new THREE.Mesh(labelGeo, labelMat);
-                            label.rotation.x = -Math.PI / 2;
-                            label.rotation.z = Math.PI;
+                            label.rotation.x = -Math.PI / 2; // flat on XZ plane, readable from top-down
+                            label.rotation.z = Math.PI / 2;   // correct texture orientation
                             label.position.set(0, 0.05, LABEL_Z);
-                            // 3D label panels replaced by DOM exp-strip — keep object for API
-                            // compatibility but never show it in the scene.
                             label.visible = false;
                             group.add(label);
 
-                            // Connector line also hidden — DOM strip handles display
+                            // ── Tactical Elbow Connector Line ──
                             const connStart = labelSide * GATE_SPAN;
-                            const connEnd   = LABEL_Z - labelSide * (PANEL_W * 0.5 + 0.3);
+                            const connEnd = LABEL_Z - labelSide * (PANEL_W * 0.5 + 0.2);
+                            const elbowZ = connStart + labelSide * 1.8;
                             const connPts = [
                                 new THREE.Vector3(0, 0, connStart),
-                                new THREE.Vector3(0, 0, connEnd),
+                                new THREE.Vector3(-0.6, 0, elbowZ),
+                                new THREE.Vector3(-0.6, 0, connEnd),
                             ];
                             const connGeo = new THREE.BufferGeometry().setFromPoints(connPts);
                             const connMat = new THREE.LineBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0 });
-                            const conn    = new THREE.Line(connGeo, connMat);
+                            const conn = new THREE.Line(connGeo, connMat);
                             conn.visible = false;
                             group.add(conn);
 
@@ -1222,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 );
                                 sm.rotation.x = -Math.PI / 2;
                                 sm.rotation.z = Math.random() * Math.PI * 2;
-                                sm.visible    = false;
+                                sm.visible = false;
                                 group.add(sm);
                                 shards.push({
                                     mesh: sm,
@@ -1237,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             // ── Lock-on pulse rings — centred on the gate (jet impact point) ──
                             const ringMat1 = new THREE.MeshBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0, side: THREE.DoubleSide });
-                            const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xffffff,  transparent: true, opacity: 0, side: THREE.DoubleSide });
+                            const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide });
                             const ring1 = new THREE.Mesh(new THREE.RingGeometry(1.8, 2.0, 48), ringMat1);
                             const ring2 = new THREE.Mesh(new THREE.RingGeometry(0.8, 0.95, 48), ringMat2);
                             ring1.rotation.x = -Math.PI / 2;
@@ -1259,43 +1308,220 @@ document.addEventListener('DOMContentLoaded', async () => {
                         });
                     }
 
-                    // ── Jet position (straight, no zig) ──
-                    if (city && city.rescueJet) {
-                        const jetX = (isPullingUp ? finalCamX : jetFlyX) - CKPT_OX;
-                        const jetY = cockpitY - CKPT_OY;
-                        const jetZ = finalCamWorldZ - GROUP_Z - CKPT_OZ;
-                        city.rescueJet.position.set(jetX, jetY, jetZ);
-                        city.rescueJet.rotation.set(0, Math.PI / 2, 0);
-                        if (city.rescueJetMat) city.rescueJetMat.opacity = 1;
-                    }
-
-                    // ── Camera ──
+                    // ── Camera & Turnaround Math ──
                     const OVERHEAD_HEIGHT = 32.0;
                     const startCamY = cockpitY + 0.3;
                     const targetCamY = cockpitY + OVERHEAD_HEIGHT;
 
-                    const camY = scrollMath.lerp(startCamY, targetCamY, easeG);
-                    const camX = isPullingUp ? finalCamX : jetFlyX;
-                    const camZ = finalCamWorldZ;
+                    // ── 3-Stage Hyperspace & 180° Turnaround Sequence (flyNorm 0.53 -> 1.00) ──
+                    // Stage 1 (0.53 -> 0.70): Cockpit Dive from overhead
+                    // Stage 2 (0.70 -> 0.85): 180° High-G Banking Turnaround
+                    // Stage 3 (0.85 -> 1.00): Jet travels from 50u ahead straight up to camera lens!
+                    const isDivingToCockpit = !isPullingUp && flyNorm > 0.53;
+                    const diveNorm          = isDivingToCockpit ? scrollMath.clamp01((flyNorm - 0.53) / 0.17) : 0;
+                    const easeDive          = scrollMath.smoothstep(diveNorm);
+
+                    const isTurningAround   = !isPullingUp && flyNorm > 0.70;
+                    const turnNorm          = isTurningAround ? scrollMath.clamp01((flyNorm - 0.70) / 0.15) : 0;
+                    const easeTurn          = scrollMath.smoothstep(turnNorm);
+
+                    const isApproachingCam  = !isPullingUp && flyNorm > 0.85;
+                    const approachNorm     = isApproachingCam ? scrollMath.clamp01((flyNorm - 0.85) / 0.15) : 0;
+                    const easeApproach     = scrollMath.smoothstep(approachNorm);
+
+                    // Remove landing strip if present
+                    if (window._landingStrip) {
+                        window._landingStrip.visible = false;
+                    }
+
+                    let camX, camY, camZ, pitchX, yawY, bankZ, targetFov, speedLineOpacity;
+
+                    if (isPullingUp) {
+                        camY = scrollMath.lerp(startCamY, targetCamY, easeG);
+                        pitchX = scrollMath.lerp(0.04, -Math.PI / 2, easeG);
+                        yawY = Math.PI / 2;
+                        bankZ = 0;
+                        targetFov = scrollMath.lerp(100, 72, easeG);
+                        speedLineOpacity = scrollMath.lerp(0.85, 0.0, easeG);
+                        camX = finalCamX;
+                        camZ = finalCamWorldZ;
+                    } else if (isDivingToCockpit) {
+                        // ── Sub-Phase 1: Cockpit Seat Dive (flyNorm 0.50 → 0.65) ──
+                        const diveNorm = scrollMath.clamp01((flyNorm - 0.50) / 0.15);
+                        const easeDive = scrollMath.smoothstep(diveNorm);
+
+                        // ── Sub-Phase 2: Camera Fly-Out to Carrier Deck POV (flyNorm 0.65 → 0.80) ──
+                        const exitNorm = scrollMath.clamp01((flyNorm - 0.65) / 0.15);
+                        const easeExit = scrollMath.smoothstep(exitNorm);
+
+                        // ── Sub-Phase 3: Landing & Taxi (flyNorm 0.80 → 1.00) ──
+                        const landPhaseNorm = scrollMath.clamp01((flyNorm - 0.80) / 0.20);
+                        const appNorm       = scrollMath.clamp01((flyNorm - 0.75) / 0.15); // jet approach starts during transition
+                        const easeApp       = scrollMath.smoothstep(appNorm);
+                        const taxiNorm      = scrollMath.clamp01((flyNorm - 0.90) / 0.10);
+
+                        speedLineOpacity = 0;
+                        bankZ = 0;
+
+                        // ── Carrier Model Positioning (Visible whenever flyNorm > 0.55) ──
+                        const cScale = 0.008;
+                        const turnEndX = finalCamX - 0.80 * FLY_X_TRAVEL;
+                        const carrierX = turnEndX + 60.0;
+                        const carrierY = cockpitY - 1.0;
+                        const carrierZ = finalCamWorldZ - GROUP_Z;
+
+                        if (city && city.carrierModel && city.carrierReady) {
+                            city.carrierModel.position.set(carrierX, carrierY, carrierZ);
+                            city.carrierModel.rotation.y = -Math.PI / 2;
+                            city.carrierModel.scale.setScalar(cScale);
+                            city.carrierModel.visible = flyNorm > 0.55;
+                        }
+
+                        // ── Hotspot offsets from carrier origin after R_y(-PI/2) ──
+                        const S = cScale;
+                        // H1 "landing coords":     local(-39.0343,   128.2941, -2044.7567)
+                        const h1 = { ox:  2044.7567*S, oy: 128.2941*S, oz: -39.0343*S  };
+                        // H2 "camera POV":         local(-249.5586,  128.2945,  207.4993)
+                        const h2 = { ox: -207.4993*S,  oy: 128.2945*S, oz: -249.5586*S };
+                        // H3 "path after landing 1": local(11.4416,  128.2941, -1676.6043)
+                        const h3 = { ox:  1676.6043*S, oy: 128.2941*S, oz:  11.4416*S  };
+                        // H4 "path after landing 2": local(87.2635,  128.2942, -1232.9289)
+                        const h4 = { ox:  1232.9289*S, oy: 128.2942*S, oz:  87.2635*S  };
+                        // H5 "path after landing 3": local(161.1160, 128.2943,  -633.5623)
+                        const h5 = { ox:  633.5623*S,  oy: 128.2943*S, oz:  161.1160*S };
+
+                        // Group-local positions
+                        const td  = { x: carrierX+h1.ox, y: carrierY+h1.oy,      z: carrierZ+h1.oz };
+                        // Reduced POV height offset from +5.0 to +2.0 (2/5 of 5.0)
+                        const pov = { x: carrierX+h2.ox, y: carrierY+h2.oy+2.0,  z: carrierZ+h2.oz };
+                        const wp1 = { x: carrierX+h3.ox, y: carrierY+h3.oy,       z: carrierZ+h3.oz };
+                        const wp2 = { x: carrierX+h4.ox, y: carrierY+h4.oy,       z: carrierZ+h4.oz };
+                        const wp3 = { x: carrierX+h5.ox, y: carrierY+h5.oy,       z: carrierZ+h5.oz };
+
+                        const glToWZ = (glz) => finalCamWorldZ + (glz - carrierZ);
+
+                        // ── Continuous Camera Flight: Seat -> Hotspot 2 on Carrier ──
+                        const seatX = jetFlyX;
+                        const seatY = scrollMath.lerp(targetCamY, startCamY, easeDive);
+                        const seatZ = finalCamWorldZ;
+
+                        const deckX = pov.x;
+                        const deckY = pov.y;
+                        const deckZ = glToWZ(pov.z);
+
+                        camX = scrollMath.lerp(seatX, deckX, easeExit);
+                        camY = scrollMath.lerp(seatY, deckY, easeExit);
+                        camZ = scrollMath.lerp(seatZ, deckZ, easeExit);
+
+                        // ── Jet Position Calculation ──
+                        let jX, jY, jZ, jYaw;
+
+                        if (taxiNorm <= 0) {
+                            // Approach & Touchdown at H1 (glide slope low above deck)
+                            const farX = carrierX + 80.0;
+                            const farY = td.y + 1.2;
+                            const farZ = td.z;
+
+                            jX = scrollMath.lerp(farX, td.x, easeApp);
+                            jY = scrollMath.lerp(farY, td.y, easeApp);
+                            jZ = scrollMath.lerp(farZ, td.z, easeApp);
+                            jYaw = Math.PI / 2;
+
+                            const noseDown = scrollMath.lerp(-0.08, 0, easeApp);
+                            if (city && city.rescueJet) {
+                                city.rescueJet.position.set(jX, jY, jZ);
+                                city.rescueJet.rotation.set(noseDown, jYaw, 0);
+                                if (city.rescueJetMat) city.rescueJetMat.opacity = flyNorm > 0.65 ? 1 : 0;
+                            }
+                        } else {
+                            // Taxi H1 -> H3 -> H4 -> H5
+                            const path = [td, wp1, wp2, wp3];
+                            const nSeg = path.length - 1;
+                            const sf = scrollMath.clamp01(taxiNorm) * nSeg;
+                            const si = Math.min(Math.floor(sf), nSeg - 1);
+                            const st = scrollMath.smoothstep(sf - si);
+                            const from = path[si];
+                            const to   = path[Math.min(si + 1, path.length - 1)];
+
+                            jX = scrollMath.lerp(from.x, to.x, st);
+                            jY = scrollMath.lerp(from.y, to.y, st);
+                            jZ = scrollMath.lerp(from.z, to.z, st);
+
+                            const ddx = to.x - from.x;
+                            const ddz = to.z - from.z;
+                            jYaw = Math.atan2(-ddx, -ddz);
+
+                            if (city && city.rescueJet) {
+                                city.rescueJet.position.set(jX, jY, jZ);
+                                city.rescueJet.rotation.set(0, jYaw, 0);
+                                if (city.rescueJetMat) city.rescueJetMat.opacity = 1;
+                            }
+                        }
+
+                        // ── Camera Look-At Calculation ──
+                        const jwX = jX;
+                        const jwY = jY;
+                        const jwZ = glToWZ(jZ);
+
+                        const ldx = jwX - camX;
+                        const ldz = jwZ - camZ;
+                        const ldy = jwY - camY;
+                        const hd  = Math.sqrt(ldx * ldx + ldz * ldz);
+
+                        let targetLookYaw = Math.atan2(-ldx, -ldz);
+                        const seatPitch = scrollMath.lerp(-Math.PI / 2, 0.04, easeDive);
+                        const seatYaw = Math.PI / 2;
+
+                        // Smoothly transition camera orientation from cockpit view to jet look-at
+                        yawY   = scrollMath.lerp(seatYaw, targetLookYaw, easeExit);
+                        pitchX = scrollMath.lerp(seatPitch, Math.atan2(ldy, Math.max(hd, 0.1)), easeExit);
+                        targetFov = scrollMath.lerp(72, 58, easeExit);
+
+                        // Cockpit HUD canvas while diving inside seat
+                        if (flyNorm < 0.65) {
+                            drawCockpitHUDCanvas(city, easeDive, 0);
+                        }
+                    } else {
+                        // Cruising top-down over experience cards
+                        camX = jetFlyX;
+                        camY = targetCamY;
+                        camZ = finalCamWorldZ;
+                        pitchX = -Math.PI / 2;
+                        yawY = Math.PI / 2;
+                        bankZ = 0;
+                        targetFov = 72;
+                        speedLineOpacity = 0;
+
+                        if (city && city.rescueJet) {
+                            const jX = jetFlyX - CKPT_OX;
+                            const jY = cockpitY - CKPT_OY;
+                            const jZ = finalCamWorldZ - GROUP_Z - CKPT_OZ;
+                            city.rescueJet.position.set(jX, jY, jZ);
+                            city.rescueJet.rotation.set(0, Math.PI / 2, 0);
+                            if (city.rescueJetMat) city.rescueJetMat.opacity = 1;
+                        }
+                    }
 
                     gl.camera.position.set(camX, camY, camZ);
                     gl.camera.rotation.order = 'YXZ';
-                    gl.camera.rotation.y = scrollMath.lerp(cockpitRotY, Math.PI / 2, easeG);
-                    gl.camera.rotation.x = scrollMath.lerp(0.04, -Math.PI / 2, easeG);
-                    gl.camera.rotation.z = 0;
+                    gl.camera.rotation.y = yawY;
+                    gl.camera.rotation.x = pitchX;
+                    gl.camera.rotation.z = bankZ || 0;
 
-                    setCameraFov(scrollMath.lerp(100, 72, easeG));
+                    setCameraFov(targetFov);
 
-                    // Speed lines fade out during pull-up
+                    // Speed lines: active during pull-up AND during hyperspace 180° turn & jet approach
                     if (speedLines) {
-                        speedLines.lineMat.opacity = isPullingUp ? scrollMath.lerp(0.85, 0.0, easeG) : 0;
-                        if (isPullingUp) {
-                            const elapsed = Date.now() * 0.08;
+                        speedLines.lineMat.opacity = speedLineOpacity;
+                        if (speedLineOpacity > 0.01) {
+                            const speedBoost = 1.0 + easeApproach * 1.5;
+                            const elapsed = Date.now() * 0.14 * speedBoost;
+                            const speedDir = isDivingToCockpit ? -1 : 1;
                             speedLines.lines.forEach(l => {
-                                let relX = (l.baseX - elapsed) % 40;
+                                let relX = (l.baseX - speedDir * elapsed) % 40;
                                 if (relX < -20) relX += 40;
                                 if (relX > 20) relX -= 40;
-                                l.mesh.position.x = finalCamX + relX;
+                                l.mesh.position.x = camX + relX;
                             });
                         }
                     }
@@ -1331,11 +1557,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     //
                     // Camera shake and FOV overrides are written into module-level scratch vars
                     // that the camera block below reads each frame.
-                    const lockHud     = document.getElementById('lock-hud');
+                    const lockHud = document.getElementById('lock-hud');
                     const impactFlash = document.getElementById('impact-flash');
-                    const lkRange     = document.getElementById('lk-range');
-                    const lkTarget    = document.getElementById('lk-target');
-                    const lkLocked    = document.getElementById('lk-locked');
+                    const lkRange = document.getElementById('lk-range');
+                    const lkTarget = document.getElementById('lk-target');
+                    const lkLocked = document.getElementById('lk-locked');
 
                     // Per-frame camera perturbation accumulators (reset each frame)
                     let shakeX = 0, shakeZ = 0, fovBump = 0;
@@ -1349,21 +1575,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                         window._expObstacles.forEach((obs) => {
                             const dist = jetWorldX - obs.worldX; // + = ahead, − = passed
 
+                            // Auto-reset hit state if user backtracks past the node
+                            if (obs.hit && dist > 0.5) {
+                                obs.hit = false;
+                                obs.hitT = 0;
+                                obs.gateLines.visible = true;
+                                obs.dot.visible = true;
+                                obs.ring1.visible = true;
+                                obs.ring2.visible = true;
+                                obs.shards.forEach(s => { s.mesh.visible = false; });
+                            }
+
+                            // ── Visibility across camera frustum ──
+                            const inTurnaround = !isPullingUp && flyNorm > 0.53;
+                            if (inTurnaround) {
+                                obs.group.visible = false;
+                                obs.label.visible = false;
+                                obs.conn.visible = false;
+                            } else {
+                                obs.group.visible = Math.abs(dist) < 35;
+                                obs.label.visible = true;
+                                obs.conn.visible = true;
+                            }
+
+                            const absDist = Math.abs(dist);
+                            const approachT = scrollMath.clamp01(1.0 - absDist / 16.0);
+                            obs.labelMat.opacity = dist <= 0 ? 1.0 : Math.max(0.4, approachT);
+                            obs.connMat.opacity = dist <= 0 ? 0.45 : 0.45 * approachT;
+
                             if (!obs.hit) {
-                                const absDist     = Math.abs(dist);
-                                const inApproach  = dist > 0 && dist < 14;
-                                const inLockZone  = dist > 0 && dist < 4;
+                                const inApproach = dist > 0 && dist < 14;
+                                const inLockZone = dist > 0 && dist < 4;
 
-                                // ── Visibility ──
-                                obs.group.visible = dist > -3 && dist < 16;
-
-                                // ── Approach fade (14→0) ──
-                                const approachT = scrollMath.clamp01(1.0 - absDist / 14.0);
-                                obs.gateMat.opacity  = 0.75 * approachT;
-                                obs.tickMat.opacity  = 0.5  * approachT;
-                                obs.dotMat.opacity   = approachT;
-                                obs.labelMat.opacity = approachT;
-                                obs.connMat.opacity  = 0.45 * approachT;
+                                obs.gateMat.opacity = 0.75 * approachT;
+                                obs.tickMat.opacity = 0.5 * approachT;
+                                obs.dotMat.opacity = approachT;
 
                                 // ── Outer ring: slow breathing pulse, fades in with approach ──
                                 if (inApproach) {
@@ -1388,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         ? (Math.sin(Date.now() * 0.025) > 0 ? 1.0 : 0.4)
                                         : 0.75 + 0.25 * Math.sin(Date.now() * 0.012);
                                     obs.gateMat.opacity = strobe;
-                                    obs.dotMat.opacity  = strobe;
+                                    obs.dotMat.opacity = strobe;
 
                                     // Lock DOM reticle
                                     anyLockHudVisible = true;
@@ -1399,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                             lockHud.classList.add('lk-locked');
                                             if (lkLocked) lkLocked.textContent = 'LOCKED';
                                         }
-                                        if (lkRange)  lkRange.textContent  = dist.toFixed(1) + ' U';
+                                        if (lkRange) lkRange.textContent = dist.toFixed(1) + ' U';
                                         if (lkTarget) lkTarget.textContent = obs.data.title;
                                     }
 
@@ -1413,16 +1659,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                                 // ── Hit trigger ──
                                 if (dist < 0 && dist > -2.5) {
-                                    obs.hit  = true;
+                                    obs.hit = true;
                                     obs.hitT = 0;
 
-                                    // Hide gate, show shards
+                                    // Shatter gate elements, but KEEP label & connector visible
                                     obs.gateLines.visible = false;
-                                    obs.dot.visible       = false;
-                                    obs.ring1.visible     = false;
-                                    obs.ring2.visible     = false;
-                                    obs.label.visible     = false;
-                                    obs.conn.visible      = false;
+                                    obs.dot.visible = false;
+                                    obs.ring1.visible = false;
+                                    obs.ring2.visible = false;
                                     obs.shards.forEach(s => { s.mesh.visible = true; });
 
                                     // Impact flash
@@ -1435,15 +1679,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     if (lockHud) {
                                         lockHud.classList.remove('lk-visible', 'lk-locked');
                                         if (lkLocked) lkLocked.textContent = 'ACQUIRING';
-                                    }
-
-                                    // Experience strip — reveal this slot and mark it active
-                                    const slot = document.getElementById(`exp-slot-${obs.index}`);
-                                    if (slot) {
-                                        // Mark every previously-hit slot inactive, then activate this one
-                                        document.querySelectorAll('.exp-slot').forEach(s => s.classList.remove('exp-slot-active'));
-                                        slot.classList.add('exp-slot-visible');
-                                        slot.classList.add('exp-slot-active');
                                     }
                                 }
 
@@ -1459,7 +1694,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     shakeZ += (Math.random() - 0.5) * shakeAmp;
                                 }
 
-                                // FOV spike then settle (spikes at t=0, settles to normal by t=0.6)
+                                // FOV spike then settle
                                 if (et < 0.6) {
                                     const spikeCurve = Math.exp(-et * 8) * 14; // fast decay
                                     fovBump += spikeCurve;
@@ -1474,8 +1709,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     s.mesh.scale.setScalar(Math.max(sc, 0.001));
                                     s.mesh.material.opacity = sc;
                                 });
-
-                                // Slots are persistent — no dismiss on distance
                             }
                         });
                     }
@@ -1501,30 +1734,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                         gl.camera.updateProjectionMatrix();
                     }
 
-                    // Hide exp strip and reset obstacles when in pull-up (not yet flying)
+                    // Hide runway and reset obstacles when in pull-up (not yet flying)
                     if (isPullingUp) {
-                        // exp-strip slots are persistent — not hidden during pull-up
                         if (window._runwayGroup) window._runwayGroup.visible = false;
                         if (window._pathTube) window._pathTube.visible = false;
                         if (window._expObstacles) {
                             window._expObstacles.forEach(obs => {
-                                obs.hit        = false;
-                                obs.hitT       = 0;
-                                obs.locked     = false;
+                                obs.hit = false;
+                                obs.hitT = 0;
+                                obs.locked = false;
                                 obs.lockFlashT = 0;
                                 obs.gateLines.visible = true;
-                                obs.dot.visible       = true;
-                                obs.label.visible     = true;
-                                obs.conn.visible      = true;
-                                obs.ring1.visible     = true;
-                                obs.ring2.visible     = true;
-                                obs.gateMat.opacity   = 0;
-                                obs.tickMat.opacity   = 0;
-                                obs.dotMat.opacity    = 0;
-                                obs.labelMat.opacity  = 0;
-                                obs.connMat.opacity   = 0;
-                                obs.ringMat1.opacity  = 0;
-                                obs.ringMat2.opacity  = 0;
+                                obs.dot.visible = true;
+                                obs.label.visible = true;
+                                obs.conn.visible = true;
+                                obs.ring1.visible = true;
+                                obs.ring2.visible = true;
+                                obs.gateMat.opacity = 0;
+                                obs.tickMat.opacity = 0;
+                                obs.dotMat.opacity = 0;
+                                obs.labelMat.opacity = 0;
+                                obs.connMat.opacity = 0;
+                                obs.ringMat1.opacity = 0;
+                                obs.ringMat2.opacity = 0;
                                 obs.ring1.scale.setScalar(1);
                                 obs.ring2.scale.setScalar(1);
                                 obs.shards.forEach(s => {
@@ -2063,11 +2295,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const progress = scroll.scroll || 0;
             const maxScroll = scroll.getMaxScroll();
             const scrollPct = Math.min(progress / maxScroll, 1.0); // 0 to 1
- 
+
             // Call the shared update function
             updateScene(scrollPct, velocity, false);
             heroFormation.update(scrollPct, gl.camera);
-            gl.frame();
         });
 
         const perfParam = new URLSearchParams(window.location.search).get('perf');
