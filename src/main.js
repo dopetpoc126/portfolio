@@ -524,15 +524,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const setCameraFov = (targetFov) => {
                 const aspect = gl.camera.aspect || (window.innerWidth / window.innerHeight);
-                const refAspect = 1.777; // Desktop 16:9 reference
                 let effectiveFov = targetFov;
 
-                if (aspect < refAspect) {
-                    const radV = (targetFov * Math.PI) / 360;
-                    const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
-                    const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(aspect, 0.35));
-                    effectiveFov = (mobileVRad * 180) / Math.PI;
-                    effectiveFov = Math.min(Math.max(effectiveFov, targetFov), 110);
+                // Subtle mobile FOV adjustment (keeps subjects close & prevents wide distortion)
+                if (aspect < 1.0) {
+                    const mobileFactor = (1.0 - Math.max(aspect, 0.45)) * 10;
+                    effectiveFov = Math.min(targetFov + mobileFactor, targetFov + 8);
                 }
 
                 if (Math.abs(gl.camera.fov - effectiveFov) < 0.01) return;
@@ -604,7 +601,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.y = cockpitRotY;
                     gl.camera.rotation.x = cockpitRotX;
                     gl.camera.rotation.z = Math.sin(t * Math.PI * 3) * 0.006;
-                    setCameraFov(55 + scrollMath.clamp01(Math.abs(velocity) * 0.025) * 8);
+                    // Slightly wider base FOV (68°) for Redbull F1 Car sequence
+                    setCameraFov(68 + scrollMath.clamp01(Math.abs(velocity) * 0.025) * 8);
                     if (city && city.f1Model) city.f1Model.position.x = driveX - trainX;
                     if (smashFlash) smashFlash.style.opacity = '0';
 
@@ -617,18 +615,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.y = scrollMath.lerp(cockpitRotY, Math.PI * 0.25, t);
                     gl.camera.rotation.x = scrollMath.lerp(cockpitRotX, -0.12, t);
                     gl.camera.rotation.z = 0;
-                    setCameraFov(scrollMath.lerp(55, 60, t));
+                    setCameraFov(scrollMath.lerp(68, 74, t));
                     if (city && city.f1Model) city.f1Model.position.x = parkedX - trainX;
                     if (smashFlash) smashFlash.style.opacity = '0';
 
                 } else if (drivePct < SUB_C) {
                     // Restore look + fast sprint to portal — smoothstep easing
-                    // Previously used norm^3 (cubic), which caused a long dead zone at the
-                    // start of Sub-C (car barely moved after parking) then a sudden blast.
-                    // smoothstep gives a symmetrical S-curve: gentle ramp, steady sprint,
-                    // soft arrival at the portal — consistent with Sub-A's approach speed.
                     const norm = (drivePct - SUB_B) / (SUB_C - SUB_B);
-                    const t = scrollMath.smoothstep(norm); // S-curve — even ramp in and out
+                    const t = scrollMath.smoothstep(norm);
                     const sprintX = scrollMath.lerp(parkedX, portalX + 2.0, t);
                     const speedFovBoost = t * 18;
                     gl.camera.position.set(sprintX, cockpitY + Math.sin(norm * Math.PI * 8) * 0.012, cockpitZ);
@@ -636,7 +630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.y = scrollMath.lerp(Math.PI * 0.25, cockpitRotY, scrollMath.smoothstep(scrollMath.clamp01(norm * 3)));
                     gl.camera.rotation.x = scrollMath.lerp(-0.12, cockpitRotX, scrollMath.smoothstep(scrollMath.clamp01(norm * 3)));
                     gl.camera.rotation.z = Math.sin(norm * Math.PI * 6) * 0.01;
-                    setCameraFov(55 + speedFovBoost);
+                    setCameraFov(68 + speedFovBoost);
                     if (city && city.f1Model) city.f1Model.position.x = sprintX - trainX;
                     if (smashFlash) smashFlash.style.opacity = '0';
 
@@ -653,7 +647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.y = cockpitRotY;
                     gl.camera.rotation.x = cockpitRotX + Math.sin(norm * Math.PI) * 0.08;
                     gl.camera.rotation.z = Math.sin(norm * Math.PI * 4) * 0.04;
-                    setCameraFov(55 + flashAmt * 35);
+                    setCameraFov(68 + flashAmt * 35);
                     if (city && city.f1Model) {
                         // Slide the car forward out of the train nose during the smash
                         city.f1Model.position.set(smashX - trainX - norm * 4.5, 0.11602419564293629, -0.15858486492682247);
