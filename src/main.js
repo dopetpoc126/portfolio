@@ -950,8 +950,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? 0
                         : (drivePct - SUB_G_END) / (1.0 - SUB_G_END); // 0→1 straight flight
 
-                    // ── Flight Path to Aircraft Carrier Landing (240.0 units) ──
-                    const FLY_X_TRAVEL = 240.0; // snappy flight path for responsive scroll pacing
+                    // ── Flight Path to Aircraft Carrier Landing (240u desktop / 380u mobile) ──
+                    const isMobileScreen = window.innerWidth < 768;
+                    const FLY_X_TRAVEL = isMobileScreen ? 380.0 : 240.0; // extended flight path for mobile pacing
                     const jetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL; // jet advances in -X
 
                     // ── Experience obstacle data ──
@@ -995,19 +996,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ];
 
                     // ── Lazy-init obstacle meshes ──
-                    // TOP-DOWN COORDINATE ORIENTATION (camera rotY=PI/2, rotX=-PI/2):
-                    //   Screen UP    = world -X  (jet flies up-screen)
-                    //   Screen RIGHT = world -Z
-                    //   Screen depth = world Y (out of screen, invisible)
-                    //
-                    // Gates span Z (left-right), thin in X. All geometry flat on XZ plane.
-                    // Theme: #ff4d00 orange accent + white text on near-black, matching site palette.
                     if (!window._expObstacles && gl && gl.scene) {
-                        const spacing = 16.0; // 16u spacing for 4 cards (finishes at 64u / 53% flyNorm)
+                        const spacing = isMobileScreen ? 28.0 : 16.0; // increased spacing on mobile for portrait cards
                         const GATE_Y = cockpitY + 0.05;
-                        const GATE_SPAN = 7; // Z half-width of gate — just past jet wingspan
+                        const GATE_SPAN = isMobileScreen ? 4.2 : 7.0; // tighter gate span on mobile
 
-                        // ── Clean Space Flight Path (Lines behind jet removed per user request) ──
+                        // ── Clean Space Flight Path ──
                         window._runwayGroup = null;
                         window._pathTube = null;
 
@@ -1016,11 +1010,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const group = new THREE.Group();
                             group.position.set(obsWorldX, GATE_Y, finalCamWorldZ);
 
-                            // ── Label side: alternating left/right, offset well clear of runway ──
+                            // ── Label side: alternating left/right ──
                             const labelSide = (i % 2 === 0) ? 1 : -1; // +Z = left on screen, -Z = right
 
-                            // ── Gate: target lock bar starting OUTSIDE wingtips so no lines cross the jet ──
-                            const WING_CLEAR = 3.6; // Clear of F-15/F-35 wingtip span
+                            // ── Gate: target lock bar starting OUTSIDE wingtips ──
+                            const WING_CLEAR = isMobileScreen ? 2.8 : 3.6;
                             const gateBarPts = [
                                 new THREE.Vector3(0, 0, labelSide * WING_CLEAR),
                                 new THREE.Vector3(0, 0, labelSide * GATE_SPAN),
@@ -1030,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const gateLines = new THREE.Line(gateBarGeo, gateMat);
                             group.add(gateLines);
 
-                            // Tick marks on the label side only (at 1/2, full span)
+                            // Tick marks on the label side only
                             const tickMat = new THREE.LineBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0 });
                             const tickGroup = new THREE.Group();
                             for (const tz of [labelSide * (GATE_SPAN * 0.6), labelSide * GATE_SPAN]) {
@@ -1051,12 +1045,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                             dot.position.z = labelSide * GATE_SPAN;
                             group.add(dot);
 
-                            // ── Tactical MFD Label Panel — Scaled Up & 4K Crisp Canvas ──
-                            const PANEL_W = 24;   // world-Z extent — increased size
-                            const PANEL_H = 10.5; // world-X extent — increased size
-                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + 2.5);
+                            // ── Tactical MFD Label Panel ──
+                            // Desktop: 24w x 10.5h (Landscape 1024x512)
+                            // Mobile: 12w x 19.5h (Vertical Portrait 512x832)
+                            const PANEL_W = isMobileScreen ? 12.0 : 24.0;
+                            const PANEL_H = isMobileScreen ? 19.5 : 10.5;
+                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + (isMobileScreen ? 0.8 : 2.5));
 
-                            const CW = 1024, CH = 512;
+                            const CW = isMobileScreen ? 512 : 1024;
+                            const CH = isMobileScreen ? 832 : 512;
                             const lc = document.createElement('canvas');
                             lc.width = CW;
                             lc.height = CH;
@@ -1066,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             lx.fillStyle = '#06070a';
                             lx.fillRect(0, 0, CW, CH);
 
-                            // Subtle tactical grid background pattern
+                            // Tactical grid background
                             lx.strokeStyle = 'rgba(255, 77, 0, 0.04)';
                             lx.lineWidth = 1;
                             const gSize = 32;
@@ -1077,166 +1074,275 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.beginPath(); lx.moveTo(0, gy); lx.lineTo(CW, gy); lx.stroke();
                             }
 
-                            // 2. Chamfered Outer Tactical Outer & Inner Borders
-                            const ch = 24; // chamfer size
-                            lx.strokeStyle = '#ff4d00';
-                            lx.lineWidth = 4;
-                            lx.beginPath();
-                            lx.moveTo(ch, 4);
-                            lx.lineTo(CW - 4, 4);
-                            lx.lineTo(CW - 4, CH - ch);
-                            lx.lineTo(CW - ch, CH - 4);
-                            lx.lineTo(4, CH - 4);
-                            lx.lineTo(4, ch);
-                            lx.closePath();
-                            lx.stroke();
+                            if (isMobileScreen) {
+                                // ── MOBILE PORTRAIT CARD CANVAS DRAWING ──
+                                const ch = 20;
+                                lx.strokeStyle = '#ff4d00';
+                                lx.lineWidth = 4;
+                                lx.beginPath();
+                                lx.moveTo(ch, 4);
+                                lx.lineTo(CW - 4, 4);
+                                lx.lineTo(CW - 4, CH - ch);
+                                lx.lineTo(CW - ch, CH - 4);
+                                lx.lineTo(4, CH - 4);
+                                lx.lineTo(4, ch);
+                                lx.closePath();
+                                lx.stroke();
 
-                            // Secondary inner rim
-                            lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
-                            lx.lineWidth = 1.5;
-                            lx.beginPath();
-                            lx.moveTo(ch + 6, 12);
-                            lx.lineTo(CW - 12, 12);
-                            lx.lineTo(CW - 12, CH - ch - 6);
-                            lx.lineTo(CW - ch - 6, CH - 12);
-                            lx.lineTo(12, CH - 12);
-                            lx.lineTo(12, ch + 6);
-                            lx.closePath();
-                            lx.stroke();
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
+                                lx.lineWidth = 1.5;
+                                lx.beginPath();
+                                lx.moveTo(ch + 4, 10);
+                                lx.lineTo(CW - 10, 10);
+                                lx.lineTo(CW - 10, CH - ch - 4);
+                                lx.lineTo(CW - ch - 4, CH - 10);
+                                lx.lineTo(10, CH - 10);
+                                lx.lineTo(10, ch + 4);
+                                lx.closePath();
+                                lx.stroke();
 
-                            // Left Tactical Battery/Signal Stripe
-                            const barSegs = 6;
-                            const barX = 18;
-                            const barStartY = 64;
-                            const barH = CH - 128;
-                            const segH = (barH - (barSegs - 1) * 4) / barSegs;
-                            for (let sb = 0; sb < barSegs; sb++) {
-                                lx.fillStyle = sb < 4 ? '#ff4d00' : 'rgba(255, 77, 0, 0.25)';
-                                lx.fillRect(barX, barStartY + sb * (segH + 4), 6, segH);
-                            }
+                                // Corner accents
+                                const bl = 28;
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.85)';
+                                lx.lineWidth = 3;
+                                lx.beginPath(); lx.moveTo(14, 24); lx.lineTo(14 + bl, 24); lx.stroke();
+                                lx.beginPath(); lx.moveTo(24, 14); lx.lineTo(24, 14 + bl); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 14 - bl, 20); lx.lineTo(CW - 20, 20); lx.lineTo(CW - 20, 20 + bl); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 20, CH - 20 - bl); lx.lineTo(CW - 20, CH - 20); lx.lineTo(CW - 20 - bl, CH - 20); lx.stroke();
+                                lx.beginPath(); lx.moveTo(20, CH - 20 - bl); lx.lineTo(20, CH - 20); lx.lineTo(20 + bl, CH - 20); lx.stroke();
 
-                            // 3. Corner Brackets & Crosshairs
-                            const bl = 36;
-                            lx.strokeStyle = 'rgba(255, 77, 0, 0.85)';
-                            lx.lineWidth = 3;
-                            // Top-Left Crosshair
-                            lx.beginPath(); lx.moveTo(14, 28); lx.lineTo(14 + bl, 28); lx.stroke();
-                            lx.beginPath(); lx.moveTo(28, 14); lx.lineTo(28, 14 + bl); lx.stroke();
-                            // Top-Right Corner
-                            lx.beginPath(); lx.moveTo(CW - 14 - bl, 24); lx.lineTo(CW - 24, 24); lx.lineTo(CW - 24, 24 + bl); lx.stroke();
-                            // Bottom-Right Corner
-                            lx.beginPath(); lx.moveTo(CW - 24, CH - 24 - bl); lx.lineTo(CW - 24, CH - 24); lx.lineTo(CW - 24 - bl, CH - 24); lx.stroke();
-                            // Bottom-Left Corner
-                            lx.beginPath(); lx.moveTo(24, CH - 24 - bl); lx.lineTo(24, CH - 24); lx.lineTo(24 + bl, CH - 24); lx.stroke();
-
-                            // 4. Header Bar — Telemetry & Badges
-                            lx.font = 'bold 20px "JetBrains Mono", monospace';
-                            lx.fillStyle = 'rgba(255, 77, 0, 0.7)';
-                            lx.textAlign = 'left';
-                            lx.fillText(`SYS.01 // TGT_LOCK [0${i + 1}]`, 42, 44);
-
-                            // [TYPE] Tactical Badge
-                            const typeLabel = node.type || 'PROJECT';
-                            lx.font = 'bold 16px "JetBrains Mono", monospace';
-                            const badgeX = 360, badgeY = 24, badgeW = 125, badgeH = 26;
-                            lx.fillStyle = 'rgba(255, 77, 0, 0.15)';
-                            lx.fillRect(badgeX, badgeY, badgeW, badgeH);
-                            lx.strokeStyle = '#ff4d00';
-                            lx.lineWidth = 1.5;
-                            lx.strokeRect(badgeX, badgeY, badgeW, badgeH);
-                            lx.fillStyle = '#ff4d00';
-                            lx.textAlign = 'center';
-                            lx.fillText(`[ ${typeLabel.toUpperCase()} ]`, badgeX + badgeW / 2, badgeY + 18);
-
-                            // Year & Coordinates (Right Aligned)
-                            lx.font = 'bold 20px "JetBrains Mono", monospace';
-                            lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
-                            lx.textAlign = 'right';
-                            lx.fillText(`YR: ${node.year}  |  LOC: 13.08°N`, CW - 32, 44);
-
-                            // Header Line
-                            lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
-                            lx.lineWidth = 2;
-                            lx.beginPath(); lx.moveTo(42, 60); lx.lineTo(CW - 32, 60); lx.stroke();
-
-                            // 5. Main Title & Role
-                            lx.fillStyle = '#ffffff';
-                            lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
-                            lx.shadowBlur = 12;
-                            lx.font = 'bold 96px "JetBrains Mono", monospace';
-                            lx.textAlign = 'left';
-                            lx.fillText(node.title, 42, 160);
-                            lx.shadowBlur = 0; // reset glow
-
-                            lx.fillStyle = '#00ffcc'; // High-tech cyan role indicator
-                            lx.font = 'bold 28px "JetBrains Mono", monospace';
-                            lx.fillText(`// ${node.role.toUpperCase()}`, 42, 204);
-
-                            // Divider Line
-                            lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
-                            lx.lineWidth = 1.5;
-                            lx.beginPath(); lx.moveTo(42, 224); lx.lineTo(CW - 32, 224); lx.stroke();
-
-                            // 6. Tech Stack HUD Badges
-                            const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
-                            let stackX = 42;
-                            const stackY = 244;
-                            lx.font = 'bold 18px "JetBrains Mono", monospace';
-                            stackItems.forEach(item => {
-                                const tw = lx.measureText(item).width;
-                                const pw = tw + 24;
-                                const ph = 30;
-                                lx.fillStyle = 'rgba(255, 77, 0, 0.12)';
-                                lx.fillRect(stackX, stackY, pw, ph);
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
-                                lx.lineWidth = 1;
-                                lx.strokeRect(stackX, stackY, pw, ph);
-                                lx.fillStyle = '#ffaa77';
+                                // Header
+                                lx.font = 'bold 16px "JetBrains Mono", monospace';
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
                                 lx.textAlign = 'left';
-                                lx.fillText(item, stackX + 12, stackY + 21);
-                                stackX += pw + 12;
-                            });
+                                lx.fillText(`SYS.01 // TGT [0${i + 1}]`, 28, 40);
 
-                            // 7. Mission Brief / Description
-                            lx.font = 'bold 20px "JetBrains Mono", monospace';
-                            lx.fillStyle = '#ff4d00';
-                            lx.fillText('>> MISSION_BRIEF:', 42, 318);
+                                lx.font = 'bold 15px "JetBrains Mono", monospace';
+                                lx.textAlign = 'right';
+                                lx.fillText(`YR: ${node.year}`, CW - 28, 40);
 
-                            lx.fillStyle = 'rgba(240, 245, 255, 0.85)';
-                            lx.font = '22px "Inter", sans-serif';
-                            const descWords = node.desc.split(' ');
-                            let descLine = '', descY = 352;
-                            for (const w of descWords) {
-                                const test = descLine + w + ' ';
-                                if (lx.measureText(test).width > CW - 84 && descLine) {
-                                    lx.fillText(descLine.trim(), 42, descY);
-                                    descLine = w + ' ';
-                                    descY += 32;
-                                    if (descY > 410) break; // hard cap at 3 lines
-                                } else {
-                                    descLine = test;
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                                lx.lineWidth = 2;
+                                lx.beginPath(); lx.moveTo(28, 52); lx.lineTo(CW - 28, 52); lx.stroke();
+
+                                // Title & Role
+                                lx.fillStyle = '#ffffff';
+                                lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
+                                lx.shadowBlur = 10;
+                                lx.font = 'bold 62px "JetBrains Mono", monospace';
+                                lx.textAlign = 'left';
+                                lx.fillText(node.title, 28, 126);
+                                lx.shadowBlur = 0;
+
+                                lx.fillStyle = '#00ffcc';
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillText(`// ${node.role.toUpperCase()}`, 28, 164);
+
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
+                                lx.lineWidth = 1.5;
+                                lx.beginPath(); lx.moveTo(28, 184); lx.lineTo(CW - 28, 184); lx.stroke();
+
+                                // Stack Pills
+                                const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
+                                let stackX = 28, stackY = 204;
+                                lx.font = 'bold 15px "JetBrains Mono", monospace';
+                                stackItems.forEach(item => {
+                                    const tw = lx.measureText(item).width;
+                                    const pw = tw + 18;
+                                    const ph = 28;
+                                    if (stackX + pw > CW - 28) {
+                                        stackX = 28;
+                                        stackY += 34;
+                                    }
+                                    lx.fillStyle = 'rgba(255, 77, 0, 0.12)';
+                                    lx.fillRect(stackX, stackY, pw, ph);
+                                    lx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
+                                    lx.lineWidth = 1;
+                                    lx.strokeRect(stackX, stackY, pw, ph);
+                                    lx.fillStyle = '#ffaa77';
+                                    lx.textAlign = 'left';
+                                    lx.fillText(item, stackX + 9, stackY + 19);
+                                    stackX += pw + 8;
+                                });
+
+                                // Mission Brief
+                                const briefY = stackY + 50;
+                                lx.font = 'bold 17px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
+                                lx.fillText('>> MISSION_BRIEF:', 28, briefY);
+
+                                lx.fillStyle = 'rgba(240, 245, 255, 0.88)';
+                                lx.font = '20px "Inter", sans-serif';
+                                const descWords = node.desc.split(' ');
+                                let descLine = '', descY = briefY + 32;
+                                for (const w of descWords) {
+                                    const test = descLine + w + ' ';
+                                    if (lx.measureText(test).width > CW - 56 && descLine) {
+                                        lx.fillText(descLine.trim(), 28, descY);
+                                        descLine = w + ' ';
+                                        descY += 28;
+                                        if (descY > CH - 80) break;
+                                    } else {
+                                        descLine = test;
+                                    }
                                 }
+                                if (descLine.trim() && descY <= CH - 80) lx.fillText(descLine.trim(), 28, descY);
+
+                                // Footer
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                                lx.lineWidth = 1.5;
+                                lx.beginPath(); lx.moveTo(28, CH - 44); lx.lineTo(CW - 28, CH - 44); lx.stroke();
+
+                                lx.fillStyle = '#00ff88';
+                                lx.beginPath(); lx.arc(38, CH - 22, 5, 0, Math.PI * 2); lx.fill();
+                                lx.font = 'bold 15px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
+                                lx.textAlign = 'left';
+                                lx.fillText(`${node.status} // NOMINAL`, 50, CH - 17);
+                            } else {
+                                // ── DESKTOP LANDSCAPE CARD CANVAS DRAWING ──
+                                const ch = 24;
+                                lx.strokeStyle = '#ff4d00';
+                                lx.lineWidth = 4;
+                                lx.beginPath();
+                                lx.moveTo(ch, 4);
+                                lx.lineTo(CW - 4, 4);
+                                lx.lineTo(CW - 4, CH - ch);
+                                lx.lineTo(CW - ch, CH - 4);
+                                lx.lineTo(4, CH - 4);
+                                lx.lineTo(4, ch);
+                                lx.closePath();
+                                lx.stroke();
+
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
+                                lx.lineWidth = 1.5;
+                                lx.beginPath();
+                                lx.moveTo(ch + 6, 12);
+                                lx.lineTo(CW - 12, 12);
+                                lx.lineTo(CW - 12, CH - ch - 6);
+                                lx.lineTo(CW - ch - 6, CH - 12);
+                                lx.lineTo(12, CH - 12);
+                                lx.lineTo(12, ch + 6);
+                                lx.closePath();
+                                lx.stroke();
+
+                                const barSegs = 6;
+                                const barX = 18;
+                                const barStartY = 64;
+                                const barH = CH - 128;
+                                const segH = (barH - (barSegs - 1) * 4) / barSegs;
+                                for (let sb = 0; sb < barSegs; sb++) {
+                                    lx.fillStyle = sb < 4 ? '#ff4d00' : 'rgba(255, 77, 0, 0.25)';
+                                    lx.fillRect(barX, barStartY + sb * (segH + 4), 6, segH);
+                                }
+
+                                const bl = 36;
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.85)';
+                                lx.lineWidth = 3;
+                                lx.beginPath(); lx.moveTo(14, 28); lx.lineTo(14 + bl, 28); lx.stroke();
+                                lx.beginPath(); lx.moveTo(28, 14); lx.lineTo(28, 14 + bl); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 14 - bl, 24); lx.lineTo(CW - 24, 24); lx.lineTo(CW - 24, 24 + bl); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 24, CH - 24 - bl); lx.lineTo(CW - 24, CH - 24); lx.lineTo(CW - 24 - bl, CH - 24); lx.stroke();
+                                lx.beginPath(); lx.moveTo(24, CH - 24 - bl); lx.lineTo(24, CH - 24); lx.lineTo(24 + bl, CH - 24); lx.stroke();
+
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.7)';
+                                lx.textAlign = 'left';
+                                lx.fillText(`SYS.01 // TGT_LOCK [0${i + 1}]`, 42, 44);
+
+                                const typeLabel = node.type || 'PROJECT';
+                                lx.font = 'bold 16px "JetBrains Mono", monospace';
+                                const badgeX = 360, badgeY = 24, badgeW = 125, badgeH = 26;
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.15)';
+                                lx.fillRect(badgeX, badgeY, badgeW, badgeH);
+                                lx.strokeStyle = '#ff4d00';
+                                lx.lineWidth = 1.5;
+                                lx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+                                lx.fillStyle = '#ff4d00';
+                                lx.textAlign = 'center';
+                                lx.fillText(`[ ${typeLabel.toUpperCase()} ]`, badgeX + badgeW / 2, badgeY + 18);
+
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
+                                lx.textAlign = 'right';
+                                lx.fillText(`YR: ${node.year}  |  LOC: 13.08°N`, CW - 32, 44);
+
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                                lx.lineWidth = 2;
+                                lx.beginPath(); lx.moveTo(42, 60); lx.lineTo(CW - 32, 60); lx.stroke();
+
+                                lx.fillStyle = '#ffffff';
+                                lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
+                                lx.shadowBlur = 12;
+                                lx.font = 'bold 96px "JetBrains Mono", monospace';
+                                lx.textAlign = 'left';
+                                lx.fillText(node.title, 42, 160);
+                                lx.shadowBlur = 0;
+
+                                lx.fillStyle = '#00ffcc';
+                                lx.font = 'bold 28px "JetBrains Mono", monospace';
+                                lx.fillText(`// ${node.role.toUpperCase()}`, 42, 204);
+
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
+                                lx.lineWidth = 1.5;
+                                lx.beginPath(); lx.moveTo(42, 224); lx.lineTo(CW - 32, 224); lx.stroke();
+
+                                const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
+                                let stackX = 42;
+                                const stackY = 244;
+                                lx.font = 'bold 18px "JetBrains Mono", monospace';
+                                stackItems.forEach(item => {
+                                    const tw = lx.measureText(item).width;
+                                    const pw = tw + 24;
+                                    const ph = 30;
+                                    lx.fillStyle = 'rgba(255, 77, 0, 0.12)';
+                                    lx.fillRect(stackX, stackY, pw, ph);
+                                    lx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
+                                    lx.lineWidth = 1;
+                                    lx.strokeRect(stackX, stackY, pw, ph);
+                                    lx.fillStyle = '#ffaa77';
+                                    lx.textAlign = 'left';
+                                    lx.fillText(item, stackX + 12, stackY + 21);
+                                    stackX += pw + 12;
+                                });
+
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
+                                lx.fillText('>> MISSION_BRIEF:', 42, 318);
+
+                                lx.fillStyle = 'rgba(240, 245, 255, 0.85)';
+                                lx.font = '22px "Inter", sans-serif';
+                                const descWords = node.desc.split(' ');
+                                let descLine = '', descY = 352;
+                                for (const w of descWords) {
+                                    const test = descLine + w + ' ';
+                                    if (lx.measureText(test).width > CW - 84 && descLine) {
+                                        lx.fillText(descLine.trim(), 42, descY);
+                                        descLine = w + ' ';
+                                        descY += 32;
+                                        if (descY > 410) break;
+                                    } else {
+                                        descLine = test;
+                                    }
+                                }
+                                if (descLine.trim()) lx.fillText(descLine.trim(), 42, descY);
+
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
+                                lx.lineWidth = 1.5;
+                                lx.beginPath(); lx.moveTo(42, CH - 54); lx.lineTo(CW - 32, CH - 54); lx.stroke();
+
+                                lx.fillStyle = '#00ff88';
+                                lx.beginPath(); lx.arc(52, CH - 28, 6, 0, Math.PI * 2); lx.fill();
+                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
+                                lx.textAlign = 'left';
+                                lx.fillText(`${node.status} // NOMINAL`, 68, CH - 21);
+
+                                lx.font = '18px "JetBrains Mono", monospace';
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.55)';
+                                lx.textAlign = 'right';
+                                lx.fillText(`SIGNAL: ENCRYPTED // LINK_STATION_0${i + 1}`, CW - 32, CH - 21);
                             }
-                            if (descLine.trim()) lx.fillText(descLine.trim(), 42, descY);
-
-                            // 8. Footer Telemetry & Status
-                            lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
-                            lx.lineWidth = 1.5;
-                            lx.beginPath(); lx.moveTo(42, CH - 54); lx.lineTo(CW - 32, CH - 54); lx.stroke();
-
-                            // Status Dot & Badge
-                            lx.fillStyle = '#00ff88';
-                            lx.beginPath(); lx.arc(52, CH - 28, 6, 0, Math.PI * 2); lx.fill();
-                            lx.font = 'bold 20px "JetBrains Mono", monospace';
-                            lx.fillStyle = '#ff4d00';
-                            lx.textAlign = 'left';
-                            lx.fillText(`${node.status} // NOMINAL`, 68, CH - 21);
-
-                            // Telemetry Code (Right Aligned)
-                            lx.font = '18px "JetBrains Mono", monospace';
-                            lx.fillStyle = 'rgba(255, 77, 0, 0.55)';
-                            lx.textAlign = 'right';
-                            lx.fillText(`SIGNAL: ENCRYPTED // LINK_STATION_0${i + 1}`, CW - 32, CH - 21);
 
                             lx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -1256,7 +1362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             // ── Tactical Elbow Connector Line ──
                             const connStart = labelSide * GATE_SPAN;
                             const connEnd = LABEL_Z - labelSide * (PANEL_W * 0.5 + 0.2);
-                            const elbowZ = connStart + labelSide * 1.8;
+                            const elbowZ = connStart + labelSide * (isMobileScreen ? 1.0 : 1.8);
                             const connPts = [
                                 new THREE.Vector3(0, 0, connStart),
                                 new THREE.Vector3(-0.6, 0, elbowZ),
