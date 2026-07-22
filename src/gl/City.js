@@ -1021,15 +1021,11 @@ export default class City {
             ctx.fillStyle = 'rgba(255,77,0,0.12)';
             const tw = ctx.measureText(txt).width + 20;
             ctx.fillRect(tx - 6, mandateY - 20, tw, 30);
-            ctx.fillStyle = '#ffaa77';
-            ctx.font = 'bold 18px "JetBrains Mono", monospace';
-            ctx.fillText(txt, tx, mandateY);
-        });
             ctx.strokeStyle = 'rgba(255,77,0,0.3)';
             ctx.lineWidth = 1;
-            ctx.strokeRect(tx - 8, mandateY - 24, tw, 34);
-            ctx.font = '500 24px "JetBrains Mono", monospace';
-            ctx.fillStyle = 'rgba(255,120,60,0.8)';
+            ctx.strokeRect(tx - 6, mandateY - 20, tw, 30);
+            ctx.fillStyle = '#ffaa77';
+            ctx.font = 'bold 18px "JetBrains Mono", monospace';
             ctx.fillText(txt, tx, mandateY);
         });
 
