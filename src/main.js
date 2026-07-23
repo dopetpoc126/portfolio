@@ -979,7 +979,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         : (drivePct - SUB_G_END) / (1.0 - SUB_G_END); // 0→1 straight flight
 
                     // ── Flight Path to Aircraft Carrier Landing ──
-                    const FLY_X_TRAVEL = isMobileScreen ? 120.0 : 240.0; // calm, luxurious speed on mobile
+                    const FLY_X_TRAVEL = 240.0; // unified flight travel distance
                     const jetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL; // jet advances in -X
 
                     // ── Experience obstacle data ──
@@ -1024,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // ── Lazy-init obstacle meshes ──
                     if (!window._expObstacles && gl && gl.scene) {
-                        const spacing = isMobileScreen ? 12.0 : 16.0; // calm, readable spacing on mobile
+                        const spacing = 16.0; // unified spacing
                         const GATE_Y = cockpitY + 0.05;
                         const GATE_SPAN = isMobileScreen ? 1.8 : 7.0; // tight gate span on mobile
 
@@ -1560,8 +1560,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         const glToWZ = (glz) => finalCamWorldZ + (glz - carrierZ);
 
-                        const phase1End = isMobileScreen ? 0.76 : 0.35;
-                        const phase2End = isMobileScreen ? 0.88 : 0.48;
+                        const phase1End = 0.35;
+                        const phase2End = 0.48;
 
                         const diveNorm = scrollMath.clamp01((flyNorm - phase1End) / (phase2End - phase1End));
                         const easeDive = scrollMath.smoothstep(diveNorm);
