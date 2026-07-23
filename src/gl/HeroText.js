@@ -92,8 +92,6 @@ export default class HeroText {
         if (this.fractured) return;
         this.fractured = true;
 
-        console.log('HeroText: SMASH!');
-
         this.meshes.forEach(mesh => {
             // Optimized 2.5D Voronoi mode for fast planar mesh fracturing
             const options = new FractureOptions({

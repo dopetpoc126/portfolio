@@ -16,15 +16,19 @@ export default class ScrollManager {
         // independent and never "hard stops" — ideal for scroll-driven WebGL cameras.
         // Setting duration would override lerp and produce a fixed-time ease-out that feels
         // stop-and-go when sub-phases apply their own easing on top.
+        // Lenis config: touchMultiplier 0.75 & touchInertiaMultiplier 1.0 provide
+        // a controlled, cinematic touch scroll speed (eliminates 4x hyper-flicking).
+        // lerp 0.06 provides smooth 60FPS WebGL camera weighting, syncTouch false prevents main-thread jank.
         this.lenis = new Lenis({
-            lerp: 0.14,           // fast, responsive camera inertia
+            lerp: isMobile ? 0.06 : 0.08,
             smoothWheel: true,
-            wheelMultiplier: 1.35, // fast, responsive wheel speed
+            wheelMultiplier: 1.00,
+            touchMultiplier: isMobile ? 0.75 : 1.00,
+            smoothTouch: true,
+            syncTouch: false,
+            touchInertiaMultiplier: isMobile ? 1.0 : 1.5,
             orientation: 'vertical',
             gestureOrientation: 'vertical',
-            smoothTouch: true,
-            syncTouch: true,
-            touchMultiplier: 1.80, // snappy, fast touch scroll speed
             infinite: false,
         });
 
@@ -37,8 +41,8 @@ export default class ScrollManager {
             this.lenis.raf(time * 1000);
         });
 
-        // Optimize GSAP
-        gsap.ticker.lagSmoothing(0);
+        // Smooth out mobile touch lag spikes for 60FPS continuity
+        gsap.ticker.lagSmoothing(1000, 16);
     }
 
 

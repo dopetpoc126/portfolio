@@ -35,7 +35,6 @@ export default class FighterJet {
                 model.rotation.set(0, 0, 0);
 
                 this.group.add(model);
-                console.log('F-35 Model Loaded');
             })
             .catch((error) => {
                 console.error('An error occurred loading the F-35 model:', error);
@@ -53,7 +52,6 @@ export default class FighterJet {
     }
 
     dispose() {
-        console.log('FighterJet: Disposing...');
         this.group.traverse(node => {
             if (node.isMesh) {
                 if (node.geometry) node.geometry.dispose();

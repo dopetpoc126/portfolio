@@ -158,7 +158,6 @@ export default class City {
             .then((scene) => {
                 this.model = scene;
                 this.modelReady = true;
-                console.log('Loft System: Model Loaded (loft2_free_interior-optimized.glb)');
                 if (this.onLoad) this.onLoad();
 
                 // Prepare materials for scroll-linked cross-fade opacity
@@ -246,7 +245,6 @@ export default class City {
             .then((scene) => {
                 this.trainModel = scene;
                 this.trainReady = true;
-                console.log('Loft System: Train Model Loaded (sci-fi_train-optimized.glb)');
 
                 this.trainModel.traverse((child) => {
                     if (child.isMesh) {
@@ -348,7 +346,6 @@ export default class City {
         // Z = -0.008450158118888254
         portalGroup.position.set(-9.48, 1.3327245588922094, -0.008450158118888254);
         this.trainModel.add(portalGroup);
-        console.log('Loft System: Tunnel exit portal created');
     }
 
     _loadF1Car() {
@@ -391,7 +388,6 @@ export default class City {
 
                 this.trainModel.add(scene);
                 this.group.updateMatrixWorld(true);
-                console.log('Loft System: RB7 F1 car loaded at train hotspot');
             })
             .catch((err) => {
                 console.warn('F1 car failed to load:', err);
@@ -431,7 +427,6 @@ export default class City {
                 });
 
                 this.trainModel.add(scene);
-                console.log('Loft System: Tyre rack loaded at train hotspot');
             })
             .catch(err => {
                 console.warn('Tyre rack failed to load:', err);
@@ -489,7 +484,6 @@ export default class City {
                 this.computerMaterials.push(screenPlane.material);
 
                 this.trainModel.add(scene);
-                console.log('Loft System: Computer loaded with projects screen');
             })
             .catch(err => {
                 console.warn('Computer failed to load:', err);
@@ -580,8 +574,6 @@ export default class City {
                 this.rescueJetMat = matProxy;
                 this.rescueJetReady = true;
                 this.group.add(scene);
-
-                console.log('Loft System: Rescue Jet Loaded Normally');
             })
             .catch((err) => {
                 console.error('Rescue jet failed to load:', err);
@@ -614,7 +606,6 @@ export default class City {
                 this.carrierModel = scene;
                 this.carrierReady = true;
                 this.group.add(scene);
-                console.log('Loft System: Aircraft Carrier Model Loaded (Charles De Gaulle)');
             })
             .catch((err) => {
                 console.warn('Aircraft Carrier model failed to load:', err);
@@ -774,15 +765,17 @@ export default class City {
         const startY = 1.2412928775135925;
         const startZ = 0.3246451894757918;
 
+        const isMobile = window.innerWidth < 1025;
+        this.isMobileHologram = isMobile;
+
         // ─── Panel dimensions ───
-        const PW = 0.85;
-        const PH = 0.56;
-        // Float the panel clearly above the table so it's fully visible.
-        // Camera at y=1.74, tilt -26.6°. At 1m distance, line-of-sight center = y≈1.24.
-        // Table surface is at y=1.24. Raise panel so its bottom clears the table.
-        // Panel bottom = panelCenterY - PH/2. We want bottom ≥ startY + 0.08 (just above surface).
-        // → panelCenterY = startY + PH/2 + 0.08 = 1.24 + 0.28 + 0.08 = 1.60
-        const panelCenterY = startY + PH / 2 + 0.10; // bottom clears table surface
+        // Desktop: wide landscape (0.85 x 0.56)
+        // Mobile: dynamically scaled narrow portrait (PW ≈ 0.42..0.44, PH = 0.58) to fit Pixel 7 (412x915) & narrow aspect ratios without clipping
+        const aspect = window.innerWidth / window.innerHeight;
+        const PW = isMobile ? Math.min(0.44, aspect * 0.95) : 0.85;
+        const PH = isMobile ? 0.58 : 0.56;
+
+        const panelCenterY = startY + PH / 2 + (isMobile ? 0.05 : 0.10);
         const panelCenterZ = startZ;
 
         // ─── 1. Base projection ring ───
@@ -802,7 +795,7 @@ export default class City {
         this.hologramRingMat = ringMat;
 
         // ─── 2. Projection pillar — short glow post from table to panel ───
-        const beamH = 0.18; // fixed short post height
+        const beamH = isMobile ? 0.10 : 0.18;
         const coneGeom = new THREE.CylinderGeometry(0.006, 0.14, beamH, 16, 1, true);
         const coneMat = new THREE.MeshBasicMaterial({
             color: 0xff4d00, transparent: true, opacity: 0,
@@ -816,7 +809,7 @@ export default class City {
         this.hologramBeamMat = coneMat;
 
         // ─── 3. Main panel — canvas texture with about content ───
-        this._buildHologramCanvas(PW, PH);
+        this._buildHologramCanvas(PW, PH, isMobile);
 
         const panelGeo = new THREE.PlaneGeometry(PW, PH);
         this.hologramPanelMat = new THREE.MeshBasicMaterial({
@@ -829,7 +822,7 @@ export default class City {
         const panel = new THREE.Mesh(panelGeo, this.hologramPanelMat);
         panel.rotation.y = Math.PI / 2;
         panel.position.set(startX, panelCenterY, panelCenterZ);
-        panel.renderOrder = 10; // renders on top of beam/ring
+        panel.renderOrder = 10;
         this.hologramGroup.add(panel);
         this.hologramPanel = panel;
 
@@ -839,7 +832,7 @@ export default class City {
             depthWrite: false, blending: THREE.AdditiveBlending
         });
         this.hologramBorderMat = borderMat;
-        const bT = 0.012; // border thickness
+        const bT = 0.012;
         const borders = [
             // top
             { w: PW + bT * 2, h: bT, x: startX, y: panelCenterY + PH / 2, z: panelCenterZ },
@@ -858,7 +851,7 @@ export default class City {
             this.hologramGroup.add(m);
         });
 
-        // ─── 5. Scanline overlay — animated scrolling lines ───
+        // ─── 5. Scanline overlay ───
         this._buildScanlineCanvas();
         this.scanlineMat = new THREE.MeshBasicMaterial({
             map: this.scanlineTex,
@@ -882,7 +875,7 @@ export default class City {
             const r = Math.random() * 0.12;
             const theta = Math.random() * Math.PI * 2;
             pPos[i * 3] = startX + (Math.random() - 0.5) * 0.04;
-            pPos[i * 3 + 1] = startY + Math.random() * (PH + 0.4);
+            pPos[i * 3 + 1] = startY + Math.random() * (PH + 0.3);
             pPos[i * 3 + 2] = startZ + r * Math.sin(theta);
             velocities.push({ y: 0.06 + Math.random() * 0.08 });
         }
@@ -902,11 +895,15 @@ export default class City {
         this._hologramPanelH = PH;
 
         this.model.add(this.hologramGroup);
-        console.log('Loft System: Holographic about panel initialized on coffee table');
     }
 
-    _buildHologramCanvas(PW, PH) {
-        const CW = 1024;
+    _buildHologramCanvas(PW, PH, isMobile = false) {
+        if (isMobile) {
+            this._buildMobileHologramCanvas(PW, PH);
+            return;
+        }
+
+        const CW = 2048;
         const CH = Math.round(CW * (PH / PW));
 
         const canvas = document.createElement('canvas');
@@ -918,23 +915,23 @@ export default class City {
         ctx.fillStyle = '#060608';
         ctx.fillRect(0, 0, CW, CH);
 
-        // Subtle dot-grid (more modern than lines)
-        for (let y = 24; y < CH; y += 40) {
-            for (let x = 24; x < CW; x += 40) {
+        // Subtle dot-grid
+        for (let y = 48; y < CH; y += 80) {
+            for (let x = 48; x < CW; x += 80) {
                 ctx.beginPath();
-                ctx.arc(x, y, 1, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255,77,0,0.07)';
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,77,0,0.08)';
                 ctx.fill();
             }
         }
 
-        // Left accent bar — full height orange stripe
+        // Left accent bar
         ctx.fillStyle = '#ff4d00';
-        ctx.fillRect(0, 0, 5, CH);
+        ctx.fillRect(0, 0, 10, CH);
 
-        // ── Corner brackets — crisp orange ──
-        const bLen = 44, bW = 2.5, pad = 18;
-        ctx.strokeStyle = 'rgba(255,77,0,0.7)';
+        // ── Corner brackets ──
+        const bLen = 88, bW = 5, pad = 36;
+        ctx.strokeStyle = 'rgba(255,77,0,0.85)';
         ctx.lineWidth = bW;
         [[pad, pad, 1, 1], [CW - pad, pad, -1, 1],
          [pad, CH - pad, 1, -1], [CW - pad, CH - pad, -1, -1]].forEach(([x, y, dx, dy]) => {
@@ -942,65 +939,64 @@ export default class City {
             ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + dy * bLen); ctx.stroke();
         });
 
-        // ── Left-padding for safe 3D framing ──
-        const leftOffset = pad + 120;
+        const leftOffset = pad + 240;
 
-        // ── Section tag — top left ──
-        ctx.font = '500 24px "JetBrains Mono", monospace';
-        ctx.fillStyle = 'rgba(255,77,0,0.6)';
+        // ── Section tag ──
+        ctx.font = '700 48px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255,77,0,0.75)';
         ctx.textAlign = 'left';
-        ctx.fillText('[ OPERATIVE_PROFILE ]', leftOffset, pad + 38);
+        ctx.fillText('[ OPERATIVE_PROFILE ]', leftOffset, pad + 76);
 
         // ── Horizontal rule ──
-        const rule1Y = pad + 52;
-        const grad = ctx.createLinearGradient(leftOffset, 0, CW - pad - 60, 0);
-        grad.addColorStop(0,   'rgba(255,77,0,0.6)');
-        grad.addColorStop(0.4, 'rgba(255,77,0,0.2)');
+        const rule1Y = pad + 104;
+        const grad = ctx.createLinearGradient(leftOffset, 0, CW - pad - 120, 0);
+        grad.addColorStop(0,   'rgba(255,77,0,0.7)');
+        grad.addColorStop(0.4, 'rgba(255,77,0,0.25)');
         grad.addColorStop(1,   'rgba(255,77,0,0)');
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(leftOffset, rule1Y); ctx.lineTo(CW - pad - 60, rule1Y); ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(leftOffset, rule1Y); ctx.lineTo(CW - pad - 120, rule1Y); ctx.stroke();
 
-        // ── Name — crisp & well-padded ──
-        ctx.font = 'bold 84px "JetBrains Mono", monospace';
+        // ── Name ──
+        ctx.font = 'bold 168px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText('SHRIYAN', leftOffset, rule1Y + 90);
+        ctx.fillText('SHRIYAN', leftOffset, rule1Y + 180);
 
         // ── Title/role line ──
-        ctx.font = '500 26px "JetBrains Mono", monospace';
+        ctx.font = '700 52px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ff4d00';
-        ctx.fillText('CS UNDERGRADUATE  ·  SYSTEMS BUILDER', leftOffset, rule1Y + 135);
+        ctx.fillText('CS UNDERGRADUATE  ·  SYSTEMS BUILDER', leftOffset, rule1Y + 270);
 
         // ── Bio data grid ──
-        const bioY = rule1Y + 180;
+        const bioY = rule1Y + 360;
         const bioItems = [
             { label: 'FOCUS',    value: 'Android & Web'  },
             { label: 'BASE',     value: 'VIT Chennai'    },
             { label: 'STATUS',   value: '● AVAILABLE',  accent: true },
         ];
-        const colStep = (CW - leftOffset - pad - 40) / 3;
+        const colStep = (CW - leftOffset - pad - 80) / 3;
         bioItems.forEach((item, i) => {
             const bx = leftOffset + i * colStep;
-            ctx.font = '500 20px "JetBrains Mono", monospace';
-            ctx.fillStyle = 'rgba(255,77,0,0.5)';
+            ctx.font = '700 40px "JetBrains Mono", monospace';
+            ctx.fillStyle = 'rgba(255,77,0,0.6)';
             ctx.textAlign = 'left';
             ctx.fillText(item.label, bx, bioY);
-            ctx.font = 'bold 26px "JetBrains Mono", monospace';
-            ctx.fillStyle = item.accent ? '#44ff88' : 'rgba(255,255,255,0.88)';
-            ctx.fillText(item.value, bx, bioY + 35);
+            ctx.font = 'bold 52px "JetBrains Mono", monospace';
+            ctx.fillStyle = item.accent ? '#44ff88' : 'rgba(255,255,255,0.92)';
+            ctx.fillText(item.value, bx, bioY + 70);
         });
 
         // ── Divider ──
-        const rule2Y = bioY + 80;
-        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(leftOffset, rule2Y); ctx.lineTo(CW - pad - 60, rule2Y); ctx.stroke();
+        const rule2Y = bioY + 160;
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(leftOffset, rule2Y); ctx.lineTo(CW - pad - 120, rule2Y); ctx.stroke();
 
         // ── Core statement ──
-        ctx.font = 'bold 28px "JetBrains Mono", monospace';
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
-        ctx.fillText('> Building high-performance interfaces.', leftOffset, rule2Y + 44);
+        ctx.font = 'bold 56px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fillText('> Building high-performance interfaces.', leftOffset, rule2Y + 88);
 
         // ── Description lines ──
         const descLines = [
@@ -1008,35 +1004,179 @@ export default class City {
             'Roots every device to maximize performance.',
             'I don\'t just write code — I optimize it.',
         ];
-        ctx.font = '24px "Inter", sans-serif';
+        ctx.font = '700 48px "Inter", sans-serif';
         descLines.forEach((line, i) => {
-            ctx.fillStyle = `rgba(255,235,215,${0.55 - i * 0.08})`;
-            ctx.fillText(line, leftOffset, rule2Y + 44 + 44 + i * 36);
+            ctx.fillStyle = `rgba(255,235,215,${0.65 - i * 0.08})`;
+            ctx.fillText(line, leftOffset, rule2Y + 88 + 88 + i * 72);
         });
 
         // ── Mandate pills ──
-        const mandateY = rule2Y + 44 + 44 + descLines.length * 36 + 20;
+        const mandateY = rule2Y + 88 + 88 + descLines.length * 72 + 40;
         ['>  Performance is paramount.', '>  User experience is priority.'].forEach((txt, i) => {
-            const tx = leftOffset + i * 400;
-            ctx.fillStyle = 'rgba(255,77,0,0.12)';
-            const tw = ctx.measureText(txt).width + 20;
-            ctx.fillRect(tx - 6, mandateY - 20, tw, 30);
-            ctx.strokeStyle = 'rgba(255,77,0,0.3)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(tx - 6, mandateY - 20, tw, 30);
+            const tx = leftOffset + i * 800;
+            ctx.fillStyle = 'rgba(255,77,0,0.14)';
+            const tw = ctx.measureText(txt).width + 40;
+            ctx.fillRect(tx - 12, mandateY - 40, tw, 60);
+            ctx.strokeStyle = 'rgba(255,77,0,0.4)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(tx - 12, mandateY - 40, tw, 60);
             ctx.fillStyle = '#ffaa77';
-            ctx.font = 'bold 18px "JetBrains Mono", monospace';
+            ctx.font = 'bold 36px "JetBrains Mono", monospace';
             ctx.fillText(txt, tx, mandateY);
         });
 
         // ── Footer ──
-        ctx.font = '500 20px "JetBrains Mono", monospace';
-        ctx.fillStyle = 'rgba(255,77,0,0.2)';
+        ctx.font = '700 40px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255,77,0,0.35)';
         ctx.textAlign = 'right';
-        ctx.fillText('UPLINK: ACTIVE  //  ZENITH SYS.01', CW - pad - 10, CH - pad - 10);
+        ctx.fillText('UPLINK: ACTIVE  //  ZENITH SYS.01', CW - pad - 20, CH - pad - 20);
 
         this.hologramTex = new THREE.CanvasTexture(canvas);
-        this.hologramTex.minFilter = THREE.LinearFilter;
+        this.hologramTex.generateMipmaps = true;
+        this.hologramTex.minFilter = THREE.LinearMipmapLinearFilter;
+        this.hologramTex.magFilter = THREE.LinearFilter;
+        this.hologramTex.anisotropy = 8;
+    }
+
+    _buildMobileHologramCanvas(PW, PH) {
+        const CW = 1440;
+        const CH = Math.round(CW * (PH / PW)); // e.g. 1988
+
+        const canvas = document.createElement('canvas');
+        canvas.width = CW;
+        canvas.height = CH;
+        const ctx = canvas.getContext('2d');
+
+        // ── Background — deep near-black ──
+        ctx.fillStyle = '#060608';
+        ctx.fillRect(0, 0, CW, CH);
+
+        // Dot grid
+        for (let y = 32; y < CH; y += 56) {
+            for (let x = 32; x < CW; x += 56) {
+                ctx.beginPath();
+                ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 77, 0, 0.09)';
+                ctx.fill();
+            }
+        }
+
+        // Left accent bar
+        ctx.fillStyle = '#ff4d00';
+        ctx.fillRect(0, 0, 12, CH);
+
+        // Corner brackets
+        const bLen = 64, bW = 5, pad = 36;
+        ctx.strokeStyle = 'rgba(255, 77, 0, 0.9)';
+        ctx.lineWidth = bW;
+        [[pad, pad, 1, 1], [CW - pad, pad, -1, 1],
+         [pad, CH - pad, 1, -1], [CW - pad, CH - pad, -1, -1]].forEach(([x, y, dx, dy]) => {
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx * bLen, y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + dy * bLen); ctx.stroke();
+        });
+
+        // Generous inner margins (leftOffset = 120) so text NEVER touches outer borders
+        const leftOffset = pad + 84; // 120
+        const maxContentW = CW - leftOffset - pad - 64; // 1200
+
+        // ── Section Tag ──
+        ctx.font = '700 40px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255, 77, 0, 0.85)';
+        ctx.textAlign = 'left';
+        ctx.fillText('[ OPERATIVE_PROFILE ]', leftOffset, pad + 60);
+
+        // ── Top Gradient Rule ──
+        const rule1Y = pad + 84;
+        const grad = ctx.createLinearGradient(leftOffset, 0, CW - pad - 64, 0);
+        grad.addColorStop(0, 'rgba(255, 77, 0, 0.8)');
+        grad.addColorStop(0.5, 'rgba(255, 77, 0, 0.3)');
+        grad.addColorStop(1, 'rgba(255, 77, 0, 0)');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(leftOffset, rule1Y); ctx.lineTo(CW - pad - 64, rule1Y); ctx.stroke();
+
+        // ── Name ──
+        ctx.font = 'bold 104px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('SHRIYAN', leftOffset, rule1Y + 116);
+
+        // ── Subtitle ──
+        ctx.font = '700 36px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#ff4d00';
+        ctx.fillText('CS UNDERGRADUATE · SYSTEMS BUILDER', leftOffset, rule1Y + 172);
+
+        // ── Bio summary grid ──
+        const bioY = rule1Y + 250;
+        const bioItems = [
+            { label: 'FOCUS', value: 'Android & Web' },
+            { label: 'BASE', value: 'VIT Chennai' },
+            { label: 'STATUS', value: '● AVAILABLE', accent: true }
+        ];
+
+        const colStep = maxContentW / 3;
+        bioItems.forEach((item, i) => {
+            const bx = leftOffset + i * colStep;
+            ctx.font = '700 28px "JetBrains Mono", monospace';
+            ctx.fillStyle = 'rgba(255, 77, 0, 0.7)';
+            ctx.fillText(item.label, bx, bioY);
+            ctx.font = 'bold 34px "JetBrains Mono", monospace';
+            ctx.fillStyle = item.accent ? '#44ff88' : 'rgba(255, 255, 255, 0.95)';
+            ctx.fillText(item.value, bx, bioY + 48);
+        });
+
+        // ── Divider ──
+        const rule2Y = bioY + 100;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(leftOffset, rule2Y); ctx.lineTo(CW - pad - 64, rule2Y); ctx.stroke();
+
+        // ── Core Statement ──
+        ctx.font = 'bold 38px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+        ctx.fillText('> Building high-performance interfaces.', leftOffset, rule2Y + 68);
+
+        // ── Description Lines ──
+        const descLines = [
+            'Android & web dev with a focus on efficiency.',
+            'Roots every device to maximize performance.',
+            'I don\'t just write code — I optimize it.',
+        ];
+        ctx.font = '700 32px "Inter", sans-serif';
+        descLines.forEach((line, i) => {
+            ctx.fillStyle = `rgba(255, 235, 215, ${0.72 - i * 0.08})`;
+            ctx.fillText(line, leftOffset, rule2Y + 140 + i * 52);
+        });
+
+        // ── Mandate Pills ──
+        const mandateY = rule2Y + 140 + descLines.length * 52 + 32;
+        const mandates = [
+            '> Performance is paramount.',
+            '> User experience is priority.'
+        ];
+        mandates.forEach((txt, i) => {
+            const my = mandateY + i * 76;
+            ctx.font = 'bold 32px "JetBrains Mono", monospace';
+            const tw = ctx.measureText(txt).width + 36;
+            ctx.fillStyle = 'rgba(255, 77, 0, 0.16)';
+            ctx.fillRect(leftOffset - 6, my - 32, tw, 50);
+            ctx.strokeStyle = 'rgba(255, 77, 0, 0.45)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(leftOffset - 6, my - 32, tw, 50);
+            ctx.fillStyle = '#ffaa77';
+            ctx.fillText(txt, leftOffset + 10, my);
+        });
+
+        // ── Footer ──
+        ctx.font = '700 32px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255, 77, 0, 0.4)';
+        ctx.textAlign = 'right';
+        ctx.fillText('UPLINK: ACTIVE // ZENITH SYS.01', CW - pad - 64, CH - pad - 32);
+
+        this.hologramTex = new THREE.CanvasTexture(canvas);
+        this.hologramTex.generateMipmaps = true;
+        this.hologramTex.minFilter = THREE.LinearMipmapLinearFilter;
+        this.hologramTex.magFilter = THREE.LinearFilter;
+        this.hologramTex.anisotropy = 8;
     }
 
     _buildScanlineCanvas() {
@@ -1119,7 +1259,6 @@ export default class City {
         this.portalGroup.position.set(-2.19, 2.8740861808376628, 0.823518420500778);
 
         this.model.add(this.portalGroup);
-        console.log('Loft System: Square Purple-Black Portal Initialized flush on wall');
     }
 
     createWallExtension() {
@@ -1165,7 +1304,6 @@ export default class City {
         }
 
         this.model.add(this.wallExtGroup);
-        console.log('Loft System: 3D wooden slats wall extension created to mask left void');
     }
 
     createSunRays() {
@@ -1242,7 +1380,6 @@ export default class City {
         });
 
         this.model.add(this.sunRayGroup);
-        console.log('Loft System: Sun ray shafts created');
     }
 
     getWaypoint(name) {
@@ -1455,7 +1592,6 @@ export default class City {
 
     dispose() {
         this.disposed = true;
-        console.log('Loft System: Disposing...');
 
         // Clean up fog
         if (this.gl.scene.fog) {

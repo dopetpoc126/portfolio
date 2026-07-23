@@ -1,8 +1,6 @@
 import './styles/base.css';
 import * as THREE from 'three';
 
-console.log('%c ZENITH BOOT SEQUENCE ', 'background: #222; color: #ff4d00');
-
 document.addEventListener('DOMContentLoaded', async () => {
     // Prevent browser from trying to restore previous scroll position and fighting Lenis
     if ('scrollRestoration' in history) {
@@ -10,7 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.scrollTo(0, 0);
     try {
-        console.log('1. Loading Dependencies...');
         const gsap = (await import('gsap')).default;
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
 
@@ -25,14 +22,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         gsap.ticker.lagSmoothing(0);
 
-        console.log('2. Check DOM...');
         const canvas = document.querySelector('#gl-canvas');
         if (!canvas) throw new Error('Canvas #gl-canvas not found');
 
         // Debug border to check visibility
         // canvas.style.border = '1px solid red';
 
-        console.log('3. Loading Modules...');
         const ScrollManager = (await import('./managers/ScrollManager')).default;
         const scrollMath = await import('./utils/scrollCameraMath.js');
         const GLManager = (await import('./gl/GLManager')).default;
@@ -46,7 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loadSatellitesModule = () => import('./gl/Satellites').then(({ default: Satellites }) => Satellites);
         const loadProjectCardsModule = () => import('./gl/ProjectCards').then(({ default: ProjectCards }) => ProjectCards);
 
-        console.log('4. Initializing Core Systems...');
         const scroll = new ScrollManager();
         scroll.scrollTo(0, { immediate: true });
         scroll.stop(); // Block scrolling while loading
@@ -99,6 +93,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (text && loaderText) loaderText.innerText = text;
         };
 
+        // ── Mobile Native Smooth Scroll ──────────────────────────────────────
+        // Hardware-accelerated 60/120FPS native touch momentum scroll on mobile.
+        // JS touch event hijacking / auto-scroll timers are removed to eliminate
+        // main-thread lag spikes and stop-and-go stutter.
+        const initScrollAssist = () => {
+            // Disabled to ensure 100% fluid native momentum scrolling on mobile
+        };
+        // ─────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────
+
+
         const finishLoading = () => {
             if (loaderFinished) return;
             loaderFinished = true;
@@ -109,8 +114,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             setTimeout(() => {
                 if (loader) loader.classList.add('loader-hidden');
-                console.log('ZENITH SEQUENCE: SYSTEMS GO');
                 scroll.start(); // Allow scrolling once loader is gone
+                initScrollAssist(); // Activate gentle section-nudge assist on mobile
                 canFracture = true;
                 ScrollTrigger.refresh();
                 if (scroll.lenis) scroll.lenis.resize();
@@ -128,10 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // heroText = new HeroText(gl);
 
-            console.log('5. Ignition...');
             if (suns) suns.ignition();
-
-            console.log('SYSTEM ONLINE.');
         };
 
         // ── Cockpit HUD 2D Canvas Drawing Routine ──
@@ -428,6 +430,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const updateScene = (scrollPct, velocity = 0, isWarmup = false) => {
+            const isMobileScreen = window.innerWidth < 1025;
+
+            // ── Section Lock Engine (Cushioned Magnetic Lock) ───────────────
+            // Smoothly decelerates the POV via a 400ms quartic ease-out curve into
+            // the exact section target (About 0.05, Projects 0.27, Experience 0.70, Contact 1.00)
+            // for a fluid, cushioned lock-on view phase without abrupt camera stops.
+            if (!isWarmup && !window._navScrolling && !window._scrollLocked) {
+                const sectionTargets = [0.05, 0.27, 0.70, 1.00];
+
+                if (window._lastLockedTargetIdx !== undefined && window._lastLockedTargetIdx >= 0) {
+                    const lastTarget = sectionTargets[window._lastLockedTargetIdx];
+                    if (lastTarget !== undefined && Math.abs(scrollPct - lastTarget) > 0.04) {
+                        window._lastLockedTargetIdx = -1;
+                    }
+                }
+
+                sectionTargets.forEach((targetNorm, idx) => {
+                    const diff = Math.abs(scrollPct - targetNorm);
+                    if (diff < 0.012 && window._lastLockedTargetIdx !== idx) {
+                        window._lastLockedTargetIdx = idx;
+                        window._scrollLocked = true;
+
+                        const maxPx = scroll.getMaxScroll();
+                        const targetPx = targetNorm * maxPx;
+
+                        // Smooth 400ms magnetic deceleration glide into section anchor
+                        scroll.scrollTo(targetPx, {
+                            duration: 0.40,
+                            easing: (t) => 1 - Math.pow(1 - t, 4), // soft quartic ease-out cushion
+                            onComplete: () => {
+                                // Tactical lock haptic & visual pulse
+                                try {
+                                    if (haptics && typeof haptics.lock === 'function') haptics.lock();
+                                    if (typeof fireNavPulse === 'function') fireNavPulse();
+                                } catch (_) {}
+
+                                setTimeout(() => {
+                                    window._scrollLocked = false;
+                                }, 150); // 150ms hold at stationary target center
+                            }
+                        });
+                    }
+                });
+            }
+            // ─────────────────────────────────────────────────────────────────
 
             // ── Remap scroll into two zones ──
             // Zone A (0→DRIVE_START): all existing phases, remapped to 0→1
@@ -521,14 +568,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rotP1 = Math.PI * (60 / 180);
             const cityTurnRot = Math.PI / 8 + (Math.PI / 2);
             const aboutTurnRot = cityTurnRot - Math.PI;
-            const setCameraFov = (targetFov) => {
+
+            const setCameraFov = (targetFov, isCockpit = false) => {
                 const aspect = gl.camera.aspect || (window.innerWidth / window.innerHeight);
+                const refAspect = 1.777; // Desktop 16:9 reference
                 let effectiveFov = targetFov;
 
-                // Precise FOV sweet spot for mobile portrait screens (caps max FOV at 81.5 deg)
-                if (aspect < 1.0) {
-                    const factor = Math.pow(1.0 - Math.max(aspect, 0.35), 1.2) * 12.0;
-                    effectiveFov = Math.min(targetFov + factor, 81.5);
+                if (aspect < refAspect) {
+                    const isMobilePortrait = aspect < 1.0;
+                    const maxAllowedFov = isMobilePortrait
+                        ? (isCockpit ? Math.min(targetFov + 12, 108) : Math.min(targetFov + 4, 74))
+                        : (isCockpit ? 110 : 85);
+                    const radV = (targetFov * Math.PI) / 360;
+                    const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
+                    const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(aspect, 0.35));
+                    effectiveFov = (mobileVRad * 180) / Math.PI;
+                    effectiveFov = Math.min(Math.max(effectiveFov, targetFov), maxAllowedFov);
                 }
 
                 if (Math.abs(gl.camera.fov - effectiveFov) < 0.01) return;
@@ -734,16 +789,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.z = 0;
 
                     // Smooth FOV transition (lerps from Sub-D's 55 to seated 110)
-                    setCameraFov(scrollMath.lerp(55, 110, norm));
+                    setCameraFov(scrollMath.lerp(55, 110, norm), true);
 
                     // Update the 3D HUD canvas with Sub-E static values
                     drawCockpitHUDCanvas(city, 0, 0);
-                    window._dbgE = (window._dbgE || 0) + 1;
-                    if (window._dbgE % 10 === 0) {
-                        const carWP = new THREE.Vector3();
-                        if (city.f1Model) city.f1Model.getWorldPosition(carWP);
-                        console.log(`[SUB-E DEBUG] norm=${norm.toFixed(2)} cam=(${curCamX.toFixed(2)}, ${curCamY.toFixed(2)}, ${curCamZ.toFixed(2)}) car=(${carWP.x.toFixed(2)}, ${carWP.y.toFixed(2)}, ${carWP.z.toFixed(2)})`);
-                    }
 
 
                     // F1 ejection: surge forward and fly diagonally towards the jet's Z-line
@@ -828,26 +877,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (city.rescueJetMat) city.rescueJetMat.opacity = 1;
                     }
 
-                    // ── DEBUG: log camera + jet + F1 world positions every 10 frames ──
-                    if (!window._dbgF) window._dbgF = 0;
-                    if (++window._dbgF % 10 === 0) {
-                        const jetWP = new THREE.Vector3();
-                        if (city.rescueJet) city.rescueJet.getWorldPosition(jetWP);
-                        const carWP = new THREE.Vector3();
-                        if (city.f1Model) city.f1Model.getWorldPosition(carWP);
-                        const parentName = city.rescueJet?.parent?.name || city.rescueJet?.parent?.type || 'none';
-                        const groupWZ = city.group?.position?.z ?? '?';
-                        const opac = city.rescueJetMat?.opacity ?? '?';
-                        const cockpitWorldX = jetWP.x + CKPT_OX;
-                        const cockpitWorldY = jetWP.y + CKPT_OY;
-                        const cockpitWorldZ = jetWP.z + CKPT_OZ;
-                        console.log(
-                            `[SUB-F DEBUG] norm=${norm.toFixed(2)} cam=(${camX.toFixed(2)}, ${(camY + PILOT_Y).toFixed(2)}, ${camWorldZ.toFixed(2)})\n` +
-                            `[SUB-F DEBUG] cockpit=(${cockpitWorldX.toFixed(2)}, ${cockpitWorldY.toFixed(2)}, ${cockpitWorldZ.toFixed(2)})\n` +
-                            `[SUB-F DEBUG] f1car=(${carWP.x.toFixed(2)}, ${carWP.y.toFixed(2)}, ${carWP.z.toFixed(2)})`
-                        );
-                    }
-
                     // Camera sits PILOT_Y above cockpit center (with shake if colliding!)
                     const shakeX = isColliding ? (Math.random() - 0.5) * 0.05 : 0;
                     const shakeY = isColliding ? (Math.random() - 0.5) * 0.05 : 0;
@@ -860,7 +889,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     gl.camera.rotation.z = bankAngle;
 
                     // Fov lerps from 110 (seated) to 100 to keep view cinematic and wide
-                    setCameraFov(scrollMath.lerp(110, 100, scrollMath.smoothstep(norm)));
+                    setCameraFov(scrollMath.lerp(110, 100, scrollMath.smoothstep(norm)), true);
                     drawCockpitHUDCanvas(city, norm, bankAngle);
 
                     // Animate speed lines: hypersonic light streaks passing cockpit
@@ -949,9 +978,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? 0
                         : (drivePct - SUB_G_END) / (1.0 - SUB_G_END); // 0→1 straight flight
 
-                    // ── Flight Path to Aircraft Carrier Landing (240u) ──
-                    const isMobileScreen = window.innerWidth < 768;
-                    const FLY_X_TRAVEL = 240.0; // snappy, responsive flight path for all viewports
+                    // ── Flight Path to Aircraft Carrier Landing ──
+                    const FLY_X_TRAVEL = isMobileScreen ? 120.0 : 240.0; // calm, luxurious speed on mobile
                     const jetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL; // jet advances in -X
 
                     // ── Experience obstacle data ──
@@ -996,9 +1024,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // ── Lazy-init obstacle meshes ──
                     if (!window._expObstacles && gl && gl.scene) {
-                        const spacing = isMobileScreen ? 20.0 : 16.0; // comfortable spacing on mobile
+                        const spacing = isMobileScreen ? 12.0 : 16.0; // calm, readable spacing on mobile
                         const GATE_Y = cockpitY + 0.05;
-                        const GATE_SPAN = isMobileScreen ? 3.8 : 7.0; // clear gate span on mobile
+                        const GATE_SPAN = isMobileScreen ? 1.8 : 7.0; // tight gate span on mobile
 
                         // ── Clean Space Flight Path ──
                         window._runwayGroup = null;
@@ -1009,12 +1037,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const group = new THREE.Group();
                             group.position.set(obsWorldX, GATE_Y, finalCamWorldZ);
 
-                            // ── Label side: alternating left/right ──
-                            const labelSide = (i % 2 === 0) ? 1 : -1; // +Z = left on screen, -Z = right
+                            // ── Label side: desktop alternates left/right (+Z / -Z), mobile places ALL cards on screen right (-Z) ──
+                            const labelSide = isMobileScreen ? -1 : ((i % 2 === 0) ? 1 : -1);
 
-                            // ── Gate: target lock bar starting OUTSIDE wingtips ──
-                            const WING_CLEAR = isMobileScreen ? 1.4 : 3.6;
-                            const gateBarPts = [
+                            // ── Gate: target lock bar ──
+                            const WING_CLEAR = isMobileScreen ? 1.5 : 3.6;
+                            const gateBarPts = isMobileScreen ? [
+                                new THREE.Vector3(0, 0, 2.0),  // connects from jet right wingtip on screen left
+                                new THREE.Vector3(0, 0, -2.0), // connects to target lock dot on screen right
+                            ] : [
                                 new THREE.Vector3(0, 0, labelSide * WING_CLEAR),
                                 new THREE.Vector3(0, 0, labelSide * GATE_SPAN),
                             ];
@@ -1026,7 +1057,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             // Tick marks on the label side only
                             const tickMat = new THREE.LineBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0 });
                             const tickGroup = new THREE.Group();
-                            for (const tz of [labelSide * (GATE_SPAN * 0.6), labelSide * GATE_SPAN]) {
+                            const tickPositions = isMobileScreen ? [-2.0, -4.5] : [labelSide * (GATE_SPAN * 0.6), labelSide * GATE_SPAN];
+                            for (const tz of tickPositions) {
                                 const pts = [
                                     new THREE.Vector3(0, 0, tz),
                                     new THREE.Vector3(0.5, 0, tz),
@@ -1034,25 +1066,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const tg = new THREE.BufferGeometry().setFromPoints(pts);
                                 tickGroup.add(new THREE.Line(tg, tickMat));
                             }
-                            group.add(tickGroup);
-
                             // Target lock impact dot at gate lock point
                             const dotGeo = new THREE.PlaneGeometry(0.5, 0.5);
                             const dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
                             const dot = new THREE.Mesh(dotGeo, dotMat);
                             dot.rotation.x = -Math.PI / 2;
-                            dot.position.z = labelSide * GATE_SPAN;
+                            dot.position.z = isMobileScreen ? -2.0 : (labelSide * GATE_SPAN);
                             group.add(dot);
 
                             // ── Tactical MFD Label Panel ──
-                            // Desktop: 24w x 10.5h (Landscape 1024x512)
-                            // Mobile: 7.5w x 13.5h (Compact Vertical Portrait 512x800 - clear of jet wingtips & frustum)
-                            const PANEL_W = isMobileScreen ? 7.5 : 24.0;
-                            const PANEL_H = isMobileScreen ? 13.5 : 10.5;
-                            const LABEL_Z = labelSide * (GATE_SPAN + PANEL_W * 0.5 + (isMobileScreen ? 0.4 : 2.5));
+                            // Desktop: PANEL_W 24.0 (length) x PANEL_H 10.5 (width), Canvas 1024x512
+                            // Mobile: Complete tall portrait redesign (PANEL_W 16.0 x PANEL_H 14.0, Canvas 1000x1350) positioned at LABEL_Z = -8.2 (right half of mobile viewport)
+                            const PANEL_W = isMobileScreen ? 16.0 : 24.0;
+                            const PANEL_H = isMobileScreen ? 14.0 : 10.5;
+                            const LABEL_Z = isMobileScreen ? -8.2 : (labelSide * (GATE_SPAN + PANEL_W * 0.5 + 2.5));
 
-                            const CW = isMobileScreen ? 512 : 1024;
-                            const CH = isMobileScreen ? 800 : 512;
+                            const CW = isMobileScreen ? 1000 : 1024;
+                            const CH = isMobileScreen ? 1350 : 512;
                             const lc = document.createElement('canvas');
                             lc.width = CW;
                             lc.height = CH;
@@ -1074,130 +1104,180 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
 
                             if (isMobileScreen) {
-                                // ── MOBILE PORTRAIT CARD CANVAS DRAWING ──
-                                const ch = 20;
-                                lx.strokeStyle = '#ff4d00';
-                                lx.lineWidth = 4;
-                                lx.beginPath();
-                                lx.moveTo(ch, 4);
-                                lx.lineTo(CW - 4, 4);
-                                lx.lineTo(CW - 4, CH - ch);
-                                lx.lineTo(CW - ch, CH - 4);
-                                lx.lineTo(4, CH - 4);
-                                lx.lineTo(4, ch);
-                                lx.closePath();
-                                lx.stroke();
+                                // ── MOBILE TALL PORTRAIT CARD CANVAS DRAWING (1000x1350) ──
+                                // 1. Deep Obsidian MFD Background
+                                lx.fillStyle = '#07090e';
+                                lx.fillRect(0, 0, CW, CH);
 
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
+                                // Subtle diagonal cyan grid matrix
+                                lx.strokeStyle = 'rgba(0, 255, 204, 0.05)';
                                 lx.lineWidth = 1.5;
+                                for (let d = -CH; d < CW + CH; d += 48) {
+                                    lx.beginPath(); lx.moveTo(d, 0); lx.lineTo(d + CH, CH); lx.stroke();
+                                }
+
+                                // Solid orange accent stripe on left edge
+                                lx.fillStyle = '#ff4d00';
+                                lx.fillRect(0, 0, 14, CH);
+
+                                // Outer Chamfered Neon Frame
+                                const ch = 36;
+                                lx.strokeStyle = '#ff4d00';
+                                lx.lineWidth = 6;
                                 lx.beginPath();
-                                lx.moveTo(ch + 4, 10);
-                                lx.lineTo(CW - 10, 10);
-                                lx.lineTo(CW - 10, CH - ch - 4);
-                                lx.lineTo(CW - ch - 4, CH - 10);
-                                lx.lineTo(10, CH - 10);
-                                lx.lineTo(10, ch + 4);
+                                lx.moveTo(ch, 12);
+                                lx.lineTo(CW - 12, 12);
+                                lx.lineTo(CW - 12, CH - ch);
+                                lx.lineTo(CW - ch, CH - 12);
+                                lx.lineTo(12, CH - 12);
+                                lx.lineTo(12, ch);
                                 lx.closePath();
                                 lx.stroke();
 
-                                // Corner accents
-                                const bl = 28;
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.85)';
-                                lx.lineWidth = 3;
-                                lx.beginPath(); lx.moveTo(14, 24); lx.lineTo(14 + bl, 24); lx.stroke();
-                                lx.beginPath(); lx.moveTo(24, 14); lx.lineTo(24, 14 + bl); lx.stroke();
-                                lx.beginPath(); lx.moveTo(CW - 14 - bl, 20); lx.lineTo(CW - 20, 20); lx.lineTo(CW - 20, 20 + bl); lx.stroke();
-                                lx.beginPath(); lx.moveTo(CW - 20, CH - 20 - bl); lx.lineTo(CW - 20, CH - 20); lx.lineTo(CW - 20 - bl, CH - 20); lx.stroke();
-                                lx.beginPath(); lx.moveTo(20, CH - 20 - bl); lx.lineTo(20, CH - 20); lx.lineTo(20 + bl, CH - 20); lx.stroke();
+                                // Inner Cyan HUD Border
+                                lx.strokeStyle = 'rgba(0, 255, 204, 0.45)';
+                                lx.lineWidth = 2.5;
+                                lx.beginPath();
+                                lx.moveTo(ch + 8, 22);
+                                lx.lineTo(CW - 22, 22);
+                                lx.lineTo(CW - 22, CH - ch - 8);
+                                lx.lineTo(CW - ch - 8, CH - 22);
+                                lx.lineTo(22, CH - 22);
+                                lx.lineTo(22, ch + 8);
+                                lx.closePath();
+                                lx.stroke();
 
-                                // Header
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
-                                lx.fillStyle = '#ff7700';
+                                // Heavy Corner Brackets
+                                const bLen = 54;
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.95)';
+                                lx.lineWidth = 5;
+                                lx.beginPath(); lx.moveTo(26, 36); lx.lineTo(26 + bLen, 36); lx.stroke();
+                                lx.beginPath(); lx.moveTo(36, 26); lx.lineTo(36, 26 + bLen); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 26 - bLen, 30); lx.lineTo(CW - 30, 30); lx.lineTo(CW - 30, 30 + bLen); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 30, CH - 30 - bLen); lx.lineTo(CW - 30, CH - 30); lx.lineTo(CW - 30 - bLen, CH - 30); lx.stroke();
+                                lx.beginPath(); lx.moveTo(30, CH - 30 - bLen); lx.lineTo(30, CH - 30); lx.lineTo(30 + bLen, CH - 30); lx.stroke();
+
+                                const padX = 52;
+
+                                // ── Top Header Section ──
+                                lx.font = 'bold 38px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#00ffcc';
                                 lx.textAlign = 'left';
-                                lx.fillText(`SYS.01 // TGT [0${i + 1}]`, 28, 44);
+                                lx.fillText(`[ SYS.01 // TGT_LOCK 0${i + 1} ]`, padX, 76);
 
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
-                                lx.textAlign = 'right';
-                                lx.fillText(`YR: ${node.year}`, CW - 28, 44);
-
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.4)';
+                                // Year Pill Badge on Right
+                                lx.font = 'bold 32px "JetBrains Mono", monospace';
+                                const yearTxt = `YR.${node.year}`;
+                                const yearW = lx.measureText(yearTxt).width + 36;
+                                lx.fillStyle = 'rgba(255, 77, 0, 0.2)';
+                                lx.fillRect(CW - padX - yearW, 40, yearW, 52);
+                                lx.strokeStyle = 'rgba(255, 77, 0, 0.7)';
                                 lx.lineWidth = 2;
-                                lx.beginPath(); lx.moveTo(28, 58); lx.lineTo(CW - 28, 58); lx.stroke();
+                                lx.strokeRect(CW - padX - yearW, 40, yearW, 52);
+                                lx.fillStyle = '#ffaa77';
+                                lx.textAlign = 'center';
+                                lx.fillText(yearTxt, CW - padX - yearW / 2, 76);
 
-                                // Title & Role — Large, Bold, High-Contrast White & Cyan
+                                // Top Divider Rule
+                                const rule1Y = 114;
+                                const grad1 = lx.createLinearGradient(padX, 0, CW - padX, 0);
+                                grad1.addColorStop(0, 'rgba(255, 77, 0, 0.85)');
+                                grad1.addColorStop(0.6, 'rgba(0, 255, 204, 0.4)');
+                                grad1.addColorStop(1, 'rgba(255, 77, 0, 0.1)');
+                                lx.strokeStyle = grad1;
+                                lx.lineWidth = 3;
+                                lx.beginPath(); lx.moveTo(padX, rule1Y); lx.lineTo(CW - padX, rule1Y); lx.stroke();
+
+                                // ── Title & Role Section ──
                                 lx.fillStyle = '#ffffff';
                                 lx.shadowColor = 'rgba(255, 77, 0, 0.8)';
-                                lx.shadowBlur = 14;
-                                lx.font = 'bold 74px "JetBrains Mono", monospace';
+                                lx.shadowBlur = 18;
+                                lx.font = 'bold 120px "JetBrains Mono", monospace';
                                 lx.textAlign = 'left';
-                                lx.fillText(node.title, 28, 135);
+                                lx.fillText(node.title, padX, rule1Y + 140);
                                 lx.shadowBlur = 0;
 
-                                lx.fillStyle = '#00ffea';
-                                lx.font = 'bold 26px "JetBrains Mono", monospace';
-                                lx.fillText(`// ${node.role.toUpperCase()}`, 28, 178);
+                                lx.font = 'bold 40px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#00ffcc';
+                                lx.fillText(`// ${node.role.toUpperCase()}`, padX, rule1Y + 204);
 
-                                lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
-                                lx.lineWidth = 1.5;
-                                lx.beginPath(); lx.moveTo(28, 198); lx.lineTo(CW - 28, 198); lx.stroke();
+                                // ── Tech Stack Badges Section ──
+                                const stackHeaderY = rule1Y + 280;
+                                lx.font = 'bold 32px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
+                                lx.fillText('TECH_STACK // INTEGRATION:', padX, stackHeaderY);
 
-                                // Stack Pills — Vibrant Orange Border & Solid High-Contrast Text
-                                const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
-                                let stackX = 28, stackY = 218;
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                const stackItems = node.stack.split('·').map(s => s.trim());
+                                let stackX = padX;
+                                let stackY = stackHeaderY + 24;
+                                lx.font = 'bold 34px "JetBrains Mono", monospace';
                                 stackItems.forEach(item => {
                                     const tw = lx.measureText(item).width;
-                                    const pw = tw + 22;
-                                    const ph = 34;
-                                    if (stackX + pw > CW - 28) {
-                                        stackX = 28;
-                                        stackY += 42;
+                                    const pw = tw + 36;
+                                    const ph = 54;
+                                    if (stackX + pw > CW - padX) {
+                                        stackX = padX;
+                                        stackY += 68;
                                     }
-                                    lx.fillStyle = 'rgba(255, 77, 0, 0.22)';
+                                    lx.fillStyle = 'rgba(255, 77, 0, 0.16)';
                                     lx.fillRect(stackX, stackY, pw, ph);
-                                    lx.strokeStyle = '#ff6600';
-                                    lx.lineWidth = 1.5;
+                                    lx.strokeStyle = 'rgba(0, 255, 204, 0.6)';
+                                    lx.lineWidth = 2;
                                     lx.strokeRect(stackX, stackY, pw, ph);
                                     lx.fillStyle = '#ffffff';
                                     lx.textAlign = 'left';
-                                    lx.fillText(item, stackX + 11, stackY + 24);
-                                    stackX += pw + 10;
+                                    lx.fillText(item, stackX + 18, stackY + 38);
+                                    stackX += pw + 16;
                                 });
 
-                                // Mission Brief Header & Text — 100% Solid Pure White for Max Legibility
-                                const briefY = stackY + 58;
-                                lx.font = 'bold 22px "JetBrains Mono", monospace';
-                                lx.fillStyle = '#ff5500';
-                                lx.fillText('>> MISSION_BRIEF:', 28, briefY);
+                                // Middle Divider Rule
+                                const rule2Y = Math.max(stackY + 84, rule1Y + 480);
+                                lx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                                lx.lineWidth = 2;
+                                lx.beginPath(); lx.moveTo(padX, rule2Y); lx.lineTo(CW - padX, rule2Y); lx.stroke();
 
-                                lx.fillStyle = '#ffffff';
-                                lx.font = 'bold 24px "Inter", sans-serif';
+                                // ── Mission Briefing Section ──
+                                const briefY = rule2Y + 60;
+                                lx.font = 'bold 36px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
+                                lx.fillText('>> MISSION BRIEFING:', padX, briefY);
+
+                                lx.fillStyle = 'rgba(255, 240, 230, 0.96)';
+                                lx.font = '700 38px "Inter", sans-serif';
                                 const descWords = node.desc.split(' ');
-                                let descLine = '', descY = briefY + 36;
+                                let descLine = '', descY = briefY + 54;
                                 for (const w of descWords) {
                                     const test = descLine + w + ' ';
-                                    if (lx.measureText(test).width > CW - 56 && descLine) {
-                                        lx.fillText(descLine.trim(), 28, descY);
+                                    if (lx.measureText(test).width > CW - padX * 2 && descLine) {
+                                        lx.fillText(descLine.trim(), padX, descY);
                                         descLine = w + ' ';
-                                        descY += 34;
-                                        if (descY > CH - 80) break;
+                                        descY += 54;
+                                        if (descY > CH - 140) break;
                                     } else {
                                         descLine = test;
                                     }
                                 }
-                                if (descLine.trim() && descY <= CH - 80) lx.fillText(descLine.trim(), 28, descY);
+                                if (descLine.trim() && descY <= CH - 140) lx.fillText(descLine.trim(), padX, descY);
 
-                                // Footer
+                                // ── Bottom Footer Status Section ──
+                                const footerY = CH - 84;
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.4)';
-                                lx.lineWidth = 1.5;
-                                lx.beginPath(); lx.moveTo(28, CH - 48); lx.lineTo(CW - 28, CH - 48); lx.stroke();
+                                lx.lineWidth = 2.5;
+                                lx.beginPath(); lx.moveTo(padX, footerY); lx.lineTo(CW - padX, footerY); lx.stroke();
 
-                                lx.fillStyle = '#44ff88';
-                                lx.beginPath(); lx.arc(38, CH - 24, 6, 0, Math.PI * 2); lx.fill();
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
-                                lx.fillStyle = '#ff5500';
+                                // Glowing Green Target Status Dot
+                                lx.fillStyle = '#00ff88';
+                                lx.beginPath(); lx.arc(padX + 12, footerY + 36, 10, 0, Math.PI * 2); lx.fill();
+
+                                lx.font = 'bold 34px "JetBrains Mono", monospace';
+                                lx.fillStyle = '#ff4d00';
                                 lx.textAlign = 'left';
-                                lx.fillText(`${node.status} // NOMINAL`, 54, CH - 18);
+                                lx.fillText(`${node.status} // NOMINAL`, padX + 36, footerY + 46);
+
+                                lx.font = 'bold 28px "JetBrains Mono", monospace';
+                                lx.fillStyle = 'rgba(0, 255, 204, 0.7)';
+                                lx.textAlign = 'right';
+                                lx.fillText(`LINK_STATION_0${i + 1} // 99.8%`, CW - padX, footerY + 46);
                             } else {
                                 // ── DESKTOP LANDSCAPE CARD CANVAS DRAWING ──
                                 const ch = 24;
@@ -1407,6 +1487,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                             group.add(ring1);
                             group.add(ring2);
 
+                            // ── Mobile customization: hide 3D side labels & connectors, keep center target rings ──
+                            if (isMobileScreen) {
+                                gateLines.visible = false;
+                                tickGroup.visible = false;
+                                dot.visible = false;
+                                conn.visible = false;
+                                label.visible = false;
+                            }
+
                             return {
                                 group, gateLines, gateMat, tickMat, dotMat, dot,
                                 label, labelMat, conn, connMat,
@@ -1441,12 +1530,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         camZ = finalCamWorldZ;
                     } else {
                         // ── Sub-H: Experience Gates → Cockpit Dive → Cockpit Carrier Landing → Carrier Hotspot ──
-                        //
-                        // flyNorm 0.00 → 0.45: Top-down flight through 4 experience gates (BEAKAN, ANADROME, ZENITH)
-                        // flyNorm 0.45 → 0.60: Cockpit Dive — Camera dives from overhead directly into pilot cockpit seat
-                        // flyNorm 0.60 → 0.85: Cockpit Landing — Pilot inside cockpit flies down glide slope, touches down & stops at wp2
-                        // flyNorm 0.85 → 1.00: Seamless Hotspot Transition — Camera glides from cockpit seat to carrier deck station POV (pov / h2)
-
                         const cScale = 0.008;
                         const turnEndX = finalCamX - 0.80 * FLY_X_TRAVEL;
                         const carrierX = finalCamX - 220.0;
@@ -1460,35 +1543,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                             city.carrierModel.visible = flyNorm > 0.20;
                         }
 
-                        // Hotspots on carrier deck (mapped for -Math.PI / 2 carrier Y-rotation: ox=localZ*S, oz=-localX*S)
+                        // Hotspots on carrier deck
                         const S = cScale;
                         const h1 = { ox: 2044.7567 * S, oy: 128.2941 * S, oz: -39.0343 * S };
-                        // Hotspot 3 (Spectator POV on Carrier Deck): 223.9672076423808m 128.29475646977212m 2063.7494398648123m
                         const h2 = { ox: 2063.74944 * S, oy: 128.294756 * S, oz: -223.967208 * S };
                         const h3 = { ox: 1676.6043 * S, oy: 128.2941 * S, oz: 11.4416 * S };
                         const h4 = { ox: 87.2635 * S, oy: 128.2942 * S, oz: 87.2635 * S };
 
-                        const JET_DECK_Y_OFFSET = -0.35; // Raises jet height flush onto carrier flight deck surface
-                        const RUNWAY_Z_OFFSET = -1.35; // Center jet onto main runway lane (to the right)
+                        const JET_DECK_Y_OFFSET = -0.35;
+                        const RUNWAY_Z_OFFSET = -1.35;
 
                         const td = { x: carrierX + h1.ox, y: carrierY + h1.oy - JET_DECK_Y_OFFSET, z: carrierZ + h1.oz + RUNWAY_Z_OFFSET };
-                        // Spectator POV: Pushed further back on carrier deck looking down the runway at approaching jet
                         const pov = { x: carrierX - 8.0, y: carrierY + h2.oy + 2.2, z: carrierZ + h2.oz + 2.5 };
-                        const rawWp1 = { x: carrierX + h3.ox, y: carrierY + h3.oy - JET_DECK_Y_OFFSET, z: carrierZ + h3.oz + RUNWAY_Z_OFFSET };
                         const wp1 = { x: td.x, y: td.y, z: td.z };
-                        const rawWp2 = { x: carrierX + h4.ox, y: carrierY + h4.oy - JET_DECK_Y_OFFSET, z: carrierZ + h4.oz + RUNWAY_Z_OFFSET };
                         const wp2 = { x: td.x, y: td.y, z: td.z };
 
                         const glToWZ = (glz) => finalCamWorldZ + (glz - carrierZ);
 
-                        // Phase progress norm calculation
-                        // Dynamic phase thresholds based on exact experience gate positions & clearance
-                        const spacing = isMobileScreen ? 20.0 : 16.0;
-                        const totalGateSpan = spacing * 4.0 + (isMobileScreen ? 16.0 : 15.0);
-                        const PHASE1_END = totalGateSpan / FLY_X_TRAVEL; // ~0.33 desktop / ~0.40 mobile (clears all 4 gates completely)
-                        const PHASE2_END = PHASE1_END + 0.18; // Spectator transition phase (0.33→0.51 desktop / 0.40→0.58 mobile)
+                        const phase1End = isMobileScreen ? 0.76 : 0.35;
+                        const phase2End = isMobileScreen ? 0.88 : 0.48;
 
-                        const diveNorm = scrollMath.clamp01((flyNorm - PHASE1_END) / 0.18);
+                        const diveNorm = scrollMath.clamp01((flyNorm - phase1End) / (phase2End - phase1End));
                         const easeDive = scrollMath.smoothstep(diveNorm);
 
                         speedLineOpacity = 0;
@@ -1496,13 +1571,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         let jX, jY, jZ, jYaw, jPitch = 0;
 
-                        if (flyNorm < PHASE1_END) {
-                            // Phase 1: Top-down overhead flight through experience gates (clears ALL 4 gates cleanly)
+                        if (flyNorm < phase1End) {
+                            // Phase 1: Top-down overhead flight through ALL experience gates (BEAKAN, ANADROME 1, ANADROME 2, ZENITH)
                             const curJetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL;
+                            // On Mobile, jet flies directly down the CENTER of the screen (Z = 0.0) below camera
+                            const mobileJetLaneZ = 0.0;
 
                             jX = curJetFlyX - CKPT_OX;
                             jY = cockpitY - CKPT_OY;
-                            jZ = finalCamWorldZ - GROUP_Z - CKPT_OZ;
+                            jZ = finalCamWorldZ - GROUP_Z + mobileJetLaneZ - CKPT_OZ;
                             jYaw = Math.PI / 2;
 
                             camX = curJetFlyX;
@@ -1511,11 +1588,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                             pitchX = -Math.PI / 2;
                             yawY = Math.PI / 2;
                             targetFov = 72;
-                        } else if (flyNorm < PHASE2_END) {
-                            // Phase 2: Deck Spectator Transition — Camera swoops into spectator station after passing all gates
-                            const startPhase2X = finalCamX - PHASE1_END * FLY_X_TRAVEL - CKPT_OX;
+                        } else if (flyNorm < phase2End) {
+                            // Phase 2: Deck Spectator Transition (starts AFTER passing node 4 ZENITH!)
+                            const mobileJetLaneZ = 0.0;
+                            const startPhase2X = finalCamX - phase1End * FLY_X_TRAVEL - CKPT_OX;
                             const startPhase2Y = cockpitY - CKPT_OY;
-                            const startPhase2Z = finalCamWorldZ - GROUP_Z - CKPT_OZ;
+                            const startPhase2Z = finalCamWorldZ - GROUP_Z + mobileJetLaneZ - CKPT_OZ;
 
                             const entryX = td.x + 100.0;
                             const entryY = td.y + 10.0;
@@ -1537,21 +1615,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             if (city && city.cockpitHUDCanvas) city.cockpitHUDCanvas.style.opacity = '0';
                         } else {
-                            // Phase 3: Spectator Carrier Landing — Pure 3° glide slope descent down to carrier deck
-                            const landNorm = scrollMath.clamp01((flyNorm - PHASE2_END) / (1.0 - PHASE2_END));
+                            // Phase 3: Spectator Carrier Landing
+                            const landNorm = scrollMath.clamp01((flyNorm - phase2End) / (1.0 - phase2End));
                             const appNorm = scrollMath.clamp01(landNorm / 0.50);
                             const appT = scrollMath.smoothstep(appNorm);
 
                             const curJetScale = scrollMath.lerp(0.008, 0.0032, appNorm);
 
                             if (landNorm < 0.50) {
-                                // Strictly monotonic forward 3° glide slope descent (td.x + 100.0 -> td.x)
                                 jX = scrollMath.lerp(td.x + 100.0, td.x, appT);
                                 jY = scrollMath.lerp(td.y + 10.0, td.y, appT);
                                 jZ = td.z;
                                 jPitch = scrollMath.lerp(-0.06, 0.0, appT);
                             } else {
-                                // Arrestor cable trap flush on flight deck
                                 jX = td.x;
                                 jY = td.y;
                                 jZ = td.z;
@@ -1559,7 +1635,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                             jYaw = Math.PI / 2;
 
-                            // Camera anchored at spectator station on carrier deck
                             camX = pov.x;
                             camY = pov.y;
                             camZ = glToWZ(pov.z);
@@ -1571,25 +1646,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (city && city.cockpitHUDCanvas) city.cockpitHUDCanvas.style.opacity = '0';
                         }
 
-                        // ALWAYS set rescue jet position and opacity = 1
                         if (city && city.rescueJet) {
-                            const flyScaleNorm = scrollMath.clamp01((flyNorm - PHASE2_END) / 0.175);
-                            const scaleVal = flyNorm < PHASE2_END ? 0.008 : scrollMath.lerp(0.008, 0.0032, flyScaleNorm);
+                            const flyScaleNorm = scrollMath.clamp01((flyNorm - 0.45) / 0.175);
+                            const scaleVal = flyNorm < 0.45 ? 0.008 : scrollMath.lerp(0.008, 0.0032, flyScaleNorm);
                             city.rescueJet.scale.setScalar(scaleVal);
                             city.rescueJet.position.set(jX, jY, jZ);
                             city.rescueJet.rotation.set(jPitch, jYaw, 0);
                             if (city.rescueJetMat) city.rescueJetMat.opacity = 1.0;
-                        }
-
-                        // Debug logging for camera and jet positions
-                        if (!window._dbgSubH) window._dbgSubH = 0;
-                        if (++window._dbgSubH % 15 === 0) {
-                            const phaseStr = flyNorm < 0.27 ? 'PHASE1_GATES' : flyNorm < 0.45 ? 'PHASE2_TRANSITION' : flyNorm < 0.80 ? 'PHASE3_LANDING' : 'PHASE4_HOTSPOT';
-                            console.log(`[SUB-H DEBUG] ${phaseStr} flyNorm=${flyNorm.toFixed(3)}\n` +
-                                `  jet=(${jX.toFixed(2)}, ${jY.toFixed(2)}, ${jZ.toFixed(2)})\n` +
-                                `  cam=(${camX.toFixed(2)}, ${camY.toFixed(2)}, ${camZ.toFixed(2)})\n` +
-                                `  rot=(pitch:${pitchX.toFixed(2)}, yaw:${yawY.toFixed(2)}) fov=${targetFov.toFixed(1)}`
-                            );
                         }
                     }
 
@@ -1601,7 +1664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     setCameraFov(targetFov);
 
-                    // Speed lines: active during pull-up AND during hyperspace 180° turn & jet approach
+                    // Speed lines
                     if (speedLines) {
                         speedLines.lineMat.opacity = speedLineOpacity;
                         if (speedLineOpacity > 0.01) {
@@ -1617,7 +1680,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
 
-                    // Debris finishes during pull-up, gone during flight
                     if (city && city.f1Model) city.f1Model.visible = false;
                     if (debris) {
                         if (!isPullingUp) {
@@ -1638,23 +1700,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
 
-                    // ── Obstacle update: lock-on → impact → post-impact ──
-                    //
-                    // PHASES (per-obstacle, driven by dist from jet to gate):
-                    //   APPROACH  dist 14→4   fade in gate, label, outer ring pulses
-                    //   LOCK-ON   dist 4→0    inner ring closes in, DOM reticle shows, gate strobes
-                    //   HIT       dist crosses 0  impact flash, camera shake, FOV spike, shards, card in
-                    //   POST-HIT  hitT 0→1.5  shards scatter + fade, FOV settles, card dismisses at hitT>0.9
-                    //
-                    // Camera shake and FOV overrides are written into module-level scratch vars
-                    // that the camera block below reads each frame.
+                    // ── Obstacle update ──
                     const lockHud = document.getElementById('lock-hud');
                     const impactFlash = document.getElementById('impact-flash');
                     const lkRange = document.getElementById('lk-range');
                     const lkTarget = document.getElementById('lk-target');
                     const lkLocked = document.getElementById('lk-locked');
 
-                    // Per-frame camera perturbation accumulators (reset each frame)
                     let shakeX = 0, shakeZ = 0, fovBump = 0;
                     let anyLockHudVisible = false;
 
@@ -1666,85 +1718,84 @@ document.addEventListener('DOMContentLoaded', async () => {
                         window._expObstacles.forEach((obs) => {
                             const dist = jetWorldX - obs.worldX; // + = ahead, − = passed
 
-                            // Auto-reset hit state if user backtracks past the node
                             if (obs.hit && dist > 0.5) {
                                 obs.hit = false;
                                 obs.hitT = 0;
-                                obs.gateLines.visible = true;
-                                obs.dot.visible = true;
+                                obs.gateLines.visible = !isMobileScreen;
+                                obs.dot.visible = !isMobileScreen;
                                 obs.ring1.visible = true;
                                 obs.ring2.visible = true;
+                                obs.conn.visible = !isMobileScreen;
                                 obs.shards.forEach(s => { s.mesh.visible = false; });
                             }
 
-                            // ── Visibility across camera frustum ──
-                            const inTurnaround = !isPullingUp && flyNorm > PHASE2_END;
+                            const inTurnaround = !isPullingUp && flyNorm > 0.53;
                             if (inTurnaround) {
                                 obs.group.visible = false;
                                 obs.label.visible = false;
                                 obs.conn.visible = false;
                             } else {
                                 obs.group.visible = Math.abs(dist) < 35;
-                                obs.label.visible = true;
-                                obs.conn.visible = true;
+                                obs.label.visible = !isMobileScreen; // Hide 3D side label card on mobile
+                                obs.conn.visible = !isMobileScreen;
                             }
 
                             const absDist = Math.abs(dist);
-                            const approachT = scrollMath.clamp01(1.0 - absDist / 16.0);
+                            const approachT = scrollMath.clamp01(1.0 - absDist / 24.0);
+
+                            // ── Label & connector opacity (always — desktop only shows these) ──
                             obs.labelMat.opacity = dist <= 0 ? 1.0 : Math.max(0.4, approachT);
-                            obs.connMat.opacity = dist <= 0 ? 0.45 : 0.45 * approachT;
+                            obs.connMat.opacity = isMobileScreen ? 0 : (dist <= 0 ? 0.45 : 0.45 * approachT);
 
                             if (!obs.hit) {
-                                const inApproach = dist > 0 && dist < 14;
-                                const inLockZone = dist > 0 && dist < 4;
+                                const inApproach = dist > 0 && dist < 24;
+                                const inLockZone = dist > 0 && dist < 8;
 
                                 obs.gateMat.opacity = 0.75 * approachT;
                                 obs.tickMat.opacity = 0.5 * approachT;
                                 obs.dotMat.opacity = approachT;
 
-                                // ── Outer ring: slow breathing pulse, fades in with approach ──
+                                // ── Outer Ring: Bright neon orange target ring ──
                                 if (inApproach) {
-                                    const ringPulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.003);
-                                    obs.ringMat1.opacity = approachT * 0.5 * ringPulse;
-                                    obs.ring1.scale.setScalar(1.0 + (1.0 - approachT) * 0.4);
+                                    const ringPulse = 0.85 + 0.15 * Math.sin(Date.now() * 0.008);
+                                    obs.ringMat1.color.setHex(0xff5500);
+                                    obs.ringMat1.opacity = Math.max(0.6, approachT * 0.95) * ringPulse;
+                                    obs.ring1.scale.setScalar(scrollMath.lerp(1.6, 1.0, approachT));
                                 } else {
                                     obs.ringMat1.opacity = 0;
                                 }
 
-                                // ── Lock-on zone (dist < 4) ──
+                                // ── Inner Ring: Bright neon cyan target lock ring ──
                                 if (inLockZone) {
-                                    const lockT = scrollMath.clamp01(1.0 - dist / 4.0); // 0→1 as dist 4→0
+                                    const lockT = scrollMath.clamp01((8 - dist) / 8); // 0→1 as dist 8→0
                                     const isLocked = lockT > 0.85;
 
-                                    // Inner ring tightens toward centre
-                                    obs.ringMat2.opacity = lockT * 0.9;
-                                    obs.ring2.scale.setScalar(scrollMath.lerp(1.8, 0.8, lockT));
+                                    obs.ringMat2.color.setHex(0x00ffcc);
+                                    obs.ringMat2.opacity = Math.max(0.7, lockT * 0.98);
+                                    obs.ring2.scale.setScalar(scrollMath.lerp(1.4, 0.75, lockT));
 
-                                    // Gate strobe on lock
-                                    const strobe = isLocked
-                                        ? (Math.sin(Date.now() * 0.025) > 0 ? 1.0 : 0.4)
-                                        : 0.75 + 0.25 * Math.sin(Date.now() * 0.012);
-                                    obs.gateMat.opacity = strobe;
-                                    obs.dotMat.opacity = strobe;
+                                    if (!isMobileScreen) {
+                                        const strobe = isLocked
+                                            ? (Math.sin(Date.now() * 0.025) > 0 ? 1.0 : 0.4)
+                                            : 0.75 + 0.25 * Math.sin(Date.now() * 0.012);
+                                        obs.gateMat.opacity = strobe;
+                                        obs.dotMat.opacity = strobe;
 
-                                    // Lock DOM reticle
-                                    anyLockHudVisible = true;
-                                    if (lockHud) {
-                                        lockHud.classList.add('lk-visible');
-                                        if (isLocked && !obs.locked) {
-                                            obs.locked = true;
-                                            lockHud.classList.add('lk-locked');
-                                            if (lkLocked) lkLocked.textContent = 'LOCKED';
+                                        anyLockHudVisible = true;
+                                        if (lockHud) {
+                                            lockHud.classList.add('lk-visible');
+                                            if (isLocked && !obs.locked) {
+                                                obs.locked = true;
+                                                lockHud.classList.add('lk-locked');
+                                                if (lkLocked) lkLocked.textContent = 'LOCKED';
+                                            }
+                                            if (lkRange) lkRange.textContent = dist.toFixed(1) + ' U';
+                                            if (lkTarget) lkTarget.textContent = obs.data.title;
                                         }
-                                        if (lkRange) lkRange.textContent = dist.toFixed(1) + ' U';
-                                        if (lkTarget) lkTarget.textContent = obs.data.title;
                                     }
-
-                                    // Subtle camera zoom push on lock-in
-                                    fovBump -= lockT * 3.5;
                                 } else {
                                     obs.ringMat2.opacity = 0;
-                                    obs.ring2.scale.setScalar(1.8);
+                                    obs.ring2.scale.setScalar(1.6);
                                     obs.locked = false;
                                 }
 
@@ -1753,24 +1804,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     obs.hit = true;
                                     obs.hitT = 0;
 
-                                    // Shatter gate elements, but KEEP label & connector visible
-                                    obs.gateLines.visible = false;
-                                    obs.dot.visible = false;
+                                    if (!isMobileScreen) {
+                                        obs.gateLines.visible = false;
+                                        obs.dot.visible = false;
+                                        // ── Scroll lock: force user to gander the card for 1.8s ──
+                                        if (scroll && scroll.lenis && !window._scrollLocked) {
+                                            window._scrollLocked = true;
+                                            scroll.lenis.stop();
+                                            setTimeout(() => {
+                                                scroll.lenis.start();
+                                                window._scrollLocked = false;
+                                            }, 200);
+                                        }
+                                    }
                                     obs.ring1.visible = false;
                                     obs.ring2.visible = false;
                                     obs.shards.forEach(s => { s.mesh.visible = true; });
-
-                                    // Impact flash
-                                    if (impactFlash) {
-                                        impactFlash.style.opacity = '1';
-                                        setTimeout(() => { impactFlash.style.opacity = '0'; }, 120);
-                                    }
-
-                                    // Dismiss lock HUD immediately
-                                    if (lockHud) {
-                                        lockHud.classList.remove('lk-visible', 'lk-locked');
-                                        if (lkLocked) lkLocked.textContent = 'ACQUIRING';
-                                    }
                                 }
 
                             } else {
@@ -1778,17 +1827,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 obs.hitT += 0.016;
                                 const et = obs.hitT;
 
-                                // Camera shake decays over 0.5s
-                                if (et < 0.5) {
-                                    const shakeAmp = (1.0 - et / 0.5) * 0.18;
-                                    shakeX += (Math.random() - 0.5) * shakeAmp;
-                                    shakeZ += (Math.random() - 0.5) * shakeAmp;
-                                }
-
-                                // FOV spike then settle
-                                if (et < 0.6) {
-                                    const spikeCurve = Math.exp(-et * 8) * 14; // fast decay
-                                    fovBump += spikeCurve;
+                                if (!isMobileScreen) {
+                                    if (et < 0.5) {
+                                        const shakeAmp = (1.0 - et / 0.5) * 0.18;
+                                        shakeX += (Math.random() - 0.5) * shakeAmp;
+                                        shakeZ += (Math.random() - 0.5) * shakeAmp;
+                                    }
+                                    if (et < 0.6) {
+                                        const spikeCurve = Math.exp(-et * 8) * 14;
+                                        fovBump += spikeCurve;
+                                    }
                                 }
 
                                 // Shard scatter + fade
@@ -2112,6 +2160,90 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
+            // ── Mobile-Only Top Tactical Experience HUD Overlay Global Update ──
+            const updateMobileExpHud = () => {
+                const isMobileScreen = window.innerWidth < 1025;
+                const mHud = document.getElementById('mobile-exp-hud');
+                if (!mHud) return;
+
+                if (!isMobileScreen) {
+                    mHud.classList.add('hidden');
+                    mHud.classList.remove('active');
+                    return;
+                }
+
+                const SUB_G_END = 0.63;
+                const localIsPullingUp = drivePct < SUB_G_END;
+                const localFlyNorm = !localIsPullingUp ? (drivePct - SUB_G_END) / (1.0 - SUB_G_END) : 0;
+                const phase1End = isMobileScreen ? 0.76 : 0.38;
+                const isInExpPhase = isDriving && drivePct >= 0.55 && !localIsPullingUp && localFlyNorm < phase1End;
+
+                if (isInExpPhase) {
+                    mHud.classList.remove('hidden');
+                    mHud.classList.add('active');
+
+                    let activeIdx = 0;
+                    if (window._expObstacles && window._expObstacles.length > 0) {
+                        const trainX = -2.21 - 9.49999988079071;
+                        const portalX = trainX - 9.48;
+                        const finalCamX = portalX - 38.0;
+                        const jetX = finalCamX - localFlyNorm * 240.0;
+
+                        // d = jetX - obs.worldX
+                        //   d > 0  → obstacle is AHEAD of jet (jet hasn't reached it)
+                        //   d < 0  → obstacle is BEHIND jet (already passed)
+                        // Pick the node with the smallest d >= -14:
+                        //   - positive d: closest upcoming node (switch to it early)
+                        //   - d in [-14, 0): just-passed node (still show it briefly)
+                        let bestDist = Infinity;
+                        window._expObstacles.forEach((obs, idx) => {
+                            const d = jetX - obs.worldX;
+                            if (d >= -14.0 && d < bestDist) {
+                                bestDist = d;
+                                activeIdx = idx;
+                            }
+                        });
+                    }
+
+                    const EXP_NODES = window._expNodeData || [
+                        { title: 'BEAKAN', role: 'Android Developer', year: '2024', stack: 'Kotlin · Android · Firebase · BLE', desc: 'Beacon-based attendance system for VIT Chennai using BLE hardware. Optimized for low-latency on rooted devices.', status: '● DEPLOYED' },
+                        { title: 'ANADROME', role: 'Graphics Engineer', year: '2024', stack: 'Android · OpenGL ES · GLSL', desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.', status: '● ACTIVE' },
+                        { title: 'ANADROME', role: 'Graphics Engineer', year: '2024', stack: 'Android · OpenGL ES · GLSL', desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.', status: '● ACTIVE' },
+                        { title: 'ZENITH', role: 'Frontend Engineer', year: '2025', stack: 'Three.js · GSAP · WebGL · Vite', desc: 'This portfolio. A fully scroll-driven cinematic WebGL experience — zero canvas2D, pure GPU.', status: '● LIVE' },
+                    ];
+                    const activeNode = EXP_NODES[activeIdx];
+                    if (activeNode && window._lastActiveNodeIdx !== activeIdx) {
+                        window._lastActiveNodeIdx = activeIdx;
+                        const tagEl = document.getElementById('m-exp-tag');
+                        const yearEl = document.getElementById('m-exp-year');
+                        const titleEl = document.getElementById('m-exp-title');
+                        const roleEl = document.getElementById('m-exp-role');
+                        const descEl = document.getElementById('m-exp-desc');
+                        const statusEl = document.getElementById('m-exp-status-text');
+                        const linkEl = document.getElementById('m-exp-link');
+
+                        if (tagEl) tagEl.innerText = `[ SYS.01 // TGT_LOCK 0${activeIdx + 1} ]`;
+                        if (yearEl) yearEl.innerText = `YR.${activeNode.year}`;
+                        if (titleEl) titleEl.innerText = activeNode.title;
+                        if (roleEl) roleEl.innerText = `// ${activeNode.role.toUpperCase()}`;
+                        if (descEl) descEl.innerText = activeNode.desc;
+                        if (statusEl) statusEl.innerText = `${activeNode.status} // NOMINAL`;
+                        if (linkEl) linkEl.innerText = `LINK: SYS_0${activeIdx + 1}`;
+
+                        const stackContainer = document.getElementById('m-exp-stack');
+                        if (stackContainer) {
+                            const pills = activeNode.stack.split('·').map(s => `<span class="m-exp-pill">${s.trim()}</span>`).join('');
+                            stackContainer.innerHTML = pills;
+                        }
+                    }
+                } else {
+                    mHud.classList.add('hidden');
+                    mHud.classList.remove('active');
+                    window._lastActiveNodeIdx = -1;
+                }
+            };
+            updateMobileExpHud();
+
             // DOM Hero Content Fading (fades out fast to prevent room overlay)
             if (domHeroContent && !isWarmup) {
                 const heroOpacity = 1 - scenePct * 12.5;
@@ -2186,8 +2318,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             warmupScheduled = true;
 
             scheduleDeferredTask(() => {
-                console.log('ZENITH: INITIATING_BACKGROUND_WARMUP');
-
                 gl.scene.traverse(child => {
                     if (child.isMesh) {
                         child.userData.originalFrustumCulled = child.frustumCulled;
@@ -2210,8 +2340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 updateScene(getScrollPct(), 0, true);
                 gl.forceRender();
-
-                console.log('ZENITH: BACKGROUND_WARMUP_COMPLETE');
             }, 2600);
         };
 
@@ -2267,7 +2395,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (backgroundBootstrapStarted) return;
             backgroundBootstrapStarted = true;
 
-            console.log('ZENITH: STARTING_ASYNC_SCENE_LOAD');
             if (!loaderFinished) {
                 setLoaderProgress(45, 'STREAMING_LOFT_INTERIOR');
             }
@@ -2350,8 +2477,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         btn.style.borderColor = '';
                         btn.style.color = '';
                     }, 500);
-
-                    console.log(`[NAV CALIBRATOR] Target '${navKey}' calibrated to ${(curPct * 100).toFixed(2)}% (scroll: ${Math.round(scroll.getMaxScroll() * curPct)}px)`);
                 }
             });
         });
@@ -2373,10 +2498,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     const targetPct = window._navTargets[navKey] !== undefined ? window._navTargets[navKey] : defaultTargets[navKey] || 0;
 
+                    window._navScrolling = true;
                     scroll.scrollTo(maxScroll * targetPct, {
                         duration: 1.8,
                         easing: (t) => 1 - Math.pow(1 - t, 3)
                     });
+                    // Clear the nav guard after the animation completes + buffer
+                    setTimeout(() => { window._navScrolling = false; }, 2200);
 
                     fireNavPulse();
                 }

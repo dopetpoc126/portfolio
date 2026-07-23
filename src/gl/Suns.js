@@ -14,13 +14,10 @@ export default class Suns {
     }
 
     init() {
-        console.log('Earth System: Initializing...');
-
         cloneCachedScene(EARTH_MODEL_URL)
             .then((scene) => {
                 this.model = scene;
                 this.modelReady = true;
-                console.log('Earth System: Model Loaded');
                 if (this.onLoad) this.onLoad();
 
                 // 1. Scale & Position
@@ -199,7 +196,6 @@ export default class Suns {
     }
 
     dispose() {
-        console.log('Earth System: Disposing...');
         if (this.model) {
             this.model.traverse(node => {
                 if (node.isMesh) {

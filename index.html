@@ -293,12 +293,42 @@
     <div class="hud-scanlines"></div>
   </div>
 
+  <!-- Mobile-only Top Tactical Experience HUD Card Overlay -->
+  <div id="mobile-exp-hud" class="mobile-exp-hud hidden">
+    <div class="m-exp-header">
+      <span id="m-exp-tag" class="m-exp-tag">[ SYS.01 // TGT_LOCK 01 ]</span>
+      <span id="m-exp-year" class="m-exp-year">YR.2024</span>
+    </div>
+    <div class="m-exp-rule"></div>
+    <div class="m-exp-hero">
+      <h2 id="m-exp-title" class="m-exp-title">BEAKAN</h2>
+      <div id="m-exp-role" class="m-exp-role">// ANDROID DEVELOPER</div>
+    </div>
+    <div id="m-exp-stack" class="m-exp-stack">
+      <span class="m-exp-pill">Kotlin</span>
+      <span class="m-exp-pill">Android</span>
+      <span class="m-exp-pill">Firebase</span>
+      <span class="m-exp-pill">BLE</span>
+    </div>
+    <div class="m-exp-brief-title">&gt;&gt; MISSION BRIEFING:</div>
+    <p id="m-exp-desc" class="m-exp-desc">
+      Beacon-based attendance system for VIT Chennai using BLE hardware. Optimized for low-latency on rooted devices.
+    </p>
+    <div class="m-exp-footer">
+      <div class="m-exp-status">
+        <span class="m-exp-dot"></span>
+        <span id="m-exp-status-text">DEPLOYED // NOMINAL</span>
+      </div>
+      <span id="m-exp-link" class="m-exp-link">LINK: SYS_01</span>
+    </div>
+  </div>
+
   <!-- Projects fullscreen overlay — triggered by clicking the computer screen -->
-  <div id="projects-fullscreen" class="projects-fullscreen hidden">
+  <div id="projects-fullscreen" class="projects-fullscreen hidden" data-lenis-prevent>
     <button id="projects-back" class="projects-back">
       <span>◀</span> BACK TO COCKPIT
     </button>
-    <div class="projects-content">
+    <div class="projects-content" data-lenis-prevent>
       <div class="projects-header">
         <h2>PROJECTS</h2>
         <span class="projects-subtitle">SYS.01 // STRATEGY_BOARD</span>

@@ -481,8 +481,6 @@ export default class ProjectCards {
     }
 
     init() {
-        console.log('ProjectCards (Carousel Mode): Initializing...');
-
         // Add to scene
         this.gl.scene.add(this.group);
 
