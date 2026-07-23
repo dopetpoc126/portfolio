@@ -770,12 +770,14 @@ export default class City {
 
         // ─── Panel dimensions ───
         // Desktop: wide landscape (0.85 x 0.56)
-        // Mobile: dynamically scaled narrow portrait (PW ≈ 0.42..0.44, PH = 0.58) to fit Pixel 7 (412x915) & narrow aspect ratios without clipping
+        // Mobile: fill the viewport. Camera sits ~1.0 unit away at FOV 52°.
+        // Visible height at that distance ≈ 2 * 1.0 * tan(26°) ≈ 0.98 units.
+        // Use PW=0.90, PH=1.20 to dominate the frame without clipping geometry.
         const aspect = window.innerWidth / window.innerHeight;
-        const PW = isMobile ? Math.min(0.44, aspect * 0.95) : 0.85;
-        const PH = isMobile ? 0.58 : 0.56;
+        const PW = isMobile ? 0.90 : 0.85;
+        const PH = isMobile ? 1.20 : 0.56;
 
-        const panelCenterY = startY + PH / 2 + (isMobile ? 0.05 : 0.10);
+        const panelCenterY = startY + PH / 2 + (isMobile ? -0.05 : 0.10);
         const panelCenterZ = startZ;
 
         // ─── 1. Base projection ring ───
@@ -1039,23 +1041,23 @@ export default class City {
     }
 
     _buildMobileHologramCanvas(PW, PH) {
-        const CW = 1440;
-        const CH = Math.round(CW * (PH / PW)); // e.g. 1988
+        const CW = 2048;
+        const CH = Math.round(CW * (PH / PW)); // ~2731 at 1.20/0.90
 
         const canvas = document.createElement('canvas');
         canvas.width = CW;
         canvas.height = CH;
         const ctx = canvas.getContext('2d');
 
-        // ── Background — deep near-black ──
+        // ── Background ──
         ctx.fillStyle = '#060608';
         ctx.fillRect(0, 0, CW, CH);
 
         // Dot grid
-        for (let y = 32; y < CH; y += 56) {
-            for (let x = 32; x < CW; x += 56) {
+        for (let y = 40; y < CH; y += 72) {
+            for (let x = 40; x < CW; x += 72) {
                 ctx.beginPath();
-                ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 77, 0, 0.09)';
                 ctx.fill();
             }
@@ -1063,10 +1065,10 @@ export default class City {
 
         // Left accent bar
         ctx.fillStyle = '#ff4d00';
-        ctx.fillRect(0, 0, 12, CH);
+        ctx.fillRect(0, 0, 16, CH);
 
         // Corner brackets
-        const bLen = 64, bW = 5, pad = 36;
+        const bLen = 110, bW = 7, pad = 52;
         ctx.strokeStyle = 'rgba(255, 77, 0, 0.9)';
         ctx.lineWidth = bW;
         [[pad, pad, 1, 1], [CW - pad, pad, -1, 1],
@@ -1075,65 +1077,64 @@ export default class City {
             ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + dy * bLen); ctx.stroke();
         });
 
-        // Generous inner margins (leftOffset = 120) so text NEVER touches outer borders
-        const leftOffset = pad + 84; // 120
-        const maxContentW = CW - leftOffset - pad - 64; // 1200
+        const lx = pad + 120;
+        const rEdge = CW - pad - 80;
+        const contentW = rEdge - lx;
 
         // ── Section Tag ──
-        ctx.font = '700 40px "JetBrains Mono", monospace';
+        ctx.font = '700 64px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255, 77, 0, 0.85)';
         ctx.textAlign = 'left';
-        ctx.fillText('[ OPERATIVE_PROFILE ]', leftOffset, pad + 60);
+        ctx.fillText('[ OPERATIVE_PROFILE ]', lx, pad + 92);
 
-        // ── Top Gradient Rule ──
-        const rule1Y = pad + 84;
-        const grad = ctx.createLinearGradient(leftOffset, 0, CW - pad - 64, 0);
-        grad.addColorStop(0, 'rgba(255, 77, 0, 0.8)');
+        // ── Top Rule ──
+        const rule1Y = pad + 130;
+        const grad = ctx.createLinearGradient(lx, 0, rEdge, 0);
+        grad.addColorStop(0, 'rgba(255, 77, 0, 0.9)');
         grad.addColorStop(0.5, 'rgba(255, 77, 0, 0.3)');
         grad.addColorStop(1, 'rgba(255, 77, 0, 0)');
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(leftOffset, rule1Y); ctx.lineTo(CW - pad - 64, rule1Y); ctx.stroke();
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(lx, rule1Y); ctx.lineTo(rEdge, rule1Y); ctx.stroke();
 
         // ── Name ──
-        ctx.font = 'bold 104px "JetBrains Mono", monospace';
+        ctx.font = 'bold 220px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText('SHRIYAN', leftOffset, rule1Y + 116);
+        ctx.fillText('SHRIYAN', lx, rule1Y + 240);
 
         // ── Subtitle ──
-        ctx.font = '700 36px "JetBrains Mono", monospace';
+        ctx.font = '700 68px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ff4d00';
-        ctx.fillText('CS UNDERGRADUATE · SYSTEMS BUILDER', leftOffset, rule1Y + 172);
+        ctx.fillText('CS UNDERGRADUATE · SYSTEMS BUILDER', lx, rule1Y + 340);
 
         // ── Bio summary grid ──
-        const bioY = rule1Y + 250;
+        const bioY = rule1Y + 480;
         const bioItems = [
-            { label: 'FOCUS', value: 'Android & Web' },
-            { label: 'BASE', value: 'VIT Chennai' },
-            { label: 'STATUS', value: '● AVAILABLE', accent: true }
+            { label: 'FOCUS',  value: 'Android & Web' },
+            { label: 'BASE',   value: 'VIT Chennai'   },
+            { label: 'STATUS', value: '● AVAILABLE', accent: true },
         ];
-
-        const colStep = maxContentW / 3;
+        const colStep = contentW / 3;
         bioItems.forEach((item, i) => {
-            const bx = leftOffset + i * colStep;
-            ctx.font = '700 28px "JetBrains Mono", monospace';
+            const bx = lx + i * colStep;
+            ctx.font = '700 52px "JetBrains Mono", monospace';
             ctx.fillStyle = 'rgba(255, 77, 0, 0.7)';
             ctx.fillText(item.label, bx, bioY);
-            ctx.font = 'bold 34px "JetBrains Mono", monospace';
-            ctx.fillStyle = item.accent ? '#44ff88' : 'rgba(255, 255, 255, 0.95)';
-            ctx.fillText(item.value, bx, bioY + 48);
+            ctx.font = 'bold 64px "JetBrains Mono", monospace';
+            ctx.fillStyle = item.accent ? '#44ff88' : 'rgba(255,255,255,0.95)';
+            ctx.fillText(item.value, bx, bioY + 88);
         });
 
         // ── Divider ──
-        const rule2Y = bioY + 100;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(leftOffset, rule2Y); ctx.lineTo(CW - pad - 64, rule2Y); ctx.stroke();
+        const rule2Y = bioY + 200;
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(lx, rule2Y); ctx.lineTo(rEdge, rule2Y); ctx.stroke();
 
         // ── Core Statement ──
-        ctx.font = 'bold 38px "JetBrains Mono", monospace';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-        ctx.fillText('> Building high-performance interfaces.', leftOffset, rule2Y + 68);
+        ctx.font = 'bold 72px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.98)';
+        ctx.fillText('> Building high-performance interfaces.', lx, rule2Y + 108);
 
         // ── Description Lines ──
         const descLines = [
@@ -1141,42 +1142,42 @@ export default class City {
             'Roots every device to maximize performance.',
             'I don\'t just write code — I optimize it.',
         ];
-        ctx.font = '700 32px "Inter", sans-serif';
+        ctx.font = '700 60px "Inter", sans-serif';
         descLines.forEach((line, i) => {
-            ctx.fillStyle = `rgba(255, 235, 215, ${0.72 - i * 0.08})`;
-            ctx.fillText(line, leftOffset, rule2Y + 140 + i * 52);
+            ctx.fillStyle = `rgba(255, 235, 215, ${0.80 - i * 0.08})`;
+            ctx.fillText(line, lx, rule2Y + 108 + 110 + i * 88);
         });
 
         // ── Mandate Pills ──
-        const mandateY = rule2Y + 140 + descLines.length * 52 + 32;
+        const mandateY = rule2Y + 108 + 110 + descLines.length * 88 + 60;
         const mandates = [
             '> Performance is paramount.',
             '> User experience is priority.'
         ];
         mandates.forEach((txt, i) => {
-            const my = mandateY + i * 76;
-            ctx.font = 'bold 32px "JetBrains Mono", monospace';
-            const tw = ctx.measureText(txt).width + 36;
+            const my = mandateY + i * 120;
+            ctx.font = 'bold 60px "JetBrains Mono", monospace';
+            const tw = ctx.measureText(txt).width + 56;
             ctx.fillStyle = 'rgba(255, 77, 0, 0.16)';
-            ctx.fillRect(leftOffset - 6, my - 32, tw, 50);
-            ctx.strokeStyle = 'rgba(255, 77, 0, 0.45)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(leftOffset - 6, my - 32, tw, 50);
+            ctx.fillRect(lx - 10, my - 52, tw, 78);
+            ctx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(lx - 10, my - 52, tw, 78);
             ctx.fillStyle = '#ffaa77';
-            ctx.fillText(txt, leftOffset + 10, my);
+            ctx.fillText(txt, lx + 14, my);
         });
 
         // ── Footer ──
-        ctx.font = '700 32px "JetBrains Mono", monospace';
+        ctx.font = '700 52px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255, 77, 0, 0.4)';
         ctx.textAlign = 'right';
-        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', CW - pad - 64, CH - pad - 32);
+        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', rEdge, CH - pad - 48);
 
         this.hologramTex = new THREE.CanvasTexture(canvas);
         this.hologramTex.generateMipmaps = true;
         this.hologramTex.minFilter = THREE.LinearMipmapLinearFilter;
         this.hologramTex.magFilter = THREE.LinearFilter;
-        this.hologramTex.anisotropy = 8;
+        this.hologramTex.anisotropy = 16;
     }
 
     _buildScanlineCanvas() {

@@ -102,8 +102,10 @@ export default class ScrollManager {
         const distance = targetY - startY;
         const startTime = performance.now();
         const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-        // Snap threshold: within 4px of target counts as "arrived"
-        const SNAP_PX = 4;
+        // Snap early: easeOutCubic flattens heavily near t=1.
+        // 12px threshold means we snap well before the curve asymptotes,
+        // which also triggers onComplete (nav unlock) much sooner.
+        const SNAP_PX = 12;
 
         const step = (now) => {
             const elapsed = (now - startTime) / 1000;
@@ -115,7 +117,6 @@ export default class ScrollManager {
             if (t < 1 && remaining > SNAP_PX) {
                 this._nativeScrollRaf = requestAnimationFrame(step);
             } else {
-                // Snap exactly to target
                 window.scrollTo(0, targetY);
                 this._nativeScrollRaf = null;
                 if (typeof onComplete === 'function') onComplete();

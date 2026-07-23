@@ -196,6 +196,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Passive scroll listener — runs syncScrollPctIdx when outside DOM sections.
             window.addEventListener('scroll', syncScrollPctIdx, { passive: true });
+
+            // ── Experience free-scroll zone ─────────────────────────────────────────
+            // While the jet is flying through the experience nodes, native scroll drives
+            // the animation. Section-jump navigation is suppressed until all nodes are
+            // cleared (window._expNodesCleared = true), at which point swipe-up resumes
+            // normal section navigation → contact/links.
+            const isExpFreeZone = () => {
+                const targets = window._navTargets || NAV_DEFAULTS;
+                const pct = getScrollPct();
+                const inExpRange = pct >= (targets.experience ?? 0.70) &&
+                                   pct < (targets.contact ?? 1.00);
+                return inExpRange && !window._expNodesCleared;
+            };
             // ────────────────────────────────────────────────────────────────────────
 
             // ── Mobile Touch Swipe (Triggers navbar link .click()) ──────
@@ -218,6 +231,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!isTracking || !e.touches || e.touches.length !== 1) return;
                 if (e.target.closest(EXCLUDED)) return;
 
+                // In the experience free-scroll zone, let native scroll drive the animation.
+                if (isExpFreeZone()) return;
+
                 const dy = e.touches[0].clientY - touchStartY;
                 const dx = e.touches[0].clientX - touchStartX;
 
@@ -232,6 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 isTracking = false;
                 if (e.target.closest(EXCLUDED)) return;
                 if (_navLocked) return; // navigation already in flight — ignore
+                if (isExpFreeZone()) return; // experience free-scroll: native scroll handles it
 
                 const t = e.changedTouches ? e.changedTouches[0] : null;
                 if (!t) return;
@@ -260,6 +277,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             document.addEventListener('wheel', (e) => {
                 if (e.target.closest(SCROLL_EXEMPT)) return;
+                // In the experience free-scroll zone, let the wheel drive native scroll.
+                if (isExpFreeZone()) return;
                 e.preventDefault();
                 wheelAccum += e.deltaY;
                 clearTimeout(wheelTimer);
@@ -626,6 +645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Reset speed lines, debris, car visibility, and skills HUD when not in driving phase
             if (!isDriving) {
+                window._expNodesCleared = false;
                 if (city && city.f1Model) {
                     city.f1Model.visible = true;
                 }
@@ -1715,6 +1735,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const phase1End = 0.35;
                         const phase2End = 0.48;
 
+                        // Track whether all experience nodes have been passed.
+                        // Used by touch/wheel handlers to re-enable section navigation
+                        // after the flight sequence completes.
+                        window._expNodesCleared = !isPullingUp && flyNorm >= phase1End;
+
                         const diveNorm = scrollMath.clamp01((flyNorm - phase1End) / (phase2End - phase1End));
                         const easeDive = scrollMath.smoothstep(diveNorm);
 
@@ -2138,9 +2163,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const landY = 2.5;
                 const landZ = 0.4868419314185841 + WZ;
 
-                // Camera stops 1m in front of hologram hotspot, 0.5m above table
-                const tableX = 0.27 + 1.0;
-                const tableY = 1.24 + 0.5;
+                // Camera stops in front of hologram hotspot, 0.5m above table.
+                // On mobile the hologram panel is larger (PW=0.90, PH=1.20) so pull
+                // back further to keep the full panel in frame.
+                const isMobileView = window.innerWidth < 1025;
+                const tablePullback = isMobileView ? 1.85 : 1.0;
+                const tableX = 0.27 + tablePullback;
+                const tableY = isMobileView ? 1.24 + 0.85 : 1.24 + 0.5;
                 const tableZ = 0.32 + WZ;
 
                 const portalX = landX;
@@ -2161,10 +2190,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const startRotY = rotP1;   // ~60° — where dive ends
                 const startRotX = 0;
 
-                // Camera at (1.27, 1.74, -24.68), Panel center at (0.27, 1.60, -24.68)
-                // dy = 1.74-1.60 = 0.14, dx = 1.0  →  rotX = -atan(0.14) ≈ -0.139 rad
+                // Camera higher on mobile (tableY = 1.24+0.85 = 2.09), panel center ≈ 1.83
+                // dy = 2.09-1.83 = 0.26, dx = 1.85 → rotX = -atan(0.26/1.85) ≈ -0.139
                 const tableRotY = Math.PI / 2;
-                const tableRotX = -Math.atan(0.14 / 1.0); // slight downward tilt to panel center
+                const tableRotX = isMobileView ? -Math.atan(0.26 / 1.85) : -Math.atan(0.14 / 1.0);
 
                 const portalRotY = Math.PI / 2; // portal is also on -X axis
 
@@ -2654,7 +2683,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                         && currentPct >= expStart
                         && currentPct < contactStart;
 
-                    const remaining = Math.abs(targetPct - currentPct);
+                    // ── Back-from-links guard: contact → experience enters the free-scroll
+                    // zone at the start of the flight. Also reset _expNodesCleared so the
+                    // free-scroll zone reactivates and the user scrolls back through the nodes.
+                    const backFromLinks = navKey === 'experience'
+                        && currentPct >= (targets.contact ?? 1.00);
+                    if (backFromLinks) {
+                        window._expNodesCleared = false;
+                        // Keep _sectionIdx at 4 (links) until the scroll actually lands at
+                        // experience, so a stray swipe during animation doesn't jump to projects.
+                        _sectionIdx = 4;
+                    }
+                    const effectiveTargetPct = backFromLinks
+                        ? (targets.experience ?? 0.70)
+                        : targetPct;
+
+                    const remaining = Math.abs(effectiveTargetPct - currentPct);
                     const fullRange = contactStart - expStart;
                     const FLIGHT_BASE_DURATION = 5.0;
                     const NORMAL_DURATION = 2.8;
@@ -2662,12 +2706,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? FLIGHT_BASE_DURATION * (remaining / Math.max(fullRange, 0.01))
                         : NORMAL_DURATION;
 
-                    const targetPx = scroll.getMaxScroll() * targetPct;
+                    const targetPx = scroll.getMaxScroll() * effectiveTargetPct;
 
-                    // Lock nav for the full animation duration + 300ms settle buffer.
-                    // _unlockNav() is called by the animation on completion; the timeout
-                    // is a safety net only.
-                    _lockNav((duration + 0.3) * 1000);
+                    // Lock nav for the animation duration. _unlockNav fires via onComplete
+                    // when the animation snaps to target (well before the full duration due
+                    // to the SNAP_PX early-exit). Safety net is capped at 1.5s max so a
+                    // missed onComplete doesn't freeze swipes for the full 2.8s.
+                    _lockNav(Math.min((duration + 0.3) * 1000, 1500));
 
                     if (scroll.isTouch) {
                         const sectionEl = document.querySelector(targetId);
