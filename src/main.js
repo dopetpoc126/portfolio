@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const haptics = (await import('./utils/Haptics')).default;
         const CinematicManager = (await import('./utils/CinematicManager')).default;
         const HeroFormation = (await import('./utils/HeroFormation')).default;
-        const HeroText = (await import('./gl/HeroText')).default;
+        // const HeroText = (await import('./gl/HeroText')).default;
         const loadFalloutModule = () => import('./gl/Fallout').then(({ default: Fallout }) => Fallout);
         const loadCityModule = () => import('./gl/City').then(({ default: City }) => City);
         const loadSatellitesModule = () => import('./gl/Satellites').then(({ default: Satellites }) => Satellites);

@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import fontJson from 'three/examples/fonts/helvetiker_bold.typeface.json';
-import { DestructibleMesh, FractureOptions } from '@dgreenheck/three-pinata';
 
 export default class HeroText {
     constructor(glManager) {
@@ -17,7 +16,7 @@ export default class HeroText {
         this.init();
     }
 
-    init() {
+    async init() {
         // Hide HTML text so 3D text takes over seamlessly
         const heroContent = document.querySelector('.hero-content');
         if (heroContent) {
@@ -42,6 +41,14 @@ export default class HeroText {
             roughness: 0.4,
             side: THREE.DoubleSide
         });
+
+        let DestructibleMesh = THREE.Mesh;
+        try {
+            const pinata = await import('@dgreenheck/three-pinata');
+            if (pinata && pinata.DestructibleMesh) {
+                DestructibleMesh = pinata.DestructibleMesh;
+            }
+        } catch (_) {}
 
         // Helper to create and position destructible text
         const createText = (text, yOffset, size = 1.8) => {
@@ -88,48 +95,55 @@ export default class HeroText {
         });
     }
 
-    fracture() {
+    async fracture() {
         if (this.fractured) return;
         this.fractured = true;
 
-        this.meshes.forEach(mesh => {
-            // Optimized 2.5D Voronoi mode for fast planar mesh fracturing
-            const options = new FractureOptions({
-                fractureMethod: 'voronoi',
-                fragmentCount: 12,
-                voronoiOptions: {
-                    mode: '2.5D',
-                    projectionAxis: 'z'
-                }
+        try {
+            const pinata = await import('@dgreenheck/three-pinata');
+            if (!pinata || !pinata.FractureOptions) return;
+            const FractureOptions = pinata.FractureOptions;
+
+            this.meshes.forEach(mesh => {
+                if (!mesh.fracture) return;
+                // Optimized 2.5D Voronoi mode for fast planar mesh fracturing
+                const options = new FractureOptions({
+                    fractureMethod: 'voronoi',
+                    fragmentCount: 12,
+                    voronoiOptions: {
+                        mode: '2.5D',
+                        projectionAxis: 'z'
+                    }
+                });
+
+                mesh.fracture(options, (fragment) => {
+                    this.group.add(fragment);
+                    this.fragments.push(fragment);
+
+                    // Calculate outward velocity from center
+                    const pos = fragment.position.clone();
+                    // Push outwards from center (0,1,34)
+                    pos.y -= 1.0;
+                    pos.z -= 34;
+
+                    const speed = Math.random() * 12 + 8;
+                    const velocity = pos.normalize().multiplyScalar(speed);
+                    // Push towards Earth (-Z) so camera flies cleanly through the dispersing cloud
+                    velocity.z = -Math.random() * 15 - 5;
+
+                    fragment.userData = {
+                        velocity: velocity,
+                        spin: new THREE.Vector3(
+                            (Math.random() - 0.5) * 8,
+                            (Math.random() - 0.5) * 8,
+                            (Math.random() - 0.5) * 8
+                        )
+                    };
+                });
+
+                mesh.visible = false;
             });
-
-            mesh.fracture(options, (fragment) => {
-                this.group.add(fragment);
-                this.fragments.push(fragment);
-
-                // Calculate outward velocity from center
-                const pos = fragment.position.clone();
-                // Push outwards from center (0,1,34)
-                pos.y -= 1.0;
-                pos.z -= 34;
-
-                const speed = Math.random() * 12 + 8;
-                const velocity = pos.normalize().multiplyScalar(speed);
-                // Push towards Earth (-Z) so camera flies cleanly through the dispersing cloud
-                velocity.z = -Math.random() * 15 - 5;
-
-                fragment.userData = {
-                    velocity: velocity,
-                    spin: new THREE.Vector3(
-                        (Math.random() - 0.5) * 8,
-                        (Math.random() - 0.5) * 8,
-                        (Math.random() - 0.5) * 8
-                    )
-                };
-            });
-
-            mesh.visible = false;
-        });
+        } catch (_) {}
     }
 
     update(scrollPct, velocity, isWarmup = false, canFracture = false) {
