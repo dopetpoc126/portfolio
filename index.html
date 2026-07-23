@@ -150,15 +150,7 @@
         <div class="mp-divider"></div>
         <p id="mp-desc" class="mp-desc">Description text goes here.</p>
         <p id="mp-tech" class="mp-tech">SYSTEMS: ...</p>
-      <!-- Interactive Monitor Click Prompt Cue -->
-      <button id="monitor-click-cue" type="button" class="monitor-click-cue hidden" aria-label="Click monitor to view full projects page">
-        <span class="cue-badge">
-          <span class="cue-dot"></span>
-          <span class="cue-icon">🖵</span>
-        </span>
-        <span class="cue-label">[ CLICK SCREEN FOR FULL PROJECTS ]</span>
-        <span class="cue-arrow">➔</span>
-      </button>
+      </div>
 
       <!-- 3D Cards render via WebGL canvas -->
     </section>
@@ -201,6 +193,16 @@
       </div>
     </section>
   </main>
+
+  <!-- Monitor click cue: direct body child so z-index works in root stacking context -->
+  <button id="monitor-click-cue" type="button" class="monitor-click-cue hidden" aria-label="Click monitor to view full projects page">
+    <span class="cue-badge">
+      <span class="cue-dot"></span>
+      <span class="cue-icon">🖵</span>
+    </span>
+    <span class="cue-label">[ CLICK SCREEN FOR FULL PROJECTS ]</span>
+    <span class="cue-arrow">➔</span>
+  </button>
 
   <!-- Drive section — cockpit driving + carrier landing -->
   <div id="drive" style="min-height: 2200vh; pointer-events: none;"></div>

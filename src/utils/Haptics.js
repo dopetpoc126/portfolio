@@ -138,6 +138,7 @@ class Haptics {
 
     setupTapHaptics() {
         document.addEventListener('click', (event) => {
+            if (!event.isTrusted) return; // ignore programmatic clicks — vibrate intervention causes jank
             const target = this.getInteractiveTarget(event.target);
             if (!target) return;
 

@@ -91,14 +91,192 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (text && loaderText) loaderText.innerText = text;
         };
 
-        // ── Mobile Native Smooth Scroll ──────────────────────────────────────
-        // Hardware-accelerated 60/120FPS native touch momentum scroll on mobile.
-        // JS touch event hijacking / auto-scroll timers are removed to eliminate
-        // main-thread lag spikes and stop-and-go stutter.
-        const initScrollAssist = () => {
-            // Disabled to ensure 100% fluid native momentum scrolling on mobile
+        // ── Section Navigation (Touch Swipe + Mouse Wheel) ─────────────────
+        // Single source of truth is the navbar link click handler.
+        // Touch swipe up   → trigger .click() on next section link
+        // Touch swipe down → trigger .click() on previous section link
+        // Mouse wheel down → trigger .click() on next section link
+        // Mouse wheel up   → trigger .click() on previous section link
+
+        const NAV_KEYS = ['hero', 'about', 'projects', 'experience', 'contact'];
+        const NAV_DEFAULTS = { hero: 0.00, about: 0.05, projects: 0.27, experience: 0.70, contact: 1.00 };
+
+        // Section index — single writer: IntersectionObserver (set up inside initSectionNav).
+        let _sectionIdx = 0;
+
+        // _navLocked gates all navigation input for the full duration of an in-flight
+        // scroll animation. Cleared by the animation itself via _navUnlock(), not a
+        // fixed timeout — so swipe-spam and mid-flight re-triggers are impossible.
+        let _navLocked = false;
+        let _navUnlockTimer = null;
+
+        const _lockNav = (durationMs) => {
+            _navLocked = true;
+            clearTimeout(_navUnlockTimer);
+            // Always unlock after durationMs regardless, as a safety net.
+            _navUnlockTimer = setTimeout(() => { _navLocked = false; }, durationMs);
         };
-        // ─────────────────────────────────────────────────────────────────────
+
+        const _unlockNav = () => {
+            clearTimeout(_navUnlockTimer);
+            _navLocked = false;
+        };
+
+        const navigateToIdx = (idx, navLinks) => {
+            if (_navLocked) return;
+            const clamped = Math.max(0, Math.min(idx, NAV_KEYS.length - 1));
+            if (clamped === _sectionIdx) return;
+
+            const hrefMap = ['#hero', '#about', '#projects', '#experience', '#contact'];
+            const link = document.querySelector(`.hud-nav a[href="${hrefMap[clamped]}"]`);
+            if (!link) return;
+
+            _sectionIdx = clamped;
+            // Trigger navbar link click — single source of truth for smooth navigation
+            link.click();
+        };
+
+        const initSectionNav = () => {
+            // Narrow exclusion list — interactive controls only.
+            // Dropping `a`, `nav`, `.hud-nav` means swipes that START near nav links
+            // are now tracked. Keep `button` and `input` so taps on controls don't
+            // accidentally trigger a section jump.
+            const EXCLUDED = 'button, input, #projects-fullscreen, [data-lenis-prevent]';
+            const SCROLL_EXEMPT = '#projects-fullscreen, [data-lenis-prevent]';
+
+            const navLinks = Array.from(document.querySelectorAll('.hud-nav a'));
+
+            // ── Section index tracking: hybrid IntersectionObserver + scroll-pct ──
+            //
+            // This site is mostly WebGL-driven. Several nav targets (#projects,
+            // #experience, #contact) have no real DOM element with height, so
+            // IntersectionObserver can never fire for them. Strategy:
+            //
+            //   • DOM sections (#hero, #work→about): IntersectionObserver at 40%
+            //     visibility. These are real full-viewport sections.
+            //   • WebGL-only sections (projects, experience, contact): scroll-pct
+            //     thresholds, updated by a passive scroll listener. The observer
+            //     result always wins when it fires; the scroll-pct path only runs
+            //     when scroll is past the last observable section.
+            //
+            // NAV_KEYS index:  0=hero  1=about  2=projects  3=experience  4=contact
+
+            // Observable DOM elements for indices 0 and 1.
+            // #about nav link → section is actually id="work"
+            const observedPairs = [
+                { el: document.querySelector('#hero'), idx: 0 },
+                { el: document.querySelector('#work'), idx: 1 },
+            ];
+
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const pair = observedPairs.find(p => p.el === entry.target);
+                        if (pair) _sectionIdx = pair.idx;
+                    }
+                });
+            }, { threshold: 0.4 });
+
+            observedPairs.forEach(p => p.el && sectionObserver.observe(p.el));
+
+            // Scroll-pct fallback for WebGL sections (projects=2, experience=3, contact=4).
+            // Only overrides _sectionIdx when scroll is past the DOM sections (~5%)
+            // AND no navigation animation is in flight.
+            const syncScrollPctIdx = () => {
+                if (_navLocked) return; // don't clobber _sectionIdx mid-animation
+                const pct = getScrollPct();
+                if (pct < 0.05) return; // DOM observer owns hero
+                // Use the calibrated nav targets so this matches wherever the user set them.
+                const targets = window._navTargets || NAV_DEFAULTS;
+                if (pct >= (targets.contact ?? 1.00)) { _sectionIdx = 4; return; }
+                if (pct >= (targets.experience ?? 0.70)) { _sectionIdx = 3; return; }
+                if (pct >= (targets.projects ?? 0.27)) { _sectionIdx = 2; return; }
+                // Below projects threshold: DOM observer handles hero/about, don't override.
+            };
+
+            // Passive scroll listener — runs syncScrollPctIdx when outside DOM sections.
+            window.addEventListener('scroll', syncScrollPctIdx, { passive: true });
+            // ────────────────────────────────────────────────────────────────────────
+
+            // ── Mobile Touch Swipe (Triggers navbar link .click()) ──────
+            let touchStartY = 0;
+            let touchStartX = 0;
+            let isTracking = false;
+
+            const SWIPE_THRESHOLD = 25;       // px — lower = easier to trigger (was 40)
+            const DIRECTION_LOCK_RATIO = 0.8;  // vertical only needs to beat 80% of horizontal (was 1.2×)
+
+            document.addEventListener('touchstart', (e) => {
+                if (e.target.closest(EXCLUDED)) return;
+                if (!e.touches || e.touches.length !== 1) return;
+                touchStartY = e.touches[0].clientY;
+                touchStartX = e.touches[0].clientX;
+                isTracking = true;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isTracking || !e.touches || e.touches.length !== 1) return;
+                if (e.target.closest(EXCLUDED)) return;
+
+                const dy = e.touches[0].clientY - touchStartY;
+                const dx = e.touches[0].clientX - touchStartX;
+
+                // Stop page from scrolling natively once vertical swipe is detected
+                if (Math.abs(dy) > Math.abs(dx) * DIRECTION_LOCK_RATIO) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                if (!isTracking) return;
+                isTracking = false;
+                if (e.target.closest(EXCLUDED)) return;
+                if (_navLocked) return; // navigation already in flight — ignore
+
+                const t = e.changedTouches ? e.changedTouches[0] : null;
+                if (!t) return;
+
+                const dy = t.clientY - touchStartY;
+                const dx = t.clientX - touchStartX;
+
+                if (Math.abs(dy) < SWIPE_THRESHOLD) return;
+                if (Math.abs(dx) > Math.abs(dy) * DIRECTION_LOCK_RATIO) return;
+
+                // _sectionIdx is always current — kept live by IntersectionObserver.
+                const currentIndex = _sectionIdx;
+                const targetIndex = dy < 0
+                    ? Math.min(currentIndex + 1, navLinks.length - 1)
+                    : Math.max(currentIndex - 1, 0);
+
+                if (targetIndex !== currentIndex && navLinks[targetIndex]) {
+                    navLinks[targetIndex].click();
+                }
+            }, { passive: true });
+
+            // ── Wheel (desktop / laptop) ────────────────────────────────────
+            let wheelAccum = 0;
+            let wheelTimer = null;
+            const WHEEL_THRESHOLD = 40;
+
+            document.addEventListener('wheel', (e) => {
+                if (e.target.closest(SCROLL_EXEMPT)) return;
+                e.preventDefault();
+                wheelAccum += e.deltaY;
+                clearTimeout(wheelTimer);
+                wheelTimer = setTimeout(() => {
+                    if (Math.abs(wheelAccum) >= WHEEL_THRESHOLD) {
+                        const currentIndex = _sectionIdx;
+                        const targetIndex = wheelAccum > 0
+                            ? Math.min(currentIndex + 1, navLinks.length - 1)
+                            : Math.max(currentIndex - 1, 0);
+                        if (targetIndex !== currentIndex && navLinks[targetIndex]) {
+                            navLinks[targetIndex].click();
+                        }
+                    }
+                    wheelAccum = 0;
+                }, 50);
+            }, { passive: false });
+        };
         // ─────────────────────────────────────────────────────────────────────
 
 
@@ -113,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => {
                 if (loader) loader.classList.add('loader-hidden');
                 scroll.start(); // Allow scrolling once loader is gone
-                initScrollAssist(); // Activate gentle section-nudge assist on mobile
+                initSectionNav(); // Section-by-section navigation (touch + wheel)
                 canFracture = true;
                 ScrollTrigger.refresh();
                 if (scroll.lenis) scroll.lenis.resize();
@@ -434,50 +612,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const updateScene = (scrollPct, velocity = 0, isWarmup = false) => {
             const isMobileScreen = window.innerWidth < 1025;
-
-            // ── Section Lock Engine (Cushioned Magnetic Lock) ───────────────
-            // Smoothly decelerates the POV via a 400ms quartic ease-out curve into
-            // the exact section target (About 0.05, Projects 0.27, Experience 0.70, Contact 1.00)
-            // for a fluid, cushioned lock-on view phase without abrupt camera stops.
-            if (!isWarmup && !window._navScrolling && !window._scrollLocked && scrollPct > 0.02) {
-                const sectionTargets = [0.05, 0.27, 0.70, 1.00];
-
-                if (window._lastLockedTargetIdx !== undefined && window._lastLockedTargetIdx >= 0) {
-                    const lastTarget = sectionTargets[window._lastLockedTargetIdx];
-                    if (lastTarget !== undefined && Math.abs(scrollPct - lastTarget) > 0.04) {
-                        window._lastLockedTargetIdx = -1;
-                    }
-                }
-
-                sectionTargets.forEach((targetNorm, idx) => {
-                    const diff = Math.abs(scrollPct - targetNorm);
-                    if (diff < 0.012 && window._lastLockedTargetIdx !== idx) {
-                        window._lastLockedTargetIdx = idx;
-                        window._scrollLocked = true;
-
-                        const maxPx = scroll.getMaxScroll();
-                        const targetPx = targetNorm * maxPx;
-
-                        // Smooth 400ms magnetic deceleration glide into section anchor
-                        scroll.scrollTo(targetPx, {
-                            duration: 0.40,
-                            easing: (t) => 1 - Math.pow(1 - t, 4), // soft quartic ease-out cushion
-                            onComplete: () => {
-                                // Tactical lock haptic & visual pulse
-                                try {
-                                    if (haptics && typeof haptics.lock === 'function') haptics.lock();
-                                    if (typeof fireNavPulse === 'function') fireNavPulse();
-                                } catch (_) {}
-
-                                setTimeout(() => {
-                                    window._scrollLocked = false;
-                                }, 150); // 150ms hold at stationary target center
-                            }
-                        });
-                    }
-                });
-            }
-            // ─────────────────────────────────────────────────────────────────
 
             // ── Remap scroll into two zones ──
             // Zone A (0→DRIVE_START): all existing phases, remapped to 0→1
@@ -2488,10 +2622,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- NAVBAR CLICKS ---
         document.querySelectorAll('.hud-nav a').forEach(link => {
             link.addEventListener('click', async (e) => {
-                e.preventDefault();
+                e.preventDefault(); // prevent native href="#section" instant jump
                 const targetId = link.getAttribute('href');
                 if (targetId && targetId.startsWith('#')) {
-                    const maxScroll = scroll.getMaxScroll();
+                    if (_navLocked) return; // swipe or previous click still animating
+
                     let navKey = 'hero';
 
                     if (targetId === '#hero') navKey = 'hero';
@@ -2500,15 +2635,59 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else if (targetId === '#experience' || targetId === '#work') navKey = 'experience';
                     else if (targetId === '#contact' || targetId === '#signal') navKey = 'contact';
 
-                    const targetPct = window._navTargets[navKey] !== undefined ? window._navTargets[navKey] : defaultTargets[navKey] || 0;
+                    // Update section index immediately so swipe/wheel handlers
+                    // have the correct current position before the scroll settles.
+                    const sectionIdxMap = { hero: 0, about: 1, projects: 2, experience: 3, contact: 4 };
+                    if (sectionIdxMap[navKey] !== undefined) {
+                        _sectionIdx = sectionIdxMap[navKey];
+                    }
+
+                    const targets = window._navTargets || defaultTargets;
+                    const targetPct = targets[navKey] ?? defaultTargets[navKey] ?? 0;
+                    const currentPct = getScrollPct();
+
+                    // ── Cinematic guard: experience → contact skips the flight nodes.
+                    // Scale duration proportionally so the animation plays through.
+                    const expStart = targets.experience ?? 0.70;
+                    const contactStart = targets.contact ?? 1.00;
+                    const inFlightZone = navKey === 'contact'
+                        && currentPct >= expStart
+                        && currentPct < contactStart;
+
+                    const remaining = Math.abs(targetPct - currentPct);
+                    const fullRange = contactStart - expStart;
+                    const FLIGHT_BASE_DURATION = 5.0;
+                    const NORMAL_DURATION = 2.8;
+                    const duration = inFlightZone
+                        ? FLIGHT_BASE_DURATION * (remaining / Math.max(fullRange, 0.01))
+                        : NORMAL_DURATION;
+
+                    const targetPx = scroll.getMaxScroll() * targetPct;
+
+                    // Lock nav for the full animation duration + 300ms settle buffer.
+                    // _unlockNav() is called by the animation on completion; the timeout
+                    // is a safety net only.
+                    _lockNav((duration + 0.3) * 1000);
+
+                    if (scroll.isTouch) {
+                        const sectionEl = document.querySelector(targetId);
+                        const elIsVisible = sectionEl && sectionEl.offsetParent !== null;
+                        if (elIsVisible) {
+                            scroll.scrollToSection(sectionEl, { duration, onComplete: _unlockNav });
+                        } else {
+                            scroll._animateNativeScroll(targetPx, duration, _unlockNav);
+                        }
+                    } else {
+                        // Desktop: Lenis handles the smooth animation.
+                        scroll.scrollTo(targetPx, {
+                            duration,
+                            easing: (t) => 1 - Math.pow(1 - t, 3),
+                            onComplete: _unlockNav,
+                        });
+                    }
 
                     window._navScrolling = true;
-                    scroll.scrollTo(maxScroll * targetPct, {
-                        duration: 1.8,
-                        easing: (t) => 1 - Math.pow(1 - t, 3)
-                    });
-                    // Clear the nav guard after the animation completes + buffer
-                    setTimeout(() => { window._navScrolling = false; }, 2200);
+                    setTimeout(() => { window._navScrolling = false; }, 1000);
 
                     fireNavPulse();
                 }
@@ -2554,9 +2733,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 1. Ignore clicks on HTML UI elements (navbar links, buttons, overlays)
             if (e.target.closest('a, button, nav, .hud-nav, #projects-fullscreen, .social-button, input')) return;
 
-            // 2. Only check when in the Loft / Projects section
+            // 2. Only check when camera is held at the monitor table
             const currentScrollPct = getScrollPct();
-            if (currentScrollPct < 0.18 || currentScrollPct > 0.55) return;
+            if (currentScrollPct < 0.2667 || currentScrollPct > 0.2855) return;
 
             // 3. Perform 3D raycast targeting computer screen mesh
             compMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -2616,9 +2795,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
 
-            // Dynamically show/hide monitor click cue prompt during Projects section
+            // Dynamically show/hide monitor click cue prompt during Projects section.
             if (monitorClickCue && projectsFullscreen) {
-                const isProjectsSection = scrollPct >= 0.18 && scrollPct <= 0.55;
+                const isProjectsSection = scrollPct >= 0.2667 && scrollPct <= 0.2855;
                 const isModalClosed = projectsFullscreen.classList.contains('hidden');
                 monitorClickCue.classList.toggle('hidden', !(isProjectsSection && isModalClosed));
             }

@@ -1097,16 +1097,24 @@ h3,
     gap: 1rem;
   }
 
+  .bio-summary .bio-label {
+    font-size: 0.7rem;
+  }
+
   .bio-summary .bio-value {
-    font-size: 0.65rem;
+    font-size: 1.0rem;
   }
 
   .mission-text .objective {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
   }
 
   .mission-text .description {
-    font-size: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .mission-text .mandate {
+    font-size: 0.85rem;
   }
 
   .hud-command-line {
@@ -2642,14 +2650,36 @@ h3,
     gap: 0.75rem;
   }
 
+  .bio-summary .bio-label {
+    font-size: clamp(0.65rem, 2.5vw, 0.75rem);
+  }
+
   .bio-summary .bio-value {
-    font-size: clamp(0.7rem, 3vw, 0.85rem);
+    font-size: clamp(0.9rem, 3.5vw, 1.05rem);
     word-break: break-word;
   }
 
+  .panel-title {
+    font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+  }
+
+  .mission-text .objective {
+    font-size: clamp(1.0rem, 3.8vw, 1.1rem);
+  }
+
+  .mission-text .description {
+    font-size: clamp(0.9rem, 3.5vw, 1.0rem);
+    line-height: 1.6;
+    word-break: break-word;
+  }
+
+  .mission-text .mandate {
+    font-size: clamp(0.8rem, 3vw, 0.9rem);
+  }
+
   .mission-text p {
-    font-size: clamp(0.75rem, 3vw, 0.88rem);
-    line-height: 1.5;
+    font-size: clamp(0.9rem, 3.5vw, 1.0rem);
+    line-height: 1.6;
     word-break: break-word;
   }
 
