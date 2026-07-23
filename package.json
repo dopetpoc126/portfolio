@@ -17,9 +17,10 @@
   },
   "dependencies": {
     "@barba/core": "^2.9.7",
-    "@studio-freight/lenis": "^1.0.33",
+    "@dgreenheck/three-pinata": "^2.0.1",
     "gsap": "^3.12.5",
     "imagesloaded": "^5.0.0",
+    "lenis": "^1.3.25",
     "three": "^0.160.0"
   }
 }
