@@ -638,7 +638,7 @@ export default class City {
         ctx.font = '52px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,170,68,0.5)';
         ctx.textAlign = 'right';
-        ctx.fillText('SYS.01 // STRATEGY_BOARD', CW - 100, 160);
+        ctx.fillText('FEATURED PROJECTS', CW - 100, 160);
         ctx.strokeStyle = 'rgba(255,170,68,0.4)';
         ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(100, 195); ctx.lineTo(CW - 100, 195); ctx.stroke();
@@ -703,7 +703,7 @@ export default class City {
             ctx.fillText(`● ${p.status}`, cx + cardW - 30, cardY + 78);
 
             // Name
-            ctx.font = 'bold 110px "JetBrains Mono", monospace';
+            ctx.font = '900 110px "Syne", sans-serif';
             ctx.fillStyle = '#fff5e8'; ctx.textAlign = 'left';
             ctx.fillText(p.name, cx + 30, cardY + 230);
 
@@ -750,7 +750,7 @@ export default class City {
         // Footer
         ctx.font = '40px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,170,68,0.22)'; ctx.textAlign = 'right';
-        ctx.fillText('NEURAL_UPLINK: ACTIVE  //  ZENITH SYS.01', CW - 100, CH - 40);
+        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', CW - 100, CH - 40);
 
         const tex = new THREE.CanvasTexture(canvas);
         tex.minFilter = THREE.LinearFilter;
@@ -1029,7 +1029,7 @@ export default class City {
         ctx.font = '700 40px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,77,0,0.35)';
         ctx.textAlign = 'right';
-        ctx.fillText('UPLINK: ACTIVE  //  ZENITH SYS.01', CW - pad - 20, CH - pad - 20);
+        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', CW - pad - 20, CH - pad - 20);
 
         this.hologramTex = new THREE.CanvasTexture(canvas);
         this.hologramTex.generateMipmaps = true;
@@ -1170,7 +1170,7 @@ export default class City {
         ctx.font = '700 32px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255, 77, 0, 0.4)';
         ctx.textAlign = 'right';
-        ctx.fillText('UPLINK: ACTIVE // ZENITH SYS.01', CW - pad - 64, CH - pad - 32);
+        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', CW - pad - 64, CH - pad - 32);
 
         this.hologramTex = new THREE.CanvasTexture(canvas);
         this.hologramTex.generateMipmaps = true;

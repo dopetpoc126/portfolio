@@ -8,25 +8,17 @@ export default class ScrollManager {
     }
 
     init() {
-        // Treat tablets/iPads as mobile but allow smooth scrolling
-        const isMobile = window.innerWidth < 1025;
-        this.isMobile = isMobile;
-
-        // Lerp mode (no duration/easing) gives exponential-decay inertia that is frame-rate
-        // independent and never "hard stops" — ideal for scroll-driven WebGL cameras.
-        // Setting duration would override lerp and produce a fixed-time ease-out that feels
-        // stop-and-go when sub-phases apply their own easing on top.
-        // Lenis config: touchMultiplier 0.75 & touchInertiaMultiplier 1.0 provide
-        // a controlled, cinematic touch scroll speed (eliminates 4x hyper-flicking).
-        // lerp 0.06 provides smooth 60FPS WebGL camera weighting, syncTouch false prevents main-thread jank.
+        // Unified Lenis configuration — 1:1 identical across Desktop and Mobile devices.
+        // No mobile-specific touch dampening, scroll assist, or touch overrides.
+        // Controlled mobile touch scroll speed — touchMultiplier: 0.35 prevents hyper-fast section jumping on touchscreens
         this.lenis = new Lenis({
-            lerp: isMobile ? 0.06 : 0.08,
+            lerp: 0.08,
             smoothWheel: true,
-            wheelMultiplier: 1.00,
-            touchMultiplier: isMobile ? 0.75 : 1.00,
             smoothTouch: true,
+            wheelMultiplier: 1.00,
+            touchMultiplier: 0.35,
+            touchInertiaMultiplier: 0.8,
             syncTouch: false,
-            touchInertiaMultiplier: isMobile ? 1.0 : 1.5,
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             infinite: false,
@@ -41,8 +33,8 @@ export default class ScrollManager {
             this.lenis.raf(time * 1000);
         });
 
-        // Smooth out mobile touch lag spikes for 60FPS continuity
-        gsap.ticker.lagSmoothing(1000, 16);
+        // Smooth out frame lag spikes
+        gsap.ticker.lagSmoothing(100, 16);
     }
 
 

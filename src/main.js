@@ -20,8 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             ScrollTrigger.config({ ignoreMobileResize: true });
         }
 
-        gsap.ticker.lagSmoothing(0);
-
         const canvas = document.querySelector('#gl-canvas');
         if (!canvas) throw new Error('Canvas #gl-canvas not found');
 
@@ -107,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const finishLoading = () => {
             if (loaderFinished) return;
             loaderFinished = true;
-            setLoaderProgress(100, 'NEURAL_LINK_SYNCHRONIZED');
+            setLoaderProgress(100, 'READY');
 
             ScrollTrigger.refresh();
             if (scroll.lenis) scroll.lenis.resize();
@@ -131,7 +129,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             domAboutSection = document.querySelector('.battlefield-hud');
             domContactSection = document.getElementById('contact');
 
-            // heroText = new HeroText(gl);
+            if (domHeroContent) {
+                gsap.fromTo(['.split-text', '.manifesto'],
+                    { opacity: 0, y: 40 },
+                    { opacity: 1, y: 0, duration: 1.2, ease: 'power4.out', stagger: 0.15 }
+                );
+            }
 
             if (suns) suns.ignition();
         };
@@ -317,8 +320,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.font = '12px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? 'rgba(255, 51, 0, 0.65)' : 'rgba(0, 255, 136, 0.65)';
             ctx.textAlign = 'left';
-            ctx.fillText("SYS: ZENITH V1.0", 40, h - 35);
-            ctx.fillText("LINK: ACTIVE", 40, h - 18);
+            ctx.fillText("SYS: PORTFOLIO V1.0", 40, h - 35);
+            ctx.fillText("STATUS: ACTIVE", 40, h - 18);
 
             ctx.textAlign = 'right';
             ctx.fillText("RADAR: SWEEPING", w - 40, h - 35);
@@ -436,7 +439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Smoothly decelerates the POV via a 400ms quartic ease-out curve into
             // the exact section target (About 0.05, Projects 0.27, Experience 0.70, Contact 1.00)
             // for a fluid, cushioned lock-on view phase without abrupt camera stops.
-            if (!isWarmup && !window._navScrolling && !window._scrollLocked) {
+            if (!isWarmup && !window._navScrolling && !window._scrollLocked && scrollPct > 0.02) {
                 const sectionTargets = [0.05, 0.27, 0.70, 1.00];
 
                 if (window._lastLockedTargetIdx !== undefined && window._lastLockedTargetIdx >= 0) {
@@ -1075,21 +1078,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                             group.add(dot);
 
                             // ── Tactical MFD Label Panel ──
-                            // Desktop: PANEL_W 24.0 (length) x PANEL_H 10.5 (width), Canvas 1024x512
+                            // Desktop: PANEL_W 34.0 (length) x PANEL_H 15.0 (width), Canvas 1600x750
                             // Mobile: Complete tall portrait redesign (PANEL_W 16.0 x PANEL_H 14.0, Canvas 1000x1350) positioned at LABEL_Z = -8.2 (right half of mobile viewport)
-                            const PANEL_W = isMobileScreen ? 16.0 : 24.0;
-                            const PANEL_H = isMobileScreen ? 14.0 : 10.5;
+                            const PANEL_W = isMobileScreen ? 16.0 : 34.0;
+                            const PANEL_H = isMobileScreen ? 14.0 : 15.0;
                             const LABEL_Z = isMobileScreen ? -8.2 : (labelSide * (GATE_SPAN + PANEL_W * 0.5 + 2.5));
 
-                            const CW = isMobileScreen ? 1000 : 1024;
-                            const CH = isMobileScreen ? 1350 : 512;
+                            const CANVAS_TOKENS = {
+                                COLOR_BG: '#06070a',
+                                COLOR_ORANGE: '#ff4d00',
+                                COLOR_CYAN: '#00ffcc',
+                                COLOR_TEXT: '#ffffff',
+                                COLOR_TEXT_MUTED: 'rgba(240, 245, 255, 0.85)',
+                                FONT_MONO: '"JetBrains Mono", monospace',
+                                FONT_SANS: '"Inter", sans-serif'
+                            };
+
+                            const CW = isMobileScreen ? 1000 : 1600;
+                            const CH = isMobileScreen ? 1350 : 750;
                             const lc = document.createElement('canvas');
                             lc.width = CW;
                             lc.height = CH;
                             const lx = lc.getContext('2d');
 
                             // 1. Dark Cockpit MFD Glass Background
-                            lx.fillStyle = '#06070a';
+                            lx.fillStyle = CANVAS_TOKENS.COLOR_BG;
                             lx.fillRect(0, 0, CW, CH);
 
                             // Tactical grid background
@@ -1163,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = 'bold 38px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#00ffcc';
                                 lx.textAlign = 'left';
-                                lx.fillText(`[ SYS.01 // TGT_LOCK 0${i + 1} ]`, padX, 76);
+                                lx.fillText(`[ PROJECT 0${i + 1} ]`, padX, 76);
 
                                 // Year Pill Badge on Right
                                 lx.font = 'bold 32px "JetBrains Mono", monospace';
@@ -1192,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.fillStyle = '#ffffff';
                                 lx.shadowColor = 'rgba(255, 77, 0, 0.8)';
                                 lx.shadowBlur = 18;
-                                lx.font = 'bold 120px "JetBrains Mono", monospace';
+                                lx.font = '900 120px "Syne", sans-serif';
                                 lx.textAlign = 'left';
                                 lx.fillText(node.title, padX, rule1Y + 140);
                                 lx.shadowBlur = 0;
@@ -1240,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const briefY = rule2Y + 60;
                                 lx.font = 'bold 36px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
-                                lx.fillText('>> MISSION BRIEFING:', padX, briefY);
+                                lx.fillText('>> OVERVIEW:', padX, briefY);
 
                                 lx.fillStyle = 'rgba(255, 240, 230, 0.96)';
                                 lx.font = '700 38px "Inter", sans-serif';
@@ -1272,161 +1285,166 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = 'bold 34px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
                                 lx.textAlign = 'left';
-                                lx.fillText(`${node.status} // NOMINAL`, padX + 36, footerY + 46);
+                                lx.fillText(`${node.status}`, padX + 36, footerY + 46);
 
                                 lx.font = 'bold 28px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(0, 255, 204, 0.7)';
                                 lx.textAlign = 'right';
-                                lx.fillText(`LINK_STATION_0${i + 1} // 99.8%`, CW - padX, footerY + 46);
+                                lx.fillText(`PROJECT 0${i + 1}`, CW - padX, footerY + 46);
                             } else {
-                                // ── DESKTOP LANDSCAPE CARD CANVAS DRAWING ──
-                                const ch = 24;
+                                // ── DESKTOP LANDSCAPE CARD CANVAS DRAWING (1600x750) ──
+                                const ch = 32;
                                 lx.strokeStyle = '#ff4d00';
-                                lx.lineWidth = 4;
+                                lx.lineWidth = 5;
                                 lx.beginPath();
-                                lx.moveTo(ch, 4);
-                                lx.lineTo(CW - 4, 4);
-                                lx.lineTo(CW - 4, CH - ch);
-                                lx.lineTo(CW - ch, CH - 4);
-                                lx.lineTo(4, CH - 4);
-                                lx.lineTo(4, ch);
+                                lx.moveTo(ch, 6);
+                                lx.lineTo(CW - 6, 6);
+                                lx.lineTo(CW - 6, CH - ch);
+                                lx.lineTo(CW - ch, CH - 6);
+                                lx.lineTo(6, CH - 6);
+                                lx.lineTo(6, ch);
                                 lx.closePath();
                                 lx.stroke();
 
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.35)';
-                                lx.lineWidth = 1.5;
+                                lx.lineWidth = 2;
                                 lx.beginPath();
-                                lx.moveTo(ch + 6, 12);
-                                lx.lineTo(CW - 12, 12);
-                                lx.lineTo(CW - 12, CH - ch - 6);
-                                lx.lineTo(CW - ch - 6, CH - 12);
-                                lx.lineTo(12, CH - 12);
-                                lx.lineTo(12, ch + 6);
+                                lx.moveTo(ch + 8, 16);
+                                lx.lineTo(CW - 16, 16);
+                                lx.lineTo(CW - 16, CH - ch - 8);
+                                lx.lineTo(CW - ch - 8, CH - 16);
+                                lx.lineTo(16, CH - 16);
+                                lx.lineTo(16, ch + 8);
                                 lx.closePath();
                                 lx.stroke();
 
                                 const barSegs = 6;
-                                const barX = 18;
-                                const barStartY = 64;
-                                const barH = CH - 128;
-                                const segH = (barH - (barSegs - 1) * 4) / barSegs;
+                                const barX = 24;
+                                const barStartY = 80;
+                                const barH = CH - 160;
+                                const segH = (barH - (barSegs - 1) * 6) / barSegs;
                                 for (let sb = 0; sb < barSegs; sb++) {
                                     lx.fillStyle = sb < 4 ? '#ff4d00' : 'rgba(255, 77, 0, 0.25)';
-                                    lx.fillRect(barX, barStartY + sb * (segH + 4), 6, segH);
+                                    lx.fillRect(barX, barStartY + sb * (segH + 6), 8, segH);
                                 }
 
-                                const bl = 36;
+                                const bl = 48;
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.85)';
-                                lx.lineWidth = 3;
-                                lx.beginPath(); lx.moveTo(14, 28); lx.lineTo(14 + bl, 28); lx.stroke();
-                                lx.beginPath(); lx.moveTo(28, 14); lx.lineTo(28, 14 + bl); lx.stroke();
-                                lx.beginPath(); lx.moveTo(CW - 14 - bl, 24); lx.lineTo(CW - 24, 24); lx.lineTo(CW - 24, 24 + bl); lx.stroke();
-                                lx.beginPath(); lx.moveTo(CW - 24, CH - 24 - bl); lx.lineTo(CW - 24, CH - 24); lx.lineTo(CW - 24 - bl, CH - 24); lx.stroke();
-                                lx.beginPath(); lx.moveTo(24, CH - 24 - bl); lx.lineTo(24, CH - 24); lx.lineTo(24 + bl, CH - 24); lx.stroke();
+                                lx.lineWidth = 4;
+                                lx.beginPath(); lx.moveTo(20, 36); lx.lineTo(20 + bl, 36); lx.stroke();
+                                lx.beginPath(); lx.moveTo(36, 20); lx.lineTo(36, 20 + bl); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 20 - bl, 32); lx.lineTo(CW - 32, 32); lx.lineTo(CW - 32, 32 + bl); lx.stroke();
+                                lx.beginPath(); lx.moveTo(CW - 32, CH - 32 - bl); lx.lineTo(CW - 32, CH - 32); lx.lineTo(CW - 32 - bl, CH - 32); lx.stroke();
+                                lx.beginPath(); lx.moveTo(32, CH - 32 - bl); lx.lineTo(32, CH - 32); lx.lineTo(32 + bl, CH - 32); lx.stroke();
 
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.7)';
                                 lx.textAlign = 'left';
-                                lx.fillText(`SYS.01 // TGT_LOCK [0${i + 1}]`, 42, 44);
+                                lx.fillText(`PROJECT 0${i + 1}`, 60, 60);
 
                                 const typeLabel = node.type || 'PROJECT';
-                                lx.font = 'bold 16px "JetBrains Mono", monospace';
-                                const badgeX = 360, badgeY = 24, badgeW = 125, badgeH = 26;
+                                lx.font = 'bold 24px "JetBrains Mono", monospace';
+                                const badgeX = 540, badgeY = 32, badgeW = 180, badgeH = 38;
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.15)';
                                 lx.fillRect(badgeX, badgeY, badgeW, badgeH);
                                 lx.strokeStyle = '#ff4d00';
-                                lx.lineWidth = 1.5;
+                                lx.lineWidth = 2;
                                 lx.strokeRect(badgeX, badgeY, badgeW, badgeH);
                                 lx.fillStyle = '#ff4d00';
                                 lx.textAlign = 'center';
-                                lx.fillText(`[ ${typeLabel.toUpperCase()} ]`, badgeX + badgeW / 2, badgeY + 18);
+                                lx.fillText(`[ ${typeLabel.toUpperCase()} ]`, badgeX + badgeW / 2, badgeY + 26);
 
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
                                 lx.textAlign = 'right';
-                                lx.fillText(`YR: ${node.year}  |  LOC: 13.08°N`, CW - 32, 44);
+                                lx.fillText(`YR: ${node.year}  |  LOC: 13.08°N`, CW - 48, 60);
 
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
-                                lx.lineWidth = 2;
-                                lx.beginPath(); lx.moveTo(42, 60); lx.lineTo(CW - 32, 60); lx.stroke();
+                                lx.lineWidth = 2.5;
+                                lx.beginPath(); lx.moveTo(60, 84); lx.lineTo(CW - 48, 84); lx.stroke();
 
                                 lx.fillStyle = '#ffffff';
                                 lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
-                                lx.shadowBlur = 12;
-                                lx.font = 'bold 96px "JetBrains Mono", monospace';
+                                lx.shadowBlur = 16;
+                                lx.font = '900 136px "Syne", sans-serif';
                                 lx.textAlign = 'left';
-                                lx.fillText(node.title, 42, 160);
+                                lx.fillText(node.title, 60, 220);
                                 lx.shadowBlur = 0;
 
                                 lx.fillStyle = '#00ffcc';
-                                lx.font = 'bold 28px "JetBrains Mono", monospace';
-                                lx.fillText(`// ${node.role.toUpperCase()}`, 42, 204);
+                                lx.font = 'bold 40px "JetBrains Mono", monospace';
+                                lx.fillText(`// ${node.role.toUpperCase()}`, 60, 280);
 
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
-                                lx.lineWidth = 1.5;
-                                lx.beginPath(); lx.moveTo(42, 224); lx.lineTo(CW - 32, 224); lx.stroke();
+                                lx.lineWidth = 2;
+                                lx.beginPath(); lx.moveTo(60, 308); lx.lineTo(CW - 48, 308); lx.stroke();
 
                                 const stackItems = typeof node.stack === 'string' ? node.stack.split('·').map(s => s.trim()) : [];
-                                let stackX = 42;
-                                const stackY = 244;
-                                lx.font = 'bold 18px "JetBrains Mono", monospace';
+                                let stackX = 60;
+                                const stackY = 332;
+                                lx.font = 'bold 26px "JetBrains Mono", monospace';
                                 stackItems.forEach(item => {
                                     const tw = lx.measureText(item).width;
-                                    const pw = tw + 24;
-                                    const ph = 30;
+                                    const pw = tw + 36;
+                                    const ph = 44;
                                     lx.fillStyle = 'rgba(255, 77, 0, 0.12)';
                                     lx.fillRect(stackX, stackY, pw, ph);
                                     lx.strokeStyle = 'rgba(255, 77, 0, 0.5)';
-                                    lx.lineWidth = 1;
+                                    lx.lineWidth = 1.5;
                                     lx.strokeRect(stackX, stackY, pw, ph);
                                     lx.fillStyle = '#ffaa77';
                                     lx.textAlign = 'left';
-                                    lx.fillText(item, stackX + 12, stackY + 21);
-                                    stackX += pw + 12;
+                                    lx.fillText(item, stackX + 18, stackY + 31);
+                                    stackX += pw + 18;
                                 });
 
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
-                                lx.fillText('>> MISSION_BRIEF:', 42, 318);
+                                lx.fillText('>> OVERVIEW:', 60, 436);
 
                                 lx.fillStyle = 'rgba(240, 245, 255, 0.85)';
-                                lx.font = '22px "Inter", sans-serif';
+                                lx.font = '30px "Inter", sans-serif';
                                 const descWords = node.desc.split(' ');
-                                let descLine = '', descY = 352;
+                                let descLine = '', descY = 482;
                                 for (const w of descWords) {
                                     const test = descLine + w + ' ';
-                                    if (lx.measureText(test).width > CW - 84 && descLine) {
-                                        lx.fillText(descLine.trim(), 42, descY);
+                                    if (lx.measureText(test).width > CW - 120 && descLine) {
+                                        lx.fillText(descLine.trim(), 60, descY);
                                         descLine = w + ' ';
-                                        descY += 32;
-                                        if (descY > 410) break;
+                                        descY += 44;
+                                        if (descY > CH - 120) break;
                                     } else {
                                         descLine = test;
                                     }
                                 }
-                                if (descLine.trim()) lx.fillText(descLine.trim(), 42, descY);
+                                if (descLine.trim()) lx.fillText(descLine.trim(), 60, descY);
 
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
-                                lx.lineWidth = 1.5;
-                                lx.beginPath(); lx.moveTo(42, CH - 54); lx.lineTo(CW - 32, CH - 54); lx.stroke();
+                                lx.lineWidth = 2;
+                                lx.beginPath(); lx.moveTo(60, CH - 76); lx.lineTo(CW - 48, CH - 76); lx.stroke();
 
                                 lx.fillStyle = '#00ff88';
-                                lx.beginPath(); lx.arc(52, CH - 28, 6, 0, Math.PI * 2); lx.fill();
-                                lx.font = 'bold 20px "JetBrains Mono", monospace';
+                                lx.beginPath(); lx.arc(76, CH - 38, 9, 0, Math.PI * 2); lx.fill();
+                                lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
                                 lx.textAlign = 'left';
-                                lx.fillText(`${node.status} // NOMINAL`, 68, CH - 21);
+                                lx.fillText(`${node.status}`, 98, CH - 28);
 
-                                lx.font = '18px "JetBrains Mono", monospace';
+                                lx.font = '26px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.55)';
                                 lx.textAlign = 'right';
-                                lx.fillText(`SIGNAL: ENCRYPTED // LINK_STATION_0${i + 1}`, CW - 32, CH - 21);
+                                lx.fillText(`PROJECT 0${i + 1}`, CW - 48, CH - 28);
                             }
 
                             lx.setTransform(1, 0, 0, 1, 0, 0);
 
+                            if (group._prevTex) {
+                                group._prevTex.dispose();
+                            }
                             const lTex = new THREE.CanvasTexture(lc);
                             lTex.flipY = true;
+                            group._prevTex = lTex;
+
                             const labelGeo = new THREE.PlaneGeometry(PANEL_W, PANEL_H);
                             const labelMat = new THREE.MeshBasicMaterial({
                                 map: lTex, transparent: true, depthWrite: false, side: THREE.DoubleSide,
@@ -1781,16 +1799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         obs.gateMat.opacity = strobe;
                                         obs.dotMat.opacity = strobe;
 
-                                        anyLockHudVisible = true;
-                                        if (lockHud) {
-                                            lockHud.classList.add('lk-visible');
-                                            if (isLocked && !obs.locked) {
-                                                obs.locked = true;
-                                                lockHud.classList.add('lk-locked');
-                                                if (lkLocked) lkLocked.textContent = 'LOCKED';
-                                            }
-                                            if (lkRange) lkRange.textContent = dist.toFixed(1) + ' U';
-                                            if (lkTarget) lkTarget.textContent = obs.data.title;
+                                        if (isLocked && !obs.locked) {
+                                            obs.locked = true;
                                         }
                                     }
                                 } else {
@@ -1832,10 +1842,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         const shakeAmp = (1.0 - et / 0.5) * 0.18;
                                         shakeX += (Math.random() - 0.5) * shakeAmp;
                                         shakeZ += (Math.random() - 0.5) * shakeAmp;
-                                    }
-                                    if (et < 0.6) {
-                                        const spikeCurve = Math.exp(-et * 8) * 14;
-                                        fovBump += spikeCurve;
                                     }
                                 }
 
@@ -2209,7 +2215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { title: 'BEAKAN', role: 'Android Developer', year: '2024', stack: 'Kotlin · Android · Firebase · BLE', desc: 'Beacon-based attendance system for VIT Chennai using BLE hardware. Optimized for low-latency on rooted devices.', status: '● DEPLOYED' },
                         { title: 'ANADROME', role: 'Graphics Engineer', year: '2024', stack: 'Android · OpenGL ES · GLSL', desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.', status: '● ACTIVE' },
                         { title: 'ANADROME', role: 'Graphics Engineer', year: '2024', stack: 'Android · OpenGL ES · GLSL', desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.', status: '● ACTIVE' },
-                        { title: 'ZENITH', role: 'Frontend Engineer', year: '2025', stack: 'Three.js · GSAP · WebGL · Vite', desc: 'This portfolio. A fully scroll-driven cinematic WebGL experience — zero canvas2D, pure GPU.', status: '● LIVE' },
+                        { title: 'PORTFOLIO', role: 'Frontend Engineer', year: '2025', stack: 'Three.js · GSAP · WebGL · Vite', desc: 'This portfolio. A fully scroll-driven WebGL experience — zero canvas2D, pure GPU.', status: '● LIVE' },
                     ];
                     const activeNode = EXP_NODES[activeIdx];
                     if (activeNode && window._lastActiveNodeIdx !== activeIdx) {
@@ -2222,13 +2228,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const statusEl = document.getElementById('m-exp-status-text');
                         const linkEl = document.getElementById('m-exp-link');
 
-                        if (tagEl) tagEl.innerText = `[ SYS.01 // TGT_LOCK 0${activeIdx + 1} ]`;
+                        if (tagEl) tagEl.innerText = `[ PROJECT 0${activeIdx + 1} ]`;
                         if (yearEl) yearEl.innerText = `YR.${activeNode.year}`;
                         if (titleEl) titleEl.innerText = activeNode.title;
                         if (roleEl) roleEl.innerText = `// ${activeNode.role.toUpperCase()}`;
                         if (descEl) descEl.innerText = activeNode.desc;
-                        if (statusEl) statusEl.innerText = `${activeNode.status} // NOMINAL`;
-                        if (linkEl) linkEl.innerText = `LINK: SYS_0${activeIdx + 1}`;
+                        if (statusEl) statusEl.innerText = activeNode.status;
+                        if (linkEl) linkEl.innerText = `PROJECT 0${activeIdx + 1}`;
 
                         const stackContainer = document.getElementById('m-exp-stack');
                         if (stackContainer) {
@@ -2317,30 +2323,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (warmupScheduled) return;
             warmupScheduled = true;
 
-            scheduleDeferredTask(() => {
-                gl.scene.traverse(child => {
-                    if (child.isMesh) {
-                        child.userData.originalFrustumCulled = child.frustumCulled;
-                        child.frustumCulled = false;
-                    }
-                });
+            gl.scene.traverse(child => {
+                if (child.isMesh) {
+                    child.userData.originalFrustumCulled = child.frustumCulled;
+                    child.frustumCulled = false;
+                }
+            });
 
-                gl.compile(gl.scene, gl.camera);
+            gl.compile(gl.scene, gl.camera);
 
-                [0, 0.1, 0.3, Math.max(0.3, getScrollPct())].forEach((sample) => {
-                    updateScene(sample, 0, true);
-                    gl.forceRender();
-                });
-
-                gl.scene.traverse(child => {
-                    if (child.isMesh && child.userData.originalFrustumCulled !== undefined) {
-                        child.frustumCulled = child.userData.originalFrustumCulled;
-                    }
-                });
-
-                updateScene(getScrollPct(), 0, true);
+            [0, 0.1, 0.3, Math.max(0.3, getScrollPct())].forEach((sample) => {
+                updateScene(sample, 0, true);
                 gl.forceRender();
-            }, 2600);
+            });
+
+            gl.scene.traverse(child => {
+                if (child.isMesh && child.userData.originalFrustumCulled !== undefined) {
+                    child.frustumCulled = child.userData.originalFrustumCulled;
+                }
+            });
+
+            updateScene(getScrollPct(), 0, true);
+            gl.forceRender();
         };
 
         const ensureFallout = async () => {
@@ -2396,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             backgroundBootstrapStarted = true;
 
             if (!loaderFinished) {
-                setLoaderProgress(45, 'STREAMING_LOFT_INTERIOR');
+                setLoaderProgress(45, 'LOADING 3D SCENE');
             }
 
             ensureCity().catch((error) => {
@@ -2404,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         };
 
-        setLoaderProgress(10, 'ESTABLISHING_NEURAL_UPLINK');
+        setLoaderProgress(10, 'INITIALIZING');
         suns = new Suns(gl);
         suns.onLoad = async () => {
             // Loading ProjectCards disabled during boot to retain only Earth & Jets
@@ -2492,8 +2496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (targetId === '#hero') navKey = 'hero';
                     else if (targetId === '#about') navKey = 'about';
-                    else if (targetId === '#projects' || targetId === '#work') navKey = 'projects';
-                    else if (targetId === '#experience') navKey = 'experience';
+                    else if (targetId === '#projects') navKey = 'projects';
+                    else if (targetId === '#experience' || targetId === '#work') navKey = 'experience';
                     else if (targetId === '#contact' || targetId === '#signal') navKey = 'contact';
 
                     const targetPct = window._navTargets[navKey] !== undefined ? window._navTargets[navKey] : defaultTargets[navKey] || 0;
@@ -2521,15 +2525,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // --- PROJECTS FULLSCREEN (Raycast trigger on computer screen monitor ONLY) ---
+        // --- PROJECTS FULLSCREEN & MONITOR CLICK CUE ---
         const projectsFullscreen = document.getElementById('projects-fullscreen');
         const projectsBack = document.getElementById('projects-back');
+        const monitorClickCue = document.getElementById('monitor-click-cue');
         const compRaycaster = new THREE.Raycaster();
         const compMouse = new THREE.Vector2();
 
         const openProjects = () => {
             if (!projectsFullscreen) return;
             projectsFullscreen.classList.remove('hidden');
+            if (monitorClickCue) monitorClickCue.classList.add('hidden');
             scroll.stop();
         };
 
@@ -2538,6 +2544,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             projectsFullscreen.classList.add('hidden');
             scroll.start();
         };
+
+        if (monitorClickCue) {
+            monitorClickCue.addEventListener('click', openProjects);
+        }
 
         // ONLY open projects screen if clicking directly on the 3D computer monitor in the loft
         document.addEventListener('click', (e) => {
@@ -2584,6 +2594,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Call the shared update function
             updateScene(scrollPct, velocity, false);
             heroFormation.update(scrollPct, gl.camera);
+
+            // Dynamically highlight active navbar item
+            const navLinks = document.querySelectorAll('.hud-nav a');
+            if (navLinks.length > 0) {
+                let activeKey = 'hero';
+                if (scrollPct >= 0.85) activeKey = 'contact';
+                else if (scrollPct >= 0.55) activeKey = 'experience';
+                else if (scrollPct >= 0.18) activeKey = 'projects';
+                else if (scrollPct >= 0.03) activeKey = 'about';
+
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    const isActive = 
+                        (activeKey === 'hero' && href === '#hero') ||
+                        (activeKey === 'about' && href === '#about') ||
+                        (activeKey === 'projects' && href === '#projects') ||
+                        (activeKey === 'experience' && (href === '#experience' || href === '#work')) ||
+                        (activeKey === 'contact' && href === '#contact');
+                    link.classList.toggle('active', isActive);
+                });
+            }
+
+            // Dynamically show/hide monitor click cue prompt during Projects section
+            if (monitorClickCue && projectsFullscreen) {
+                const isProjectsSection = scrollPct >= 0.18 && scrollPct <= 0.55;
+                const isModalClosed = projectsFullscreen.classList.contains('hidden');
+                monitorClickCue.classList.toggle('hidden', !(isProjectsSection && isModalClosed));
+            }
         });
 
         const perfParam = new URLSearchParams(window.location.search).get('perf');

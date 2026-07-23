@@ -24,7 +24,7 @@ const PROJECTS = [
         description: 'High-performance live wallpaper engine.',
         tech: ['Android', 'Video Rendering', 'Performance', 'Kotlin'],
         longDesc: "A wallpaper engine that renders local video files as live backgrounds with minimal battery impact. Features hardware-accelerated rendering and audio visualization.",
-        status: 'OPERATIONAL',
+        status: 'ACTIVE',
         link: 'https://github.com/dopetpoc126/Anadrome',
         index: '02'
     },
@@ -33,7 +33,7 @@ const PROJECTS = [
         description: 'High-performance live wallpaper engine.',
         tech: ['Android', 'Video Rendering', 'Performance', 'Kotlin'],
         longDesc: "A wallpaper engine that renders local video files as live backgrounds with minimal battery impact. Features hardware-accelerated rendering and audio visualization.",
-        status: 'OPERATIONAL',
+        status: 'ACTIVE',
         link: 'https://github.com/dopetpoc126/Anadrome',
         index: '03'
     }

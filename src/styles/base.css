@@ -1,11 +1,44 @@
 @import './mobile-overlay.css';
 
 :root {
+  /* Color Tokens */
   --color-void: #050505;
+  --color-surface-bg: #06070a;
+  --color-surface-card: rgba(10, 12, 18, 0.85);
   --color-text: #ffffff;
-  --color-accent: #ff4d00;
+  --color-text-muted: rgba(255, 240, 230, 0.82);
+  --color-text-subtle: rgba(255, 255, 255, 0.55);
+  --color-accent-orange: #ff4d00;
+  --color-accent-cyan: #00ffcc;
+  --color-status-success: #00ff88;
+  --color-border-subtle: rgba(255, 255, 255, 0.15);
+  --color-border-accent: rgba(255, 77, 0, 0.3);
+  --color-border-cyan: rgba(0, 255, 204, 0.4);
+
+  /* Typography Tokens */
+  --font-display: 'Syne', sans-serif;
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.5rem;
+
+  /* Spacing Tokens */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Component Surface & Radius Tokens */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
 }
 
 * {
@@ -137,26 +170,25 @@ html.lenis {
 
 h1,
 h2,
-h3 {
-  font-weight: 300;
+h3,
+.display-huge {
+  font-family: var(--font-display);
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-  /* Added shadow */
 }
 
 .split-text {
-  font-size: 5rem;
-  line-height: 0.9;
-  font-weight: 800;
-  /* Thicker/Bolder */
-  /* mix-blend-mode: difference; - Removed for better readability */
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 9vw, 7.5rem);
+  line-height: 0.88;
+  font-weight: 900;
   text-shadow: 0 4px 30px rgba(0, 0, 0, 1), 0 0 15px rgba(0, 0, 0, 0.8);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   letter-spacing: -0.04em;
-  /* Tighter for bold impact */
   color: var(--color-text);
 }
 
@@ -187,11 +219,30 @@ h3 {
   text-transform: uppercase;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 1),
     0 0 8px rgba(0, 0, 0, 0.6);
-  transition: color 0.3s ease;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.hud-nav a:hover {
-  color: var(--color-accent);
+.hud-nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-accent-orange);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-nav a:hover,
+.hud-nav a.active {
+  color: var(--color-accent-orange);
+}
+
+.hud-nav a.active::after,
+.hud-nav a:hover::after {
+  width: 100%;
 }
 
 .hud-nav .logo {
@@ -229,15 +280,12 @@ h3 {
 }
 
 .glass-panel {
-  background: rgba(5, 5, 5, 0.85);
-  /* Significantly darker */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-bg);
+  border: 2px solid var(--color-border-accent);
   padding: 2.5rem;
-  border-radius: 4px;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
-  transition: border 0.3s ease, background 0.3s ease;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   mix-blend-mode: normal;
 }
 
@@ -2207,6 +2255,7 @@ h3 {
    Visible during approach to each exp node
 ═══════════════════════════════════════════ */
 #lock-hud {
+  display: none !important;
   position: fixed;
   inset: 0;
   z-index: 58;
@@ -2656,7 +2705,7 @@ h3 {
     border: 1.5px solid rgba(255, 77, 0, 0.8);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(255, 77, 0, 0.2);
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: clamp(1rem, 4vw, 2rem);
     color: #ffffff;
     font-family: 'JetBrains Mono', monospace;
     opacity: 0;
@@ -2770,19 +2819,219 @@ h3 {
   .m-exp-status {
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: #ff4d00;
+    gap: var(--space-xs);
+    color: var(--color-accent-orange);
   }
 
   .m-exp-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #00ff88;
-    box-shadow: 0 0 6px #00ff88;
+    background: var(--color-status-success);
+    box-shadow: 0 0 6px var(--color-status-success);
   }
 
   .m-exp-link {
-    color: rgba(0, 255, 204, 0.7);
+    color: var(--color-accent-cyan);
   }
+}
+
+/* ═══════════════════════════════════════════
+   HARDENING & ACCESSIBILITY RESILIENCE
+═══════════════════════════════════════════ */
+
+/* ── Keyboard Focus Indicators ── */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-accent-cyan) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.6) !important;
+}
+
+/* ── Motion Sensitivity (Reduced Motion) ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .blink-slow,
+  .scan-line,
+  .typing-effect,
+  .loader-scanline {
+    animation: none !important;
+  }
+}
+
+/* ── Text Overflow & Flex/Grid Containment Resilience ── */
+.project-card,
+.mobile-project-card,
+.mobile-exp-hud,
+.hud-panel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Performance & CSS Layout Containment ── */
+.work-section,
+.contact-section,
+.projects-fullscreen,
+.mobile-exp-hud {
+  contain: layout style;
+  content-visibility: auto;
+}
+
+#gl-canvas {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ── Primary Action CTA Buttons ── */
+.project-link,
+.mp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-accent-orange);
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px rgba(255, 77, 0, 0.3);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+
+.project-link:hover,
+.mp-button:hover {
+  transform: translateY(-2px);
+  background: #ff661a;
+  box-shadow: 0 8px 24px rgba(255, 77, 0, 0.5);
+  color: #ffffff !important;
+}
+
+/* ── Tactile Micro-Interactions & Button Press Feedback ── */
+.project-link:active,
+.mp-button:active,
+.social-button:active,
+.projects-back:active,
+.mp-nav-btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* ── Modal Overlay Scale-In Transition ── */
+.projects-fullscreen {
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: scale(1);
+}
+
+.projects-fullscreen.hidden {
+  transform: scale(0.96) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ── Interactive Monitor Click Prompt Cue ── */
+.monitor-click-cue {
+  position: fixed;
+  bottom: 5vh;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 85;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface-bg);
+  border: 2px solid var(--color-accent-orange);
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 77, 0, 0.25);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, border-color 0.25s ease;
+  pointer-events: auto;
+}
+
+.monitor-click-cue.hidden {
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(20px) !important;
+  pointer-events: none !important;
+}
+
+.monitor-click-cue:hover {
+  background: var(--color-accent-orange);
+  color: #ffffff;
+  transform: translateX(-50%) translateY(-4px) scale(1.02);
+  box-shadow: 0 14px 40px rgba(255, 77, 0, 0.6);
+}
+
+.monitor-click-cue:active {
+  transform: translateX(-50%) scale(0.96) !important;
+}
+
+.cue-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cue-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-status-success);
+  box-shadow: 0 0 8px var(--color-status-success);
+  animation: cue-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes cue-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.cue-arrow {
+  color: var(--color-accent-cyan);
+  transition: transform 0.2s ease;
+}
+
+.monitor-click-cue:hover .cue-arrow {
+  color: #ffffff;
+  transform: translateX(4px);
 }

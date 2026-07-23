@@ -47,6 +47,21 @@ export default class GLManager {
 
     addEventListeners() {
         window.addEventListener('resize', this.onResize.bind(this));
+
+        // WebGL context loss recovery hardening
+        this.canvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            console.warn('[GLManager] WebGL context lost. Pausing rendering.');
+            this.isContextLost = true;
+        }, false);
+
+        this.canvas.addEventListener('webglcontextrestored', () => {
+            console.log('[GLManager] WebGL context restored. Re-compiling shaders.');
+            this.isContextLost = false;
+            this.onResize();
+            this.compile(this.scene, this.camera);
+            this.forceRender();
+        }, false);
     }
 
     onResize() {

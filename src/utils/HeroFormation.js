@@ -13,65 +13,29 @@ export default class HeroFormation {
         this.manifesto = document.querySelector('.manifesto');
         if (!this.heroEl) return;
         this._spawnJet();
-    }
-
-    async _spawnJet() {
+    }    async _spawnJet() {
         if (!this.scene) return;
         try {
             const THREE = await import('three');
 
-            // 1. Create a transparent overlay canvas so the 3D jet renders ON TOP of HTML text
-            this.overlayCanvas = document.createElement('canvas');
-            this.overlayCanvas.style.position = 'fixed';
-            this.overlayCanvas.style.top = '0';
-            this.overlayCanvas.style.left = '0';
-            this.overlayCanvas.style.width = '100vw';
-            this.overlayCanvas.style.height = '100vh';
-            this.overlayCanvas.style.zIndex = '30'; // Above text
-            this.overlayCanvas.style.pointerEvents = 'none';
-            document.body.appendChild(this.overlayCanvas);
-
-            this.overlayRenderer = new THREE.WebGLRenderer({ canvas: this.overlayCanvas, alpha: true, antialias: true });
-            this.overlayRenderer.setSize(window.innerWidth, window.innerHeight);
-            this.overlayRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            this.overlayRenderer.setClearColor(0x000000, 0);
-            this.overlayRenderer.clear();
-
-            window.addEventListener('resize', () => {
-                if (this.overlayRenderer) {
-                    this.overlayRenderer.setSize(window.innerWidth, window.innerHeight);
-                }
-            });
-
-            this.overlayScene = new THREE.Scene();
-
-            // Add lighting for the solid jet material
-            const ambient = new THREE.AmbientLight(0xffffff, 1.8); // Much brighter ambient light
-            this.overlayScene.add(ambient);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 4.0); // Stronger primary light
-            dirLight.position.set(10, 20, 10);
-            this.overlayScene.add(dirLight);
-            const backLight = new THREE.DirectionalLight(0x88ccff, 3.0); // Bright cyan/blue rim light
-            backLight.position.set(-10, -10, -10);
-            this.overlayScene.add(backLight);
-
-            // 2. Load the Jet
+            // 1. Load the Jet
             const { cloneCachedScene, createModelUrl } = await import('../gl/modelCache.js');
             const model = await cloneCachedScene(createModelUrl('jet_fighter-optimized.glb'));
 
-            this.jetGroup = new THREE.Group();
-
-            const solidMat = new THREE.MeshStandardMaterial({
-                color: 0xe0e0e0, // Bright silver
-                metalness: 0.7, // Lower metalness to catch more diffuse light
-                roughness: 0.2, // Very smooth for crisp reflections
+            // Mobile-optimized Phong material (significantly lighter for mobile GPUs than PBR StandardMaterial)
+            this.solidMat = new THREE.MeshPhongMaterial({
+                color: 0xe0e0e0,
+                specular: 0x88ccff,
+                shininess: 60,
                 transparent: true,
-                opacity: 1.0
+                opacity: 1.0,
+                depthWrite: false
             });
 
             model.traverse(child => {
                 if (child.isMesh) {
-                    child.material = solidMat;
+                    child.material = this.solidMat;
+                    child.renderOrder = 999; // Ensure jets render cleanly over background
                 }
             });
 
@@ -90,8 +54,9 @@ export default class HeroFormation {
             this.jetGroupLeft.position.set(0, 0, 35);
             this.jetGroupLeft.visible = false;
 
-            this.overlayScene.add(this.jetGroupRight);
-            this.overlayScene.add(this.jetGroupLeft);
+            // Render directly inside the primary Three.js WebGL scene — zero 2nd WebGL renderer overhead!
+            this.scene.add(this.jetGroupRight);
+            this.scene.add(this.jetGroupLeft);
 
             this.jetLoaded = true;
         } catch (e) {
@@ -100,11 +65,9 @@ export default class HeroFormation {
     }
 
     update(scrollPct, camera) {
-
         const smoothstep = t => t * t * (3 - 2 * t);
 
         // ===== 3D JET (Outer Wingmen) =====
-        // Stretched flight paths to cruise (active from 0.005 to 0.10)
         if (this.jetLoaded && this.jetGroupRight && this.jetGroupLeft && camera) {
             if (scrollPct > 0.005 && scrollPct < 0.10) {
                 this.jetGroupRight.visible = true;
@@ -117,19 +80,19 @@ export default class HeroFormation {
                 const currentZ = startZ + (endZ - startZ) * smoothstep(t);
 
                 // Timing variables
-                const xyEase = smoothstep(Math.min(t * 2.5, 1)); // Centers by t=0.4 (approx 0.043 scroll)
-                const peelOffT = Math.max(0, (t - 0.47) / 0.53); // Starts peeling away at t=0.47 (exactly 0.05 scroll)
-                const peelEase = peelOffT * peelOffT * peelOffT; // Accelerates outward
+                const xyEase = smoothstep(Math.min(t * 2.5, 1));
+                const peelOffT = Math.max(0, (t - 0.47) / 0.53);
+                const peelEase = peelOffT * peelOffT * peelOffT;
 
-                // Y Position (shared) - raised higher above camera to clear buildings
+                // Y Position (shared)
                 const startY = camera.position.y + 4.0;
-                const peelY = startY + 25; // Fly up higher during peel off
+                const peelY = startY + 25;
                 const currentY = startY + (peelY - startY) * peelEase;
 
                 // RIGHT JET
                 const startXRight = camera.position.x + 30.0;
                 const endXRight = camera.position.x + 18.0;
-                const peelXRight = endXRight + 25.0; // Break formation to the right
+                const peelXRight = endXRight + 25.0;
 
                 this.jetGroupRight.position.z = currentZ;
                 this.jetGroupRight.position.x = startXRight + (endXRight - startXRight) * xyEase + (peelXRight - endXRight) * peelEase;
@@ -139,12 +102,12 @@ export default class HeroFormation {
                 const bankOutRight = peelEase * -1.5;
                 this.jetGroupRight.rotation.y = camera.rotation.y + Math.PI + (bankInRight * 0.4) + (bankOutRight * 0.6);
                 this.jetGroupRight.rotation.z = camera.rotation.z + bankInRight + bankOutRight;
-                this.jetGroupRight.rotation.x = 0 + peelEase * 0.8; // Perfectly level with horizon, climb out during escape
+                this.jetGroupRight.rotation.x = 0 + peelEase * 0.8;
 
                 // LEFT JET
                 const startXLeft = camera.position.x - 30.0;
                 const endXLeft = camera.position.x - 18.0;
-                const peelXLeft = endXLeft - 25.0; // Break formation to the left
+                const peelXLeft = endXLeft - 25.0;
 
                 this.jetGroupLeft.position.z = currentZ;
                 this.jetGroupLeft.position.x = startXLeft + (endXLeft - startXLeft) * xyEase + (peelXLeft - endXLeft) * peelEase;
@@ -156,32 +119,18 @@ export default class HeroFormation {
                 this.jetGroupLeft.rotation.z = camera.rotation.z - (bankInLeft + bankOutLeft);
                 this.jetGroupLeft.rotation.x = 0 + peelEase * 0.8;
 
-                // Fading
-                const fadeIn = Math.min(t / 0.1, 1); // Fade in quickly
-                const fadeOut = t > 0.5 ? 1.0 - (t - 0.5) / 0.5 : 1.0; // Fade out during the peel off phase (starts at 0.05 scroll)
+                // Single material opacity update (zero per-frame traversal)
+                const fadeIn = Math.min(t / 0.1, 1);
+                const fadeOut = t > 0.5 ? 1.0 - (t - 0.5) / 0.5 : 1.0;
                 const opacity = Math.max(Math.min(fadeIn, fadeOut), 0);
 
-                const updateOpacity = (group) => {
-                    group.traverse(child => {
-                        if (child.isMesh) {
-                            child.material.opacity = opacity;
-                        }
-                    });
-                };
-                updateOpacity(this.jetGroupRight);
-                updateOpacity(this.jetGroupLeft);
-
-                if (this.overlayRenderer && this.overlayScene) {
-                    this.overlayRenderer.render(this.overlayScene, camera);
+                if (this.solidMat) {
+                    this.solidMat.opacity = opacity;
                 }
             } else {
                 this.jetGroupRight.visible = false;
                 this.jetGroupLeft.visible = false;
-                if (this.overlayRenderer) {
-                    this.overlayRenderer.clear();
-                }
             }
         }
-
     }
 }
