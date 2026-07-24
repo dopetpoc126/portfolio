@@ -3284,8 +3284,8 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 1.5rem;
+  justify-content: flex-start; /* Align to top to allow natural scrolling on short screens */
+  padding: 6rem 1.5rem 4rem; /* Give top breathing room for the navbar */
   width: 100%;
   opacity: 0;
   visibility: hidden;
@@ -3312,6 +3312,7 @@ button:focus-visible,
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0; /* Prevent the container from shrinking on short screens */
 }
 
 /* TV screen CRT overlay effect */
@@ -3379,13 +3380,14 @@ button:focus-visible,
 
 .social-hub-title {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(1.6rem, 4.2vw, 2.8rem);
   font-weight: 900;
   letter-spacing: -0.02em;
   color: #ffffff;
   margin: 0.2rem 0;
   text-transform: uppercase;
   text-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
 }
 
 .social-hub-subtitle {
@@ -3632,6 +3634,9 @@ button:focus-visible,
   .social-hub-container {
     padding: 1.5rem;
     gap: 1.5rem;
+  }
+  .social-hub-title {
+    white-space: normal;
   }
   .screen-bracket {
     width: 10px;
