@@ -370,48 +370,19 @@ export default class City {
                 // Sync opacity with train — start invisible, revealed via trainMaterials
                 this.f1Model = scene;
                 this.f1Materials = [];
-
-                // ── Build 3 breakup groups from mesh children ──────────────
-                // X-centre thresholds derived from mesh audit:
-                //   front  cx < -0.4   (nose, front wing)
-                //   mid   -0.4..+0.4  (chassis, cockpit, sidepods)
-                //   rear   cx > +0.4   (engine cover, rear wing, diffuser)
-                const frontGroup = new THREE.Group();
-                const midGroup   = new THREE.Group();
-                const rearGroup  = new THREE.Group();
-                frontGroup.name = 'f1_front';
-                midGroup.name   = 'f1_mid';
-                rearGroup.name  = 'f1_rear';
-
-                const _box3 = new THREE.Box3();
-                const _ctr  = new THREE.Vector3();
-
                 scene.traverse((child) => {
                     if (child.isMesh) {
                         child.frustumCulled = false;
                         const mats = Array.isArray(child.material)
-                            ? child.material : [child.material];
+                            ? child.material
+                            : [child.material];
                         mats.forEach(mat => {
                             mat.transparent = true;
                             mat.opacity = 0;
                             mat.depthWrite = true;
                             this.f1Materials.push(mat);
                         });
-
-                        // Assign to breakup group by local bounding-box centre X
-                        _box3.setFromObject(child);
-                        _box3.getCenter(_ctr);
-                        if (_ctr.x < -0.4)      frontGroup.add(child.clone());
-                        else if (_ctr.x > 0.4)  rearGroup.add(child.clone());
-                        else                     midGroup.add(child.clone());
                     }
-                });
-
-                // Store groups — hidden until impact
-                this.f1Groups = [frontGroup, midGroup, rearGroup];
-                this.f1Groups.forEach(g => {
-                    g.visible = false;
-                    scene.add(g); // parent to f1Model scene so they share its transform
                 });
 
                 this.trainModel.add(scene);
