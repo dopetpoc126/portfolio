@@ -289,17 +289,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (Math.abs(dx) > Math.abs(dy) * DIRECTION_LOCK_RATIO) return;
 
                 const currentIndex = _sectionIdx;
-                let targetIndex = dy < 0
+                const targetIndex = dy < 0
                     ? Math.min(currentIndex + 1, navLinks.length - 1)
                     : Math.max(currentIndex - 1, 0);
-
-                // The hidden exp-node links (indices 4, 5, 6) are only used when
-                // navigating forward through the experience zone. When swiping back
-                // (dy > 0) from contact (7) or any index above exp-node-1 (4),
-                // skip the hidden nodes entirely and land on experience (3).
-                if (dy > 0 && targetIndex >= 4 && targetIndex <= 6) {
-                    targetIndex = 3;
-                }
 
                 if (targetIndex !== currentIndex && navLinks[targetIndex]) {
                     navLinks[targetIndex].click();
@@ -331,54 +323,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (scroll.lenis) scroll.lenis.resize();
 
             setTimeout(() => {
-                scroll.start();
-
-                const dismissLoader = () => {
-                    if (loader) loader.classList.add('loader-hidden');
-                    if (splashLoader) {
-                        splashLoader.destroy();
-                        splashLoader = null;
-                    }
-                    window.scrollTo(0, 0);
-                    if (scroll.lenis) scroll.lenis.scrollTo(0, { immediate: true });
-                    ScrollTrigger.refresh();
-                    if (scroll.lenis) scroll.lenis.resize();
-                    initSectionNav();
-                    canFracture = true;
-                };
-
-                if (scroll.isTouch) {
-                    // Mobile: instant jumps only — no rAF animation, no browser scroll
-                    // pipeline involvement. Force Three.js to render the camera path once.
-                    const maxScroll = Math.max(
-                        document.documentElement.scrollHeight - window.innerHeight,
-                        1
-                    );
-                    const aboutPx = Math.max((window._navTargets?.about ?? 0.05) * maxScroll, 80);
-                    window.scrollTo(0, aboutPx);
-                    // Extra rAFs to let iOS settle scroll geometry before dismissing
-                    requestAnimationFrame(() => {
-                        window.scrollTo(0, 0);
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => dismissLoader());
-                        });
-                    });
-                } else {
-                    // Desktop: Lenis animated warmup — onComplete is reliable
-                    const maxScroll = scroll.getMaxScroll();
-                    const aboutPx = Math.max((window._navTargets?.about ?? 0.05) * maxScroll, 80);
-                    scroll.scrollTo(aboutPx, {
-                        duration: 1.0,
-                        easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
-                        onComplete: () => {
-                            scroll.scrollTo(0, {
-                                duration: 0.8,
-                                easing: (t) => 1 - Math.pow(1 - t, 3),
-                                onComplete: () => setTimeout(dismissLoader, 200),
-                            });
-                        },
-                    });
+                if (loader) loader.classList.add('loader-hidden');
+                if (splashLoader) {
+                    splashLoader.destroy();
+                    splashLoader = null;
                 }
+                scroll.start(); // Allow scrolling once loader is gone
+                initSectionNav(); // Section-by-section navigation (touch + wheel)
+                canFracture = true;
+                ScrollTrigger.refresh();
+                if (scroll.lenis) scroll.lenis.resize();
             }, 2600);
         };
 
