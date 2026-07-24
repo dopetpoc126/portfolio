@@ -3321,6 +3321,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     _lockNav((duration + 0.5) * 1000);
 
                     if (scroll.isTouch) {
+                        // Kill any active iOS momentum before starting programmatic scroll.
+                        // This must happen synchronously here (before _animateNativeScroll)
+                        // so the momentum kill and the rAF capture are in the same task.
+                        window.scrollTo(0, window.scrollY);
+
                         const sectionEl = document.querySelector(targetId);
                         const elIsVisible = sectionEl && sectionEl.offsetParent !== null;
                         if (elIsVisible) {
