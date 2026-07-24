@@ -1,7 +1,6 @@
 import './styles/base.css';
 import * as THREE from 'three';
 import { initCircularText } from './components/CircularText.js';
-import { Shuffle } from './components/Shuffle.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Prevent browser from trying to restore previous scroll position and fighting Lenis
@@ -16,26 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         gsap.registerPlugin(ScrollTrigger);
         ScrollTrigger.clearScrollMemory('manual');
 
-        // ── Shuffle animation on SHRIYAN name in splash screen ──────────────
-        // Deferred via rIC so it never blocks the first paint or GSAP/Three boot.
-        const _runShuffle = () => {
-            const nameEl = document.querySelector('.loader-name');
-            if (!nameEl) return;
-            new Shuffle(nameEl, gsap, {
-                shuffleDirection: 'down',
-                duration:         0.5,
-                ease:             'power3.out',
-                shuffleTimes:     2,
-                animationMode:    'evenodd',
-                stagger:          0.04,
-                respectReducedMotion: true,
-            }).play();
-        };
-        if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(_runShuffle, { timeout: 400 });
-        } else {
-            setTimeout(_runShuffle, 0);
-        }
         // ─────────────────────────────────────────────────────────────────────
 
         // Industry Standard Fix for Mobile/iOS thread jank
@@ -345,13 +324,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             setTimeout(() => {
                 // ── Hidden warmup scroll ─────────────────────────────────────
-                // Silently scroll hero→about→hero behind the loader so Three.js
-                // renders the earth→room camera path at least once before the
-                // user touches the scroll. This prevents the first-load jank.
-                scroll.start(); // must be started before we can drive it
+                // Silently drive the earth→room camera path behind the loader
+                // so Three.js renders it at least once before the user scrolls.
+                // Works on both desktop (Lenis) and mobile (native rAF scroll).
+                scroll.start();
 
                 const maxScroll = scroll.getMaxScroll();
-                const aboutPx   = (window._navTargets?.about ?? 0.05) * maxScroll;
+                const aboutPx   = Math.max(
+                    (window._navTargets?.about ?? 0.05) * maxScroll,
+                    80  // floor so we always move something even if maxScroll is 0
+                );
 
                 const dismissLoader = () => {
                     if (loader) loader.classList.add('loader-hidden');
@@ -359,7 +341,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         splashLoader.destroy();
                         splashLoader = null;
                     }
-                    // Scroll back to top instantly so user starts from hero
                     scroll.scrollTo(0, { immediate: true });
                     ScrollTrigger.refresh();
                     if (scroll.lenis) scroll.lenis.resize();
@@ -367,22 +348,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                     canFracture = true;
                 };
 
-                // Step 1: scroll to about (fast, hidden behind loader)
-                scroll.scrollTo(aboutPx, {
-                    duration: 1.0,
-                    easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
-                    onComplete: () => {
-                        // Step 2: scroll back to hero
-                        scroll.scrollTo(0, {
-                            duration: 0.8,
-                            easing: (t) => 1 - Math.pow(1 - t, 3),
-                            onComplete: () => {
-                                // Small pause then dismiss
-                                setTimeout(dismissLoader, 200);
-                            },
+                if (scroll.isTouch) {
+                    // Mobile: use the rAF-driven native scroll which has a real onComplete
+                    scroll._animateNativeScroll(aboutPx, 1.0, () => {
+                        scroll._animateNativeScroll(0, 0.8, () => {
+                            setTimeout(dismissLoader, 200);
                         });
-                    },
-                });
+                    });
+                } else {
+                    // Desktop: Lenis — onComplete is reliable
+                    scroll.scrollTo(aboutPx, {
+                        duration: 1.0,
+                        easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+                        onComplete: () => {
+                            scroll.scrollTo(0, {
+                                duration: 0.8,
+                                easing: (t) => 1 - Math.pow(1 - t, 3),
+                                onComplete: () => setTimeout(dismissLoader, 200),
+                            });
+                        },
+                    });
+                }
                 // ─────────────────────────────────────────────────────────────
             }, 2600);
         };
