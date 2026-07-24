@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const finishLoading = () => {
             if (loaderFinished) return;
             loaderFinished = true;
-            setLoaderProgress(100, 'READY');
+            setLoaderProgress(100, 'Ready');
 
             ScrollTrigger.refresh();
             if (scroll.lenis) scroll.lenis.resize();
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.textAlign = 'left';
             ctx.font = '12px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? '#ff3300' : 'rgba(0, 255, 136, 0.6)';
-            ctx.fillText("SPD (KTS)", 40, 140);
+            ctx.fillText("Speed (kts)", 40, 140);
             ctx.font = 'bold 42px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? '#ff3300' : '#00ff88';
             ctx.fillText(String(spd).padStart(4, '0'), 40, 185);
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.textAlign = 'right';
             ctx.font = '12px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? '#ff3300' : 'rgba(0, 255, 136, 0.6)';
-            ctx.fillText("ALT (FT)", w - 40, 140);
+            ctx.fillText("Altitude (ft)", w - 40, 140);
             ctx.font = 'bold 42px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? '#ff3300' : '#00ff88';
             ctx.fillText(String(alt).padStart(5, '0'), w - 40, 185);
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.textAlign = 'center';
             ctx.font = 'bold 18px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? '#ff3300' : '#00ff88';
-            ctx.fillText(`G-FORCE: ${gForce}G`, w / 2, h - 150);
+            ctx.fillText(`G-Load: ${gForce}G`, w / 2, h - 150);
 
             // Radar display (Sweep animation)
             const rx = w / 2;
@@ -524,26 +524,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.lineTo(rx + Math.cos(sweep) * rad, ry + Math.sin(sweep) * rad);
             ctx.stroke();
 
-            // Target lock box status
-            let tgtStatus = 'ACQUIRING';
-            if (norm >= 0.40 && norm < 0.72) tgtStatus = 'LOCKED';
-            else if (norm >= 0.72 && norm < 0.84) tgtStatus = 'COLLISION';
-            else if (norm >= 0.84) tgtStatus = 'DESTROYED';
+            // Target status
+            let tgtStatus = 'Tracking';
+            if (norm >= 0.40 && norm < 0.72) tgtStatus = 'Locked';
+            else if (norm >= 0.72 && norm < 0.84) tgtStatus = 'Impact';
+            else if (norm >= 0.84) tgtStatus = 'Clear';
 
             ctx.font = 'bold 14px "JetBrains Mono", monospace';
-            ctx.fillStyle = (tgtStatus === 'COLLISION' || tgtStatus === 'DESTROYED') ? '#ff3300' : '#00ff88';
-            ctx.fillText(`TGT STATUS: ${tgtStatus}`, rx, ry + rad + 24);
+            ctx.fillStyle = (tgtStatus === 'Impact' || tgtStatus === 'Clear') ? '#ff3300' : '#00ff88';
+            ctx.fillText(`Target: ${tgtStatus}`, rx, ry + rad + 24);
 
-            // System notifications
+            // Status
             ctx.font = '12px "JetBrains Mono", monospace';
             ctx.fillStyle = isRedAlert ? 'rgba(255, 51, 0, 0.65)' : 'rgba(0, 255, 136, 0.65)';
             ctx.textAlign = 'left';
-            ctx.fillText("SYS: PORTFOLIO V1.0", 40, h - 35);
-            ctx.fillText("STATUS: ACTIVE", 40, h - 18);
+            ctx.fillText("Portfolio — Shriyan", 40, h - 35);
+            ctx.fillText("Online", 40, h - 18);
 
             ctx.textAlign = 'right';
-            ctx.fillText("RADAR: SWEEPING", w - 40, h - 35);
-            ctx.fillText("FUEL: 89%", w - 40, h - 18);
+            ctx.fillText("Scan: active", w - 40, h - 35);
+            ctx.fillText("Fuel: 89%", w - 40, h - 18);
 
             // Large center warnings during red alert
             if (isRedAlert) {
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ctx.textAlign = 'center';
                 ctx.fillText("■ IMPACT ■", w / 2, h / 2 - 45);
                 ctx.font = '14px "JetBrains Mono", monospace';
-                ctx.fillText("SYSTEM FAILURE // CRITICAL COLLISION", w / 2, h / 2 + 10);
+                ctx.fillText("Critical impact detected", w / 2, h / 2 + 10);
             }
 
             city.hudTexture.needsUpdate = true;
@@ -1160,47 +1160,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const FLY_X_TRAVEL = 240.0; // unified flight travel distance
                     const jetFlyX = finalCamX - flyNorm * FLY_X_TRAVEL; // jet advances in -X
 
-                    // ── Experience obstacle data ──
+                    // ── Experience project data ──
                     const EXP_NODES = [
                         {
-                            title: 'BEAKAN',
-                            role: 'Android Developer',
-                            type: 'PROJECT',
-                            year: '2024',
-                            stack: 'Kotlin · Android · Firebase · BLE',
-                            desc: 'Beacon-based attendance system for VIT Chennai using BLE hardware. Optimized for low-latency on rooted devices.',
-                            status: '● DEPLOYED',
+                            title: 'ADRIG AI',
+                            role: 'Software Development Engineer',
+                            type: 'INTERNSHIP',
+                            year: '2026',
+                            stack: 'On-site · Chennai · Full Stack',
+                            desc: 'SDE Intern at ADRIG AI Technologies Pvt. Ltd. Building production software at an AI-focused company. May 2026 – Present.',
+                            status: '● Current',
                         },
                         {
-                            title: 'ANADROME',
-                            role: 'Graphics Engineer',
-                            type: 'PROJECT',
-                            year: '2024',
-                            stack: 'Android · OpenGL ES · GLSL',
-                            desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.',
-                            status: '● ACTIVE',
-                        },
-                        {
-                            title: 'ANADROME',
-                            role: 'Graphics Engineer',
-                            type: 'PROJECT',
-                            year: '2024',
-                            stack: 'Android · OpenGL ES · GLSL',
-                            desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.',
-                            status: '● ACTIVE',
-                        },
-                        {
-                            title: 'ZENITH',
-                            role: 'Frontend Engineer',
-                            type: 'PROJECT',
+                            title: 'ANDROID CLUB',
+                            role: 'Outreach — VIT Chennai',
+                            type: 'LEADERSHIP',
                             year: '2025',
-                            stack: 'Three.js · GSAP · WebGL · Vite',
-                            desc: 'This portfolio. A fully scroll-driven cinematic WebGL experience — zero canvas2D, pure GPU.',
-                            status: '● LIVE',
+                            stack: 'Part-time · Hybrid · Chennai',
+                            desc: 'Outreach member at Android Club VITC. Managing community engagement and representing the club across events. Apr 2025 – Present.',
+                            status: '● Current',
+                        },
+                        {
+                            title: 'LLMVERSE',
+                            role: 'Runner-Up 2',
+                            type: 'HACKATHON',
+                            year: '2025',
+                            stack: 'AI · LLM · 12-Hour Sprint',
+                            desc: 'Runner-Up 2 at LLMverse — a 12-hour hackathon organised by the Artificial Intelligence Club, VIT Chennai. Feb 2025.',
+                            status: '● Awarded',
                         },
                     ];
 
                     // ── Lazy-init obstacle meshes ──
+                    // Reset if node count has changed (e.g. after data update)
+                    if (window._expObstacles && window._expObstacles.length !== EXP_NODES.length) {
+                        window._expObstacles.forEach(obs => {
+                            if (obs.group && obs.group.parent) obs.group.parent.remove(obs.group);
+                        });
+                        window._expObstacles = null;
+                    }
                     if (!window._expObstacles && gl && gl.scene) {
                         const spacing = 16.0; // unified spacing
                         const GATE_Y = cockpitY + 0.05;
@@ -1351,11 +1349,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = 'bold 38px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#00ffcc';
                                 lx.textAlign = 'left';
-                                lx.fillText(`[ PROJECT 0${i + 1} ]`, padX, 76);
+                                lx.fillText(`Experience ${String(i + 1).padStart(2, '0')}`, padX, 76);
 
                                 // Year Pill Badge on Right
                                 lx.font = 'bold 32px "JetBrains Mono", monospace';
-                                const yearTxt = `YR.${node.year}`;
+                                const yearTxt = `${node.year}`;
                                 const yearW = lx.measureText(yearTxt).width + 36;
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.2)';
                                 lx.fillRect(CW - padX - yearW, 40, yearW, 52);
@@ -1380,20 +1378,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.fillStyle = '#ffffff';
                                 lx.shadowColor = 'rgba(255, 77, 0, 0.8)';
                                 lx.shadowBlur = 18;
-                                lx.font = '900 120px "Syne", sans-serif';
+                                // Scale font down if title is too wide
+                                let titleFontSizeM = 120;
+                                lx.font = `900 ${titleFontSizeM}px "Syne", sans-serif`;
+                                const titleMaxWidthM = CW - padX * 2;
+                                while (lx.measureText(node.title).width > titleMaxWidthM && titleFontSizeM > 48) {
+                                    titleFontSizeM -= 6;
+                                    lx.font = `900 ${titleFontSizeM}px "Syne", sans-serif`;
+                                }
                                 lx.textAlign = 'left';
                                 lx.fillText(node.title, padX, rule1Y + 140);
                                 lx.shadowBlur = 0;
 
                                 lx.font = 'bold 40px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#00ffcc';
-                                lx.fillText(`// ${node.role.toUpperCase()}`, padX, rule1Y + 204);
+                                lx.fillText(`${node.role.toUpperCase()}`, padX, rule1Y + 204);
 
                                 // ── Tech Stack Badges Section ──
                                 const stackHeaderY = rule1Y + 280;
                                 lx.font = 'bold 32px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
-                                lx.fillText('TECH_STACK // INTEGRATION:', padX, stackHeaderY);
+                                lx.fillText('Tech Stack', padX, stackHeaderY);
 
                                 const stackItems = node.stack.split('·').map(s => s.trim());
                                 let stackX = padX;
@@ -1424,11 +1429,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.lineWidth = 2;
                                 lx.beginPath(); lx.moveTo(padX, rule2Y); lx.lineTo(CW - padX, rule2Y); lx.stroke();
 
-                                // ── Mission Briefing Section ──
+                                // ── Overview Section ──
                                 const briefY = rule2Y + 60;
                                 lx.font = 'bold 36px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
-                                lx.fillText('>> OVERVIEW:', padX, briefY);
+                                lx.fillText('Overview', padX, briefY);
 
                                 lx.fillStyle = 'rgba(255, 240, 230, 0.96)';
                                 lx.font = '700 38px "Inter", sans-serif';
@@ -1465,7 +1470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = 'bold 28px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(0, 255, 204, 0.7)';
                                 lx.textAlign = 'right';
-                                lx.fillText(`PROJECT 0${i + 1}`, CW - padX, footerY + 46);
+                                lx.fillText(`Experience ${String(i + 1).padStart(2, '0')}`, CW - padX, footerY + 46);
                             } else {
                                 // ── DESKTOP LANDSCAPE CARD CANVAS DRAWING (1600x750) ──
                                 const ch = 32;
@@ -1515,7 +1520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.7)';
                                 lx.textAlign = 'left';
-                                lx.fillText(`PROJECT 0${i + 1}`, 60, 60);
+                                lx.fillText(`Experience ${String(i + 1).padStart(2, '0')}`, 60, 60);
 
                                 const typeLabel = node.type || 'PROJECT';
                                 lx.font = 'bold 24px "JetBrains Mono", monospace';
@@ -1532,7 +1537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.8)';
                                 lx.textAlign = 'right';
-                                lx.fillText(`YR: ${node.year}  |  LOC: 13.08°N`, CW - 48, 60);
+                                lx.fillText(`${node.year}  ·  Chennai`, CW - 48, 60);
 
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.3)';
                                 lx.lineWidth = 2.5;
@@ -1541,14 +1546,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.fillStyle = '#ffffff';
                                 lx.shadowColor = 'rgba(255, 77, 0, 0.6)';
                                 lx.shadowBlur = 16;
-                                lx.font = '900 136px "Syne", sans-serif';
+                                // Scale font down if title is too wide to fit the card
+                                let titleFontSize = 136;
+                                lx.font = `900 ${titleFontSize}px "Syne", sans-serif`;
+                                const titleMaxWidth = CW - 120; // 60px padding each side
+                                while (lx.measureText(node.title).width > titleMaxWidth && titleFontSize > 48) {
+                                    titleFontSize -= 6;
+                                    lx.font = `900 ${titleFontSize}px "Syne", sans-serif`;
+                                }
                                 lx.textAlign = 'left';
                                 lx.fillText(node.title, 60, 220);
                                 lx.shadowBlur = 0;
 
                                 lx.fillStyle = '#00ffcc';
                                 lx.font = 'bold 40px "JetBrains Mono", monospace';
-                                lx.fillText(`// ${node.role.toUpperCase()}`, 60, 280);
+                                lx.fillText(`${node.role.toUpperCase()}`, 60, 280);
 
                                 lx.strokeStyle = 'rgba(255, 77, 0, 0.25)';
                                 lx.lineWidth = 2;
@@ -1575,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                                 lx.font = 'bold 30px "JetBrains Mono", monospace';
                                 lx.fillStyle = '#ff4d00';
-                                lx.fillText('>> OVERVIEW:', 60, 436);
+                                lx.fillText('Overview', 60, 436);
 
                                 lx.fillStyle = 'rgba(240, 245, 255, 0.85)';
                                 lx.font = '30px "Inter", sans-serif';
@@ -1608,7 +1620,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 lx.font = '26px "JetBrains Mono", monospace';
                                 lx.fillStyle = 'rgba(255, 77, 0, 0.55)';
                                 lx.textAlign = 'right';
-                                lx.fillText(`PROJECT 0${i + 1}`, CW - 48, CH - 28);
+                                lx.fillText(`Experience ${String(i + 1).padStart(2, '0')}`, CW - 48, CH - 28);
                             }
 
                             lx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1997,15 +2009,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     if (!isMobileScreen) {
                                         obs.gateLines.visible = false;
                                         obs.dot.visible = false;
-                                        // ── Scroll lock: force user to gander the card for 1.8s ──
-                                        if (scroll && scroll.lenis && !window._scrollLocked) {
-                                            window._scrollLocked = true;
-                                            scroll.lenis.stop();
-                                            setTimeout(() => {
-                                                scroll.lenis.start();
-                                                window._scrollLocked = false;
-                                            }, 200);
-                                        }
+                                    }
+                                    // ── Scroll lock: pause scroll so user can read the card ──
+                                    if (scroll && scroll.lenis && !window._scrollLocked) {
+                                        window._scrollLocked = true;
+                                        scroll.lenis.stop();
+                                        const lockDuration = isMobileScreen ? 600 : 200;
+                                        setTimeout(() => {
+                                            scroll.lenis.start();
+                                            window._scrollLocked = false;
+                                        }, lockDuration);
                                     }
                                     obs.ring1.visible = false;
                                     obs.ring2.visible = false;
@@ -2041,11 +2054,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // ── Clear lock HUD if nothing is in lock zone this frame ──
                     if (!anyLockHudVisible && lockHud && lockHud.classList.contains('lk-visible')) {
                         lockHud.classList.remove('lk-visible', 'lk-locked');
-                        if (lkLocked) lkLocked.textContent = 'ACQUIRING';
+                        if (lkLocked) lkLocked.textContent = 'Tracking';
                     }
                     if (isPullingUp && lockHud) {
                         lockHud.classList.remove('lk-visible', 'lk-locked');
-                        if (lkLocked) lkLocked.textContent = 'ACQUIRING';
+                        if (lkLocked) lkLocked.textContent = 'Tracking';
                     }
 
                     // ── Apply per-frame camera shake + FOV bump (additive on top of base values) ──
@@ -2366,11 +2379,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const localIsPullingUp = drivePct < SUB_G_END;
                 const localFlyNorm = !localIsPullingUp ? (drivePct - SUB_G_END) / (1.0 - SUB_G_END) : 0;
                 const phase1End = isMobileScreen ? 0.76 : 0.38;
-                const isInExpPhase = isDriving && drivePct >= 0.55 && !localIsPullingUp && localFlyNorm < phase1End;
+                // If user has pinned a drivePct cutoff, use it directly; otherwise fall back to phase1End
+                const hudCutoffDrivePct = window._expHudCutoffDrivePct !== null && window._expHudCutoffDrivePct !== undefined
+                    ? window._expHudCutoffDrivePct
+                    : null;
+                const belowCutoff = hudCutoffDrivePct !== null
+                    ? drivePct < hudCutoffDrivePct
+                    : localFlyNorm < phase1End;
+                const isInExpPhase = isDriving && drivePct >= 0.55 && !localIsPullingUp && belowCutoff;
 
                 if (isInExpPhase) {
-                    mHud.classList.remove('hidden');
-                    mHud.classList.add('active');
+                    // Two-frame approach: set display:block first, then trigger opacity on next frame
+                    if (mHud.classList.contains('hidden') || !mHud.classList.contains('active')) {
+                        mHud.classList.remove('hidden');
+                        mHud.style.display = 'block';
+                        requestAnimationFrame(() => mHud.classList.add('active'));
+                    }
 
                     let activeIdx = 0;
                     if (window._expObstacles && window._expObstacles.length > 0) {
@@ -2396,10 +2420,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     const EXP_NODES = window._expNodeData || [
-                        { title: 'BEAKAN', role: 'Android Developer', year: '2024', stack: 'Kotlin · Android · Firebase · BLE', desc: 'Beacon-based attendance system for VIT Chennai using BLE hardware. Optimized for low-latency on rooted devices.', status: '● DEPLOYED' },
-                        { title: 'ANADROME', role: 'Graphics Engineer', year: '2024', stack: 'Android · OpenGL ES · GLSL', desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.', status: '● ACTIVE' },
-                        { title: 'ANADROME', role: 'Graphics Engineer', year: '2024', stack: 'Android · OpenGL ES · GLSL', desc: 'GPU-accelerated live wallpaper engine with a fully custom shader pipeline. Zero CPU overhead at runtime.', status: '● ACTIVE' },
-                        { title: 'PORTFOLIO', role: 'Frontend Engineer', year: '2025', stack: 'Three.js · GSAP · WebGL · Vite', desc: 'This portfolio. A fully scroll-driven WebGL experience — zero canvas2D, pure GPU.', status: '● LIVE' },
+                        { title: 'ADRIG AI', role: 'Software Development Engineer', year: '2026', stack: 'On-site · Chennai · Full Stack', desc: 'SDE Intern at ADRIG AI Technologies Pvt. Ltd. Building production software at an AI-focused company. May 2026 – Present.', status: '● Current' },
+                        { title: 'ANDROID CLUB', role: 'Outreach — VIT Chennai', year: '2025', stack: 'Part-time · Hybrid · Chennai', desc: 'Outreach member at Android Club VITC. Managing community engagement and representing the club across events. Apr 2025 – Present.', status: '● Current' },
+                        { title: 'LLMVERSE', role: 'Runner-Up 2', year: '2025', stack: 'AI · LLM · 12-Hour Sprint', desc: 'Runner-Up 2 at LLMverse — a 12-hour hackathon organised by the Artificial Intelligence Club, VIT Chennai. Feb 2025.', status: '● Awarded' },
                     ];
                     const activeNode = EXP_NODES[activeIdx];
                     if (activeNode && window._lastActiveNodeIdx !== activeIdx) {
@@ -2412,13 +2435,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const statusEl = document.getElementById('m-exp-status-text');
                         const linkEl = document.getElementById('m-exp-link');
 
-                        if (tagEl) tagEl.innerText = `[ PROJECT 0${activeIdx + 1} ]`;
-                        if (yearEl) yearEl.innerText = `YR.${activeNode.year}`;
+                        if (tagEl) tagEl.innerText = `Experience ${String(activeIdx + 1).padStart(2, '0')}`;
+                        if (yearEl) yearEl.innerText = `${activeNode.year}`;
                         if (titleEl) titleEl.innerText = activeNode.title;
-                        if (roleEl) roleEl.innerText = `// ${activeNode.role.toUpperCase()}`;
+                        if (roleEl) roleEl.innerText = activeNode.role.toUpperCase();
                         if (descEl) descEl.innerText = activeNode.desc;
                         if (statusEl) statusEl.innerText = activeNode.status;
-                        if (linkEl) linkEl.innerText = `PROJECT 0${activeIdx + 1}`;
+                        if (linkEl) linkEl.innerText = `Experience ${String(activeIdx + 1).padStart(2, '0')}`;
 
                         const stackContainer = document.getElementById('m-exp-stack');
                         if (stackContainer) {
@@ -2427,8 +2450,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
                 } else {
-                    mHud.classList.add('hidden');
-                    mHud.classList.remove('active');
+                    if (mHud.classList.contains('active')) {
+                        mHud.classList.remove('active');
+                        mHud.classList.add('hiding'); // triggers fade-out transition
+                        setTimeout(() => {
+                            // Only hide if not re-activated during the transition
+                            if (!mHud.classList.contains('active')) {
+                                mHud.classList.remove('hiding');
+                                mHud.classList.add('hidden');
+                                mHud.style.display = '';
+                            }
+                        }, 260); // match transition duration
+                    } else if (!mHud.classList.contains('hidden')) {
+                        mHud.classList.add('hidden');
+                        mHud.style.display = '';
+                    }
                     window._lastActiveNodeIdx = -1;
                 }
             };
@@ -2451,7 +2487,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // DOM Contact / Links Section Fading (fades in when scrolling to Links / Aircraft Carrier)
             if (!domContactSection) domContactSection = document.getElementById('contact');
             if (domContactSection && !isWarmup) {
-                const contactOpacity = parseFloat(scrollMath.clamp01((scrollPct - 0.82) / 0.08).toFixed(3));
+                const contactStart = (window._contactFadeInPct !== null && window._contactFadeInPct !== undefined)
+                    ? window._contactFadeInPct
+                    : 0.82;
+                const contactOpacity = parseFloat(scrollMath.clamp01((scrollPct - contactStart) / 0.08).toFixed(3));
                 const visibilityVal = contactOpacity > 0.01 ? 'visible' : 'hidden';
                 const pointerEventsVal = contactOpacity > 0.5 ? 'auto' : 'none';
 
@@ -2487,7 +2526,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const calibPctEl = document.getElementById('calib-pct');
             if (calibPctEl && !isWarmup) {
-                calibPctEl.textContent = `${(scenePct * 100).toFixed(1)}%`;
+                calibPctEl.textContent = `${(scrollPct * 100).toFixed(1)}%`;
+            }
+            const calibDriveEl = document.getElementById('calib-drive-pct');
+            if (calibDriveEl && !isWarmup) {
+                if (isDriving) {
+                    calibDriveEl.textContent = `drive: ${(drivePct * 100).toFixed(1)}%`;
+                } else {
+                    calibDriveEl.textContent = `scene: ${(scenePct * 100).toFixed(1)}%`;
+                }
             }
 
             // --- HAPTIC MODES ---
@@ -2640,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             backgroundBootstrapStarted = true;
 
             if (!loaderFinished) {
-                setLoaderProgress(45, 'LOADING 3D SCENE');
+                setLoaderProgress(45, 'Loading scene');
             }
 
             ensureCity().catch((error) => {
@@ -2648,7 +2695,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         };
 
-        setLoaderProgress(10, 'INITIALIZING');
+        setLoaderProgress(10, 'Initializing');
         suns = new Suns(gl);
         suns.onLoad = async () => {
             // Loading ProjectCards disabled during boot to retain only Earth & Jets
@@ -2691,6 +2738,151 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const savedTargets = localStorage.getItem('zenith_nav_targets');
         window._navTargets = savedTargets ? JSON.parse(savedTargets) : defaultTargets;
+
+        // Exp HUD cutoff — raw drivePct above which the mobile card is hidden.
+        // Default: 0.723 (72.3%). Override via debug panel.
+        const savedExpCutoff = localStorage.getItem('zenith_exp_hud_cutoff');
+        window._expHudCutoffDrivePct = savedExpCutoff !== null ? parseFloat(savedExpCutoff) : 0.723;
+
+        // Contact/social fade-in threshold — raw scrollPct where the section starts appearing.
+        // Null means "use the hardcoded 0.82 default".
+        const savedContactFadeIn = localStorage.getItem('zenith_contact_fadein');
+        window._contactFadeInPct = savedContactFadeIn !== null ? parseFloat(savedContactFadeIn) : null;
+
+        // --- DEBUG CALIBRATOR TOGGLE ---
+        const debugPanel = document.getElementById('debug-calibrator');
+        const debugToggleBtn = document.getElementById('debug-toggle');
+        const debugCloseBtn = document.getElementById('debug-cal-close');
+        const debugResetBtn = document.getElementById('debug-cal-reset');
+
+        const openCalibrator = () => {
+            if (debugPanel) debugPanel.classList.remove('hidden');
+        };
+        const closeCalibrator = () => {
+            if (debugPanel) debugPanel.classList.add('hidden');
+        };
+
+        if (debugToggleBtn) {
+            debugToggleBtn.addEventListener('click', () => {
+                if (debugPanel && debugPanel.classList.contains('hidden')) {
+                    openCalibrator();
+                } else {
+                    closeCalibrator();
+                }
+            });
+        }
+
+        if (debugCloseBtn) {
+            debugCloseBtn.addEventListener('click', closeCalibrator);
+            debugCloseBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') closeCalibrator();
+            });
+        }
+
+        // Keyboard shortcut: Ctrl+Shift+D
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                if (debugPanel && debugPanel.classList.contains('hidden')) {
+                    openCalibrator();
+                } else {
+                    closeCalibrator();
+                }
+            }
+        });
+
+        if (debugResetBtn) {
+            debugResetBtn.addEventListener('click', () => {
+                window._navTargets = { ...defaultTargets };
+                localStorage.removeItem('zenith_nav_targets');
+                // Also reset exp HUD cutoff
+                window._expHudCutoffDrivePct = 0.723;
+                localStorage.removeItem('zenith_exp_hud_cutoff');
+                // Also reset contact fade-in
+                window._contactFadeInPct = null;
+                localStorage.removeItem('zenith_contact_fadein');
+                updateCalibLabels();
+                updateExpCutoffLabel();
+                updateContactFadeInLabel();
+                debugResetBtn.style.borderColor = '#00ff88';
+                debugResetBtn.style.color = '#00ff88';
+                setTimeout(() => {
+                    debugResetBtn.style.borderColor = '';
+                    debugResetBtn.style.color = '';
+                }, 600);
+            });
+        }
+
+        // --- EXP HUD CUTOFF BUTTON ---
+        const expCutoffBtn = document.getElementById('debug-exp-cutoff');
+
+        const updateExpCutoffLabel = () => {
+            if (!expCutoffBtn) return;
+            if (window._expHudCutoffDrivePct !== null) {
+                expCutoffBtn.textContent = `Set Exp HUD Cutoff [drive: ${(window._expHudCutoffDrivePct * 100).toFixed(1)}%]`;
+                expCutoffBtn.style.borderColor = 'rgba(0,255,136,0.6)';
+                expCutoffBtn.style.color = '#00ff88';
+            } else {
+                expCutoffBtn.textContent = `Set Exp HUD Cutoff [drive: --]`;
+                expCutoffBtn.style.borderColor = '';
+                expCutoffBtn.style.color = '';
+            }
+        };
+        updateExpCutoffLabel();
+
+        if (expCutoffBtn) {
+            expCutoffBtn.addEventListener('click', () => {
+                // drivePct is in scope via the gsap ticker closure — read it from the
+                // running scene state instead of recalculating to stay in sync.
+                const currentScroll = scroll.scroll || 0;
+                const maxScroll = scroll.getMaxScroll();
+                const rawPct = Math.min(currentScroll / maxScroll, 1.0);
+                const DRIVE_START_VAL = 0.167;
+                const currentDrivePct = rawPct >= DRIVE_START_VAL
+                    ? (rawPct - DRIVE_START_VAL) / (1.0 - DRIVE_START_VAL)
+                    : 0;
+
+                window._expHudCutoffDrivePct = currentDrivePct;
+                localStorage.setItem('zenith_exp_hud_cutoff', currentDrivePct.toString());
+                updateExpCutoffLabel();
+
+                // Flash confirm
+                expCutoffBtn.style.background = 'rgba(0,255,136,0.15)';
+                setTimeout(() => { expCutoffBtn.style.background = ''; }, 500);
+            });
+        }
+
+        // --- CONTACT FADE-IN BUTTON ---
+        const contactFadeInBtn = document.getElementById('debug-contact-fadein');
+
+        const updateContactFadeInLabel = () => {
+            if (!contactFadeInBtn) return;
+            if (window._contactFadeInPct !== null && window._contactFadeInPct !== undefined) {
+                contactFadeInBtn.textContent = `Set Social Fade-in [${(window._contactFadeInPct * 100).toFixed(1)}%]`;
+                contactFadeInBtn.style.borderColor = 'rgba(0,255,136,0.6)';
+                contactFadeInBtn.style.color = '#00ff88';
+            } else {
+                contactFadeInBtn.textContent = `Set Social Fade-in [--]`;
+                contactFadeInBtn.style.borderColor = '';
+                contactFadeInBtn.style.color = '';
+            }
+        };
+        updateContactFadeInLabel();
+
+        if (contactFadeInBtn) {
+            contactFadeInBtn.addEventListener('click', () => {
+                const currentScroll = scroll.scroll || 0;
+                const maxScroll = scroll.getMaxScroll();
+                const rawPct = Math.min(currentScroll / maxScroll, 1.0);
+
+                window._contactFadeInPct = rawPct;
+                localStorage.setItem('zenith_contact_fadein', rawPct.toString());
+                updateContactFadeInLabel();
+
+                contactFadeInBtn.style.background = 'rgba(0,255,136,0.15)';
+                setTimeout(() => { contactFadeInBtn.style.background = ''; }, 500);
+            });
+        }
 
         // Update button labels with stored percentages
         const updateCalibLabels = () => {
