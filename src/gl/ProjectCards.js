@@ -11,30 +11,30 @@ gsap.registerPlugin(ScrollTrigger);
 // Project data
 const PROJECTS = [
     {
-        title: 'BEAKAN',
-        description: 'Dynamic Island-style notification overlay for Android.',
-        tech: ['Android', 'Kotlin', 'Accessibility Svc', 'UI/UX'],
-        longDesc: "A Dynamic Island-inspired overlay that intercepts media, OTPs, and system events, presenting them as an interactive pill for seamless background interaction.",
-        status: 'DEPLOYED',
-        link: 'https://github.com/dopetpoc126/Beakan',
+        title: 'ANADROME',
+        description: 'Live wallpaper app that plays videos on your home screen.',
+        tech: ['Android', 'Kotlin', 'Video Playback', 'WallpaperService'],
+        longDesc: "A dynamic live wallpaper app for Android that renders local video files as live backgrounds. Built with a focus on performance, battery efficiency, and modern design.",
+        status: 'ACTIVE',
+        link: 'https://github.com/dopetpoc126/Anadrome',
         index: '01'
     },
     {
-        title: 'ANADROME',
-        description: 'High-performance live wallpaper engine.',
-        tech: ['Android', 'Video Rendering', 'Performance', 'Kotlin'],
-        longDesc: "A wallpaper engine that renders local video files as live backgrounds with minimal battery impact. Features hardware-accelerated rendering and audio visualization.",
+        title: 'BEAKAN',
+        description: 'Notification interceptor with a pill-shaped overlay.',
+        tech: ['Android', 'Kotlin', 'NotificationListenerService', 'UI/UX'],
+        longDesc: "Intercepts media, OTP, download, and system notifications and presents them as an interactive pill overlay — seamless background interaction without opening the app.",
         status: 'ACTIVE',
-        link: 'https://github.com/dopetpoc126/Anadrome',
+        link: 'https://github.com/dopetpoc126/Beakan',
         index: '02'
     },
     {
-        title: 'ANADROME',
-        description: 'High-performance live wallpaper engine.',
-        tech: ['Android', 'Video Rendering', 'Performance', 'Kotlin'],
-        longDesc: "A wallpaper engine that renders local video files as live backgrounds with minimal battery impact. Features hardware-accelerated rendering and audio visualization.",
-        status: 'ACTIVE',
-        link: 'https://github.com/dopetpoc126/Anadrome',
+        title: 'NIDAN AI',
+        description: 'Medical symptom analysis with ML and LLM reasoning.',
+        tech: ['Python', 'ML', 'LLM', 'Web'],
+        longDesc: "An intelligent medical symptom analysis assistant combining machine learning predictions with LLM-based diagnostic reasoning. Built as a team project at VIT Chennai.",
+        status: 'COMPLETE',
+        link: 'https://github.com/dopetpoc126/htpss---Dataset-2.0---Nidan-AI',
         index: '03'
     }
 ];
