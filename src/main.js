@@ -2676,11 +2676,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gl.compile(gl.scene, gl.camera);
             }
 
-            // Pre-render key scene checkpoints across the entire Earth-to-City zoom curve
-            [0.0, 0.05, 0.08, 0.12, 0.18, 0.27].forEach((sample) => {
+            // Pre-render key scene checkpoints across the full Earth-to-City zoom curve.
+            // Await a rAF between each sample so the GPU has time to compile the shader
+            // variant for that camera position — prevents first-scroll stutter from
+            // lazy shader compilation on initial visible draw.
+            const warmupSamples = [0.00, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.18, 0.21, 0.25, 0.27];
+            for (const sample of warmupSamples) {
                 updateScene(sample, 0, true);
                 gl.forceRender();
-            });
+                await new Promise(r => requestAnimationFrame(r));
+            }
+            // Snap back to actual scroll position
+            updateScene(getScrollPct(), 0, true);
+            gl.forceRender();
 
             // Restore visibility and frustum culling
             hiddenElements.forEach(el => { el.visible = false; });
