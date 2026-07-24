@@ -349,13 +349,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (scroll.isTouch) {
                     // Mobile: instant jumps only — no rAF animation, no browser scroll
-                    // pipeline involvement. Force Two.js to render the camera path once.
-                    const maxScroll = scroll.getMaxScroll();
+                    // pipeline involvement. Force Three.js to render the camera path once.
+                    const maxScroll = Math.max(
+                        document.documentElement.scrollHeight - window.innerHeight,
+                        1
+                    );
                     const aboutPx = Math.max((window._navTargets?.about ?? 0.05) * maxScroll, 80);
                     window.scrollTo(0, aboutPx);
+                    // Extra rAFs to let iOS settle scroll geometry before dismissing
                     requestAnimationFrame(() => {
                         window.scrollTo(0, 0);
-                        requestAnimationFrame(() => dismissLoader());
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => dismissLoader());
+                        });
                     });
                 } else {
                     // Desktop: Lenis animated warmup — onComplete is reliable
@@ -3291,7 +3297,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? Math.min(FLIGHT_BASE_DURATION * (remaining / Math.max(fullRange, 0.01)), 2.5)
                         : NORMAL_DURATION;
 
-                    const targetPx = scroll.getMaxScroll() * effectiveTargetPct;
+                    // Re-read maxScroll fresh at click time — on iOS the scroll geometry
+                    // can be stale after programmatic warmup scrolls during loader.
+                    const freshMaxScroll = Math.max(
+                        document.documentElement.scrollHeight - window.innerHeight,
+                        scroll.getMaxScroll(),
+                        1
+                    );
+                    const targetPx = freshMaxScroll * effectiveTargetPct;
 
                     // Cancel any in-flight native scroll animation before starting a new one
                     if (scroll._nativeScrollRaf) {
