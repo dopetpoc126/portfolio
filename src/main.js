@@ -344,16 +344,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (scroll.lenis) scroll.lenis.resize();
 
             setTimeout(() => {
-                if (loader) loader.classList.add('loader-hidden');
-                if (splashLoader) {
-                    splashLoader.destroy();
-                    splashLoader = null;
-                }
-                scroll.start(); // Allow scrolling once loader is gone
-                initSectionNav(); // Section-by-section navigation (touch + wheel)
-                canFracture = true;
-                ScrollTrigger.refresh();
-                if (scroll.lenis) scroll.lenis.resize();
+                // ── Hidden warmup scroll ─────────────────────────────────────
+                // Silently scroll hero→about→hero behind the loader so Three.js
+                // renders the earth→room camera path at least once before the
+                // user touches the scroll. This prevents the first-load jank.
+                scroll.start(); // must be started before we can drive it
+
+                const maxScroll = scroll.getMaxScroll();
+                const aboutPx   = (window._navTargets?.about ?? 0.05) * maxScroll;
+
+                const dismissLoader = () => {
+                    if (loader) loader.classList.add('loader-hidden');
+                    if (splashLoader) {
+                        splashLoader.destroy();
+                        splashLoader = null;
+                    }
+                    // Scroll back to top instantly so user starts from hero
+                    scroll.scrollTo(0, { immediate: true });
+                    ScrollTrigger.refresh();
+                    if (scroll.lenis) scroll.lenis.resize();
+                    initSectionNav();
+                    canFracture = true;
+                };
+
+                // Step 1: scroll to about (fast, hidden behind loader)
+                scroll.scrollTo(aboutPx, {
+                    duration: 1.0,
+                    easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+                    onComplete: () => {
+                        // Step 2: scroll back to hero
+                        scroll.scrollTo(0, {
+                            duration: 0.8,
+                            easing: (t) => 1 - Math.pow(1 - t, 3),
+                            onComplete: () => {
+                                // Small pause then dismiss
+                                setTimeout(dismissLoader, 200);
+                            },
+                        });
+                    },
+                });
+                // ─────────────────────────────────────────────────────────────
             }, 2600);
         };
 
