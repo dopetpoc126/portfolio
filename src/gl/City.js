@@ -370,20 +370,48 @@ export default class City {
                 // Sync opacity with train — start invisible, revealed via trainMaterials
                 this.f1Model = scene;
                 this.f1Materials = [];
+
+                // ── Build 3 breakup groups from mesh children ──────────────
+                // X-centre thresholds derived from mesh audit:
+                //   front  cx < -0.4   (nose, front wing)
+                //   mid   -0.4..+0.4  (chassis, cockpit, sidepods)
+                //   rear   cx > +0.4   (engine cover, rear wing, diffuser)
+                const frontGroup = new THREE.Group();
+                const midGroup   = new THREE.Group();
+                const rearGroup  = new THREE.Group();
+                frontGroup.name = 'f1_front';
+                midGroup.name   = 'f1_mid';
+                rearGroup.name  = 'f1_rear';
+
+                const _box3 = new THREE.Box3();
+                const _ctr  = new THREE.Vector3();
+
                 scene.traverse((child) => {
                     if (child.isMesh) {
-                        child.frustumCulled = false; // Prevent culling during float animation
-                        // Preserve original materials, just add transparency control
+                        child.frustumCulled = false;
                         const mats = Array.isArray(child.material)
-                            ? child.material
-                            : [child.material];
+                            ? child.material : [child.material];
                         mats.forEach(mat => {
                             mat.transparent = true;
                             mat.opacity = 0;
                             mat.depthWrite = true;
                             this.f1Materials.push(mat);
                         });
+
+                        // Assign to breakup group by local bounding-box centre X
+                        _box3.setFromObject(child);
+                        _box3.getCenter(_ctr);
+                        if (_ctr.x < -0.4)      frontGroup.add(child.clone());
+                        else if (_ctr.x > 0.4)  rearGroup.add(child.clone());
+                        else                     midGroup.add(child.clone());
                     }
+                });
+
+                // Store groups — hidden until impact
+                this.f1Groups = [frontGroup, midGroup, rearGroup];
+                this.f1Groups.forEach(g => {
+                    g.visible = false;
+                    scene.add(g); // parent to f1Model scene so they share its transform
                 });
 
                 this.trainModel.add(scene);
@@ -646,28 +674,28 @@ export default class City {
         // ── Projects ──
         const projects = [
             {
+                name: 'ANADROME',
+                type: 'Android Live Wallpaper',
+                stack: 'Kotlin · Android · Video Playback',
+                desc: 'Live wallpaper app that plays videos on your home screen. Built for performance and battery efficiency.',
+                url: 'https://github.com/dopetpoc126/Anadrome',
+                status: 'ACTIVE', statusColor: '#ffaa44'
+            },
+            {
                 name: 'BEAKAN',
-                type: 'Android App',
-                stack: 'Kotlin · Android · Firebase',
-                desc: 'Beacon-based attendance system using BLE hardware. Built for VIT Chennai. Maximizes performance on rooted devices.',
-                url: 'https://github.com/dopetpoc126/BEAKAN',
-                status: 'DEPLOYED', statusColor: '#44ff88'
-            },
-            {
-                name: 'ANADROME',
-                type: 'Live Wallpaper',
-                stack: 'Android · OpenGL ES · GLSL',
-                desc: 'GPU-accelerated live wallpaper engine with a custom shader pipeline. Runs entirely on the GPU.',
-                url: 'https://github.com/dopetpoc126/Anadrome',
+                type: 'Android Notification Tool',
+                stack: 'Kotlin · Android · NotificationListenerService',
+                desc: 'Intercepts media, OTP, and system notifications and presents them as an interactive pill overlay.',
+                url: 'https://github.com/dopetpoc126/Beakan',
                 status: 'ACTIVE', statusColor: '#ffaa44'
             },
             {
-                name: 'ANADROME',
-                type: 'Live Wallpaper',
-                stack: 'Android · OpenGL ES · GLSL',
-                desc: 'GPU-accelerated live wallpaper engine with a custom shader pipeline. Runs entirely on the GPU.',
-                url: 'https://github.com/dopetpoc126/Anadrome',
-                status: 'ACTIVE', statusColor: '#ffaa44'
+                name: 'NIDAN AI',
+                type: 'Medical AI Assistant',
+                stack: 'Python · ML · LLM · Web',
+                desc: 'Symptom analysis assistant combining ML predictions with LLM-based diagnostic reasoning. VIT Chennai team project.',
+                url: 'https://github.com/dopetpoc126/htpss---Dataset-2.0---Nidan-AI',
+                status: 'COMPLETE', statusColor: '#44ff88'
             }
         ];
 
@@ -947,7 +975,7 @@ export default class City {
         ctx.font = '700 48px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,77,0,0.75)';
         ctx.textAlign = 'left';
-        ctx.fillText('[ OPERATIVE_PROFILE ]', leftOffset, pad + 76);
+        ctx.fillText('[ PROFILE ]', leftOffset, pad + 76);
 
         // ── Horizontal rule ──
         const rule1Y = pad + 104;
@@ -968,14 +996,14 @@ export default class City {
         // ── Title/role line ──
         ctx.font = '700 52px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ff4d00';
-        ctx.fillText('CS UNDERGRADUATE  ·  SYSTEMS BUILDER', leftOffset, rule1Y + 270);
+        ctx.fillText('CS Student  ·  Android Developer', leftOffset, rule1Y + 270);
 
         // ── Bio data grid ──
         const bioY = rule1Y + 360;
         const bioItems = [
-            { label: 'FOCUS',    value: 'Android & Web'  },
-            { label: 'BASE',     value: 'VIT Chennai'    },
-            { label: 'STATUS',   value: '● AVAILABLE',  accent: true },
+            { label: 'FOCUS',      value: 'Android · Kotlin'  },
+            { label: 'UNIVERSITY', value: 'VIT Chennai'        },
+            { label: 'STATUS',     value: '● AVAILABLE', accent: true },
         ];
         const colStep = (CW - leftOffset - pad - 80) / 3;
         bioItems.forEach((item, i) => {
@@ -996,15 +1024,18 @@ export default class City {
         ctx.beginPath(); ctx.moveTo(leftOffset, rule2Y); ctx.lineTo(CW - pad - 120, rule2Y); ctx.stroke();
 
         // ── Core statement ──
-        ctx.font = 'bold 56px "JetBrains Mono", monospace';
+        ctx.font = 'bold 48px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx.fillText('> Building high-performance interfaces.', leftOffset, rule2Y + 88);
+        // Auto-fit to canvas width
+        const maxW = CW - leftOffset - pad - 120;
+        let coreText = 'Android dev · Kotlin · UI/UX focus.';
+        ctx.fillText(coreText, leftOffset, rule2Y + 88);
 
         // ── Description lines ──
         const descLines = [
-            'Android & web dev with a focus on efficiency.',
-            'Roots every device to maximize performance.',
-            'I don\'t just write code — I optimize it.',
+            'Solving problems most apps don\'t bother with.',
+            'Building from the OS up, not settling for defaults.',
+            'Comfortable moving into ML and web when needed.',
         ];
         ctx.font = '700 48px "Inter", sans-serif';
         descLines.forEach((line, i) => {
@@ -1012,19 +1043,19 @@ export default class City {
             ctx.fillText(line, leftOffset, rule2Y + 88 + 88 + i * 72);
         });
 
-        // ── Mandate pills ──
+        // ── Mandate pills — stacked vertically ──
         const mandateY = rule2Y + 88 + 88 + descLines.length * 72 + 40;
-        ['>  Performance is paramount.', '>  User experience is priority.'].forEach((txt, i) => {
-            const tx = leftOffset + i * 800;
-            ctx.fillStyle = 'rgba(255,77,0,0.14)';
+        ['>  Third-year CS student at VIT Chennai.', '>  Open to roles and collaboration.'].forEach((txt, i) => {
+            const ty = mandateY + i * 90;
+            ctx.font = 'bold 36px "JetBrains Mono", monospace';
             const tw = ctx.measureText(txt).width + 40;
-            ctx.fillRect(tx - 12, mandateY - 40, tw, 60);
+            ctx.fillStyle = 'rgba(255,77,0,0.14)';
+            ctx.fillRect(leftOffset - 12, ty - 40, tw, 60);
             ctx.strokeStyle = 'rgba(255,77,0,0.4)';
             ctx.lineWidth = 2;
-            ctx.strokeRect(tx - 12, mandateY - 40, tw, 60);
+            ctx.strokeRect(leftOffset - 12, ty - 40, tw, 60);
             ctx.fillStyle = '#ffaa77';
-            ctx.font = 'bold 36px "JetBrains Mono", monospace';
-            ctx.fillText(txt, tx, mandateY);
+            ctx.fillText(txt, leftOffset, ty);
         });
 
         // ── Footer ──
@@ -1085,7 +1116,7 @@ export default class City {
         ctx.font = '700 64px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255, 77, 0, 0.85)';
         ctx.textAlign = 'left';
-        ctx.fillText('[ OPERATIVE_PROFILE ]', lx, pad + 92);
+        ctx.fillText('[ PROFILE ]', lx, pad + 92);
 
         // ── Top Rule ──
         const rule1Y = pad + 130;
@@ -1105,7 +1136,7 @@ export default class City {
         // ── Subtitle ──
         ctx.font = '700 68px "JetBrains Mono", monospace';
         ctx.fillStyle = '#ff4d00';
-        ctx.fillText('CS UNDERGRADUATE · SYSTEMS BUILDER', lx, rule1Y + 340);
+        ctx.fillText('CS Student  ·  Android Developer', lx, rule1Y + 340);
 
         // ── Bio summary grid ──
         const bioY = rule1Y + 480;
@@ -1132,15 +1163,15 @@ export default class City {
         ctx.beginPath(); ctx.moveTo(lx, rule2Y); ctx.lineTo(rEdge, rule2Y); ctx.stroke();
 
         // ── Core Statement ──
-        ctx.font = 'bold 72px "JetBrains Mono", monospace';
+        ctx.font = 'bold 68px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.98)';
-        ctx.fillText('> Building high-performance interfaces.', lx, rule2Y + 108);
+        ctx.fillText('Android dev · Kotlin · UI/UX focus.', lx, rule2Y + 108);
 
         // ── Description Lines ──
         const descLines = [
-            'Android & web dev with a focus on efficiency.',
-            'Roots every device to maximize performance.',
-            'I don\'t just write code — I optimize it.',
+            'Solving problems most apps don\'t bother with.',
+            'Building from the OS up, not settling for defaults.',
+            'Comfortable moving into ML and web when needed.',
         ];
         ctx.font = '700 60px "Inter", sans-serif';
         descLines.forEach((line, i) => {
@@ -1151,13 +1182,13 @@ export default class City {
         // ── Mandate Pills ──
         const mandateY = rule2Y + 108 + 110 + descLines.length * 88 + 60;
         const mandates = [
-            '> Performance is paramount.',
-            '> User experience is priority.'
+            '> Third-year CS student at VIT Chennai.',
+            '> Open to roles and collaboration.'
         ];
         mandates.forEach((txt, i) => {
-            const my = mandateY + i * 120;
+            const my = mandateY + i * 130;
             ctx.font = 'bold 60px "JetBrains Mono", monospace';
-            const tw = ctx.measureText(txt).width + 56;
+            const tw = Math.min(ctx.measureText(txt).width + 56, CW - lx - pad - 20);
             ctx.fillStyle = 'rgba(255, 77, 0, 0.16)';
             ctx.fillRect(lx - 10, my - 52, tw, 78);
             ctx.strokeStyle = 'rgba(255, 77, 0, 0.5)';

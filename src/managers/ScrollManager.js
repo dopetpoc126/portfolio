@@ -15,10 +15,10 @@ export default class ScrollManager {
         // syncTouch: false — on touch devices Lenis never takes over native scroll.
         // On desktop it drives smooth wheel scroll only.
         this.lenis = new Lenis({
-            lerp: 0.05,
+            lerp: 0.07,
             smoothWheel: true,
             syncTouch: false,
-            wheelMultiplier: 0.6,
+            wheelMultiplier: 0.9,
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             infinite: false,

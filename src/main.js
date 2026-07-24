@@ -704,6 +704,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (city && city.f1Model) {
                     city.f1Model.visible = true;
                 }
+                if (city && city.f1Groups) {
+                    city.f1Groups.forEach(grp => {
+                        grp.visible = false;
+                        grp.position.set(0, 0, 0);
+                        grp.rotation.set(0, 0, 0);
+                    });
+                }
                 if (debris) {
                     debris.group.visible = false;
                 }
@@ -1127,39 +1134,79 @@ document.addEventListener('DOMContentLoaded', async () => {
                         speedLines.group.position.set(0, 0, 0); // locked to world space
                     }
 
-                    // F1 car breakup debris on impact (norm >= 0.78)
+                    // F1 car breakup on impact (norm >= 0.78)
                     if (city && city.f1Model) {
                         if (norm >= 0.78) {
-                            // Hide original F1 car
+                            // Hide the whole car — show the 3 breakup groups instead
                             city.f1Model.visible = false;
 
+                            const tExplode = (norm - 0.78) / 0.22; // 0→1 over the explode window
+
+                            if (city.f1Groups) {
+                                // Velocity vectors for each chunk (in f1Model local space)
+                                // front: flies forward-left and up
+                                // mid:   stays roughly centred, tumbles
+                                // rear:  flies backward-right
+                                const chunkVels = [
+                                    { vx: -8,  vy:  5, vz:  2, rx: 2.5, ry: -1.5, rz:  1.2 }, // front
+                                    { vx:  0,  vy:  3, vz:  0, rx: 1.2, ry:  2.0,  rz: -0.8 }, // mid
+                                    { vx:  6,  vy:  4, vz: -2, rx: -2,  ry:  1.5,  rz:  1.5 }, // rear
+                                ];
+
+                                city.f1Groups.forEach((grp, i) => {
+                                    grp.visible = true;
+                                    const v = chunkVels[i];
+                                    const eased = tExplode * tExplode; // ease-in so chunks pause then fly
+                                    grp.position.set(
+                                        v.vx * eased * 3,
+                                        v.vy * eased * 3,
+                                        v.vz * eased * 3
+                                    );
+                                    grp.rotation.set(
+                                        v.rx * eased,
+                                        v.ry * eased,
+                                        v.rz * eased
+                                    );
+                                    // Fade out as they scatter
+                                    const opacity = scrollMath.clamp01(1.0 - tExplode * 1.4);
+                                    grp.traverse(c => {
+                                        if (c.isMesh) {
+                                            const mats = Array.isArray(c.material) ? c.material : [c.material];
+                                            mats.forEach(m => { m.opacity = opacity; });
+                                        }
+                                    });
+                                });
+                            }
+
+                            // Keep orange debris for extra chaos behind the chunks
                             if (debris) {
                                 debris.group.visible = true;
-
                                 const crashX = portalX - 24.0;
                                 const crashY = cockpitY + 0.3;
                                 const crashZ = carFixedZ;
                                 debris.group.position.set(crashX, crashY, crashZ);
-
-                                const tExplode = (norm - 0.78) / 0.22;
+                                const tD = tExplode;
                                 debris.particles.forEach(p => {
-                                    p.mesh.position.set(p.vx * tExplode * 0.4, p.vy * tExplode * 0.4, p.vz * tExplode * 0.4);
-                                    p.mesh.rotation.set(p.rx * tExplode, p.ry * tExplode, p.rz * tExplode);
-
-                                    const scale = scrollMath.clamp01(1.0 - tExplode);
-                                    p.mesh.scale.setScalar(scale);
+                                    p.mesh.position.set(p.vx * tD * 0.25, p.vy * tD * 0.25, p.vz * tD * 0.25);
+                                    p.mesh.rotation.set(p.rx * tD, p.ry * tD, p.rz * tD);
+                                    p.mesh.scale.setScalar(scrollMath.clamp01(1.0 - tD) * 0.6);
                                 });
                             }
                         } else {
-                            // Show F1 car
+                            // Show F1 car, hide groups
                             city.f1Model.visible = true;
-                            city.f1Model.position.set(carX, cockpitY + 0.3, carFixedZ); // Eye-level height
+                            city.f1Model.position.set(carX, cockpitY + 0.3, carFixedZ);
                             city.f1Model.scale.setScalar(120.0);
-                            city.f1Model.rotation.set(0, 0, 0); // Sideways blocking the track
+                            city.f1Model.rotation.set(0, 0, 0);
 
-                            if (debris) {
-                                debris.group.visible = false;
+                            if (city.f1Groups) {
+                                city.f1Groups.forEach(grp => {
+                                    grp.visible = false;
+                                    grp.position.set(0, 0, 0);
+                                    grp.rotation.set(0, 0, 0);
+                                });
                             }
+                            if (debris) debris.group.visible = false;
                         }
                     }
                 } else {
