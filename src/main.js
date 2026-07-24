@@ -1,5 +1,7 @@
 import './styles/base.css';
 import * as THREE from 'three';
+import { initCircularText } from './components/CircularText.js';
+import { Shuffle } from './components/Shuffle.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Prevent browser from trying to restore previous scroll position and fighting Lenis
@@ -13,6 +15,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         gsap.registerPlugin(ScrollTrigger);
         ScrollTrigger.clearScrollMemory('manual');
+
+        // ── Shuffle animation on SHRIYAN name in splash screen ──────────────
+        // Deferred via rIC so it never blocks the first paint or GSAP/Three boot.
+        const _runShuffle = () => {
+            const nameEl = document.querySelector('.loader-name');
+            if (!nameEl) return;
+            new Shuffle(nameEl, gsap, {
+                shuffleDirection: 'down',
+                duration:         0.5,
+                ease:             'power3.out',
+                shuffleTimes:     2,
+                animationMode:    'evenodd',
+                stagger:          0.04,
+                respectReducedMotion: true,
+            }).play();
+        };
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(_runShuffle, { timeout: 400 });
+        } else {
+            setTimeout(_runShuffle, 0);
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         // Industry Standard Fix for Mobile/iOS thread jank
         if (window.innerWidth < 1025) {
@@ -115,8 +139,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Mouse wheel down → trigger .click() on next section link
         // Mouse wheel up   → trigger .click() on previous section link
 
-        const NAV_KEYS = ['hero', 'about', 'projects', 'experience', 'contact'];
-        const NAV_DEFAULTS = { hero: 0.00, about: 0.05, projects: 0.27, experience: 0.70, contact: 1.00 };
+        // NAV_KEYS index: 0=hero 1=about 2=projects 3=experience 4=exp-node-1 5=exp-node-2 6=exp-node-3 7=contact
+        // exp-node-1/2/3 are invisible nav points inside the experience flight zone.
+        // Swipe between them uses the same Lenis-driven section jump as all other sections —
+        // no more native-scroll free-scroll zone fighting.
+        const NAV_KEYS = ['hero', 'about', 'projects', 'experience', 'exp-node-1', 'exp-node-2', 'exp-node-3', 'contact'];
+        const NAV_DEFAULTS = {
+            hero: 0.00, about: 0.05, projects: 0.27,
+            experience: 0.70,
+            'exp-node-1': 0.71, 'exp-node-2': 0.73, 'exp-node-3': 0.75,
+            contact: 1.00
+        };
 
         // Section index — single writer: IntersectionObserver (set up inside initSectionNav).
         let _sectionIdx = 0;
@@ -125,18 +158,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // scroll animation. Cleared by the animation itself via _navUnlock(), not a
         // fixed timeout — so swipe-spam and mid-flight re-triggers are impossible.
         let _navLocked = false;
+        let _navLockSetAt = 0;
         let _navUnlockTimer = null;
 
         const _lockNav = (durationMs) => {
             _navLocked = true;
+            _navLockSetAt = performance.now();
             clearTimeout(_navUnlockTimer);
-            // Always unlock after durationMs regardless, as a safety net.
             _navUnlockTimer = setTimeout(() => { _navLocked = false; }, durationMs);
         };
 
         const _unlockNav = () => {
             clearTimeout(_navUnlockTimer);
             _navLocked = false;
+            window._programmaticScroll = false;
         };
 
         const navigateToIdx = (idx, navLinks) => {
@@ -144,12 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const clamped = Math.max(0, Math.min(idx, NAV_KEYS.length - 1));
             if (clamped === _sectionIdx) return;
 
-            const hrefMap = ['#hero', '#about', '#projects', '#experience', '#contact'];
+            const hrefMap = ['#hero', '#about', '#projects', '#experience', '#exp-node-1', '#exp-node-2', '#exp-node-3', '#contact'];
             const link = document.querySelector(`.hud-nav a[href="${hrefMap[clamped]}"]`);
             if (!link) return;
 
             _sectionIdx = clamped;
-            // Trigger navbar link click — single source of truth for smooth navigation
             link.click();
         };
 
@@ -158,8 +192,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Dropping `a`, `nav`, `.hud-nav` means swipes that START near nav links
             // are now tracked. Keep `button` and `input` so taps on controls don't
             // accidentally trigger a section jump.
-            const EXCLUDED = 'button, input, #projects-fullscreen, [data-lenis-prevent]';
-            const SCROLL_EXEMPT = '#projects-fullscreen, [data-lenis-prevent]';
+            const EXCLUDED = 'button, input, #projects-fullscreen, .social-hub-container, [data-lenis-prevent]';
+            const SCROLL_EXEMPT = '#projects-fullscreen, .social-hub-container, [data-lenis-prevent]';
 
             const navLinks = Array.from(document.querySelectorAll('.hud-nav a'));
 
@@ -196,45 +230,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             observedPairs.forEach(p => p.el && sectionObserver.observe(p.el));
 
-            // Scroll-pct fallback for WebGL sections (projects=2, experience=3, contact=4).
-            // Only overrides _sectionIdx when scroll is past the DOM sections (~5%)
-            // AND no navigation animation is in flight.
+            // Scroll-pct fallback for WebGL sections.
+            // NAV_KEYS: 0=hero 1=about 2=projects 3=experience 4=exp-node-1 5=exp-node-2 6=exp-node-3 7=contact
             const syncScrollPctIdx = () => {
-                if (_navLocked) return; // don't clobber _sectionIdx mid-animation
+                if (_navLocked) return;
                 const pct = getScrollPct();
-                if (pct < 0.05) return; // DOM observer owns hero
-                // Use the calibrated nav targets so this matches wherever the user set them.
                 const targets = window._navTargets || NAV_DEFAULTS;
-                if (pct >= (targets.contact ?? 1.00)) { _sectionIdx = 4; return; }
-                if (pct >= (targets.experience ?? 0.70)) { _sectionIdx = 3; return; }
-                if (pct >= (targets.projects ?? 0.27)) { _sectionIdx = 2; return; }
-                // Below projects threshold: DOM observer handles hero/about, don't override.
+                if (pct >= (targets.contact          ?? 1.00)) { _sectionIdx = 7; return; }
+                if (pct >= (targets['exp-node-3']    ?? 0.75)) { _sectionIdx = 6; return; }
+                if (pct >= (targets['exp-node-2']    ?? 0.73)) { _sectionIdx = 5; return; }
+                if (pct >= (targets['exp-node-1']    ?? 0.71)) { _sectionIdx = 4; return; }
+                if (pct >= (targets.experience       ?? 0.70)) { _sectionIdx = 3; return; }
+                if (pct >= (targets.projects         ?? 0.27)) { _sectionIdx = 2; return; }
+                if (pct >= (targets.about            ?? 0.05)) { _sectionIdx = 1; return; }
+                // Below about threshold — DOM IntersectionObserver owns hero (idx 0).
+                // Don't override here; IO will set it when #hero is visible.
             };
 
             // Passive scroll listener — runs syncScrollPctIdx when outside DOM sections.
             window.addEventListener('scroll', syncScrollPctIdx, { passive: true });
-
-            // ── Experience free-scroll zone ─────────────────────────────────────────
-            // While the jet is flying through the experience nodes, native scroll drives
-            // the animation. Section-jump navigation is suppressed until all nodes are
-            // cleared (window._expNodesCleared = true), at which point swipe-up resumes
-            // normal section navigation → contact/links.
-            const isExpFreeZone = () => {
-                const targets = window._navTargets || NAV_DEFAULTS;
-                const pct = getScrollPct();
-                const inExpRange = pct >= (targets.experience ?? 0.70) &&
-                                   pct < (targets.contact ?? 1.00);
-                return inExpRange && !window._expNodesCleared;
-            };
-            // ────────────────────────────────────────────────────────────────────────
+            // No isExpFreeZone / free-scroll zone — exp nodes are full Lenis section jumps.
 
             // ── Mobile Touch Swipe (Triggers navbar link .click()) ──────
             let touchStartY = 0;
             let touchStartX = 0;
             let isTracking = false;
+            let _directionLocked = false; // true once we've confirmed it's a vertical swipe
 
-            const SWIPE_THRESHOLD = 25;       // px — lower = easier to trigger (was 40)
-            const DIRECTION_LOCK_RATIO = 0.8;  // vertical only needs to beat 80% of horizontal (was 1.2×)
+            const SWIPE_THRESHOLD = 25;
+            const DIRECTION_LOCK_RATIO = 0.8;
 
             document.addEventListener('touchstart', (e) => {
                 if (e.target.closest(EXCLUDED)) return;
@@ -242,20 +266,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 touchStartY = e.touches[0].clientY;
                 touchStartX = e.touches[0].clientX;
                 isTracking = true;
-            }, { passive: true });
+                _directionLocked = false;
+                // Only clear a stale nav lock — not one from an animation still in flight.
+                // We track when the lock was set and only force-clear after 800ms.
+                if (_navLocked && _navLockSetAt && (performance.now() - _navLockSetAt) > 800) {
+                    _unlockNav();
+                }
+            }, { passive: false });
 
             document.addEventListener('touchmove', (e) => {
                 if (!isTracking || !e.touches || e.touches.length !== 1) return;
                 if (e.target.closest(EXCLUDED)) return;
 
-                // In the experience free-scroll zone, let native scroll drive the animation.
-                if (isExpFreeZone()) return;
-
                 const dy = e.touches[0].clientY - touchStartY;
                 const dx = e.touches[0].clientX - touchStartX;
 
-                // Stop page from scrolling natively once vertical swipe is detected
-                if (Math.abs(dy) > Math.abs(dx) * DIRECTION_LOCK_RATIO) {
+                // Once we detect a clear vertical intent, lock out native scroll for the rest
+                // of this gesture so the swipe stays clean.
+                if (!_directionLocked && (Math.abs(dy) > 8 || Math.abs(dx) > 8)) {
+                    _directionLocked = true;
+                    if (Math.abs(dy) > Math.abs(dx) * DIRECTION_LOCK_RATIO) {
+                        e.preventDefault();
+                    }
+                } else if (_directionLocked && Math.abs(dy) > Math.abs(dx) * DIRECTION_LOCK_RATIO) {
                     e.preventDefault();
                 }
             }, { passive: false });
@@ -263,9 +296,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.addEventListener('touchend', (e) => {
                 if (!isTracking) return;
                 isTracking = false;
+                _directionLocked = false;
                 if (e.target.closest(EXCLUDED)) return;
-                if (_navLocked) return; // navigation already in flight — ignore
-                if (isExpFreeZone()) return; // experience free-scroll: native scroll handles it
+                if (_navLocked) return;
 
                 const t = e.changedTouches ? e.changedTouches[0] : null;
                 if (!t) return;
@@ -276,7 +309,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (Math.abs(dy) < SWIPE_THRESHOLD) return;
                 if (Math.abs(dx) > Math.abs(dy) * DIRECTION_LOCK_RATIO) return;
 
-                // _sectionIdx is always current — kept live by IntersectionObserver.
                 const currentIndex = _sectionIdx;
                 const targetIndex = dy < 0
                     ? Math.min(currentIndex + 1, navLinks.length - 1)
@@ -294,8 +326,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             document.addEventListener('wheel', (e) => {
                 if (e.target.closest(SCROLL_EXEMPT)) return;
-                // In the experience free-scroll zone, let the wheel drive native scroll.
-                if (isExpFreeZone()) return;
                 e.preventDefault();
                 wheelAccum += e.deltaY;
                 clearTimeout(wheelTimer);
@@ -348,11 +378,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             domContactSection = document.getElementById('contact');
 
             if (domHeroContent) {
-                gsap.fromTo(['.split-text', '.manifesto'],
-                    { opacity: 0, y: 40 },
-                    { opacity: 1, y: 0, duration: 1.2, ease: 'power4.out', stagger: 0.15 }
-                );
+                // Old text elements removed — circular text ring is used instead
             }
+
+            // Init circular text ring — projection loop handles position/size every frame
+            const ringFontWt = '700';
+            initCircularText('#circular-text-ring', {
+                text: '* SCROLL DOWN * SHRIYAN * ANDROID DEV * ',
+                spinDuration: 18,
+                size: 200, // placeholder — corrected by projection on first frame
+                fontSize: '32px',
+                fontWeight: ringFontWt,
+            });
+            const ring = document.getElementById('circular-text-ring');
+            if (ring) { ring.style.transform = 'none'; }
+
+            // Fade the ring in with the hero intro
+            gsap.fromTo('#circular-text-ring',
+                { opacity: 0, scale: 0.85 },
+                { opacity: 1, scale: 1, duration: 1.4, ease: 'power3.out', delay: 0.3 }
+            );
 
             if (suns) suns.ignition();
         };
@@ -2010,15 +2055,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         obs.gateLines.visible = false;
                                         obs.dot.visible = false;
                                     }
-                                    // ── Scroll lock: pause scroll so user can read the card ──
-                                    if (scroll && scroll.lenis && !window._scrollLocked) {
+                                    // Skip the scroll lock if a programmatic nav tween is in flight.
+                                    // We still mark obs.hit (so shards play) but don't interrupt the tween.
+                                    if (!window._programmaticScroll && scroll && scroll.lenis && !window._scrollLocked) {
                                         window._scrollLocked = true;
-                                        scroll.lenis.stop();
-                                        const lockDuration = isMobileScreen ? 600 : 200;
-                                        setTimeout(() => {
-                                            scroll.lenis.start();
-                                            window._scrollLocked = false;
-                                        }, lockDuration);
+                                        if (!isMobileScreen) {
+                                            scroll.lenis.stop();
+                                            setTimeout(() => {
+                                                scroll.lenis.start();
+                                                window._scrollLocked = false;
+                                            }, 200);
+                                        } else {
+                                            setTimeout(() => {
+                                                window._scrollLocked = false;
+                                            }, 600);
+                                        }
                                     }
                                     obs.ring1.visible = false;
                                     obs.ring2.visible = false;
@@ -2396,28 +2447,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         requestAnimationFrame(() => mHud.classList.add('active'));
                     }
 
-                    let activeIdx = 0;
-                    if (window._expObstacles && window._expObstacles.length > 0) {
-                        const trainX = -2.21 - 9.49999988079071;
-                        const portalX = trainX - 9.48;
-                        const finalCamX = portalX - 38.0;
-                        const jetX = finalCamX - localFlyNorm * 240.0;
-
-                        // d = jetX - obs.worldX
-                        //   d > 0  → obstacle is AHEAD of jet (jet hasn't reached it)
-                        //   d < 0  → obstacle is BEHIND jet (already passed)
-                        // Pick the node with the smallest d >= -14:
-                        //   - positive d: closest upcoming node (switch to it early)
-                        //   - d in [-14, 0): just-passed node (still show it briefly)
-                        let bestDist = Infinity;
-                        window._expObstacles.forEach((obs, idx) => {
-                            const d = jetX - obs.worldX;
-                            if (d >= -14.0 && d < bestDist) {
-                                bestDist = d;
-                                activeIdx = idx;
-                            }
-                        });
-                    }
+                    // Mirror desktop logic: use _sectionIdx driven by calibrated scroll positions.
+                    // idx 4=exp-node-1, 5=exp-node-2, 6=exp-node-3. Clamp to [0,2] for array index.
+                    const activeIdx = Math.max(0, Math.min(_sectionIdx - 4, 2));
 
                     const EXP_NODES = window._expNodeData || [
                         { title: 'ADRIG AI', role: 'Software Development Engineer', year: '2026', stack: 'On-site · Chennai · Full Stack', desc: 'SDE Intern at ADRIG AI Technologies Pvt. Ltd. Building production software at an AI-focused company. May 2026 – Present.', status: '● Current' },
@@ -2470,17 +2502,70 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             updateMobileExpHud();
 
-            // DOM Hero Content Fading (fades out fast to prevent room overlay)
-            if (domHeroContent && !isWarmup) {
-                const heroOpacity = Math.max(0, 1 - scenePct * 12.5);
-                const transformVal = `translateY(${scenePct * -80}px)`;
-                if (domHeroContent._lastOpacity !== heroOpacity) {
+            // DOM Hero Content Fading — ring fades out on first hint of scroll
+            if (!isWarmup) {
+                // scrollPct * 40 → fully transparent by 2.5% scroll (about one swipe)
+                const heroOpacity = Math.max(0, 1 - scrollPct * 40);
+                const ringEl = document.getElementById('circular-text-ring');
+                if (ringEl && ringEl._lastHeroOpacity !== heroOpacity) {
+                    ringEl.style.opacity = heroOpacity;
+                    ringEl._lastHeroOpacity = heroOpacity;
+                }
+                if (domHeroContent && domHeroContent._lastOpacity !== heroOpacity) {
                     domHeroContent.style.opacity = heroOpacity;
                     domHeroContent._lastOpacity = heroOpacity;
                 }
-                if (domHeroContent._lastTransform !== transformVal) {
-                    domHeroContent.style.transform = transformVal;
-                    domHeroContent._lastTransform = transformVal;
+
+                // ── Project earth position to screen space every frame ──
+                // This makes the ring track the globe at any viewport size, zero config.
+                if (ringEl && suns && suns.model && suns.modelReady && heroOpacity > 0) {
+                    const earthPos = suns.model.position.clone();
+
+                    // Project centre to NDC (-1..1)
+                    const ndc = earthPos.clone().project(gl.camera);
+                    const screenCx = ( ndc.x * 0.5 + 0.5) * window.innerWidth;
+                    const screenCy = (-ndc.y * 0.5 + 0.5) * window.innerHeight;
+
+                    // Estimate screen radius: project a point offset by the earth's world radius.
+                    // Earth GLB base radius ≈ 1 unit; scale = baseScale (18–25).
+                    const worldRadius = suns.baseScale * 1.0;
+                    // Pick a point on the rim in camera-right direction
+                    const right = new THREE.Vector3();
+                    right.setFromMatrixColumn(gl.camera.matrixWorld, 0).normalize();
+                    const rimPoint = earthPos.clone().addScaledVector(right, worldRadius);
+                    const rimNdc  = rimPoint.clone().project(gl.camera);
+                    const rimX    = ( rimNdc.x * 0.5 + 0.5) * window.innerWidth;
+                    const rimY    = (-rimNdc.y * 0.5 + 0.5) * window.innerHeight;
+                    const screenR = Math.hypot(rimX - screenCx, rimY - screenCy);
+
+                    // Apply — only update if moved more than 1px to avoid style churn
+                    const newLeft = Math.round(screenCx - screenR);
+                    const newTop  = Math.round(screenCy - screenR);
+                    const newSize = Math.round(screenR * 2);
+
+                    if (ringEl._projLeft !== newLeft || ringEl._projTop !== newTop || ringEl._projSize !== newSize) {
+                        ringEl._projLeft = newLeft;
+                        ringEl._projTop  = newTop;
+                        ringEl._projSize = newSize;
+                        ringEl.style.left   = `${newLeft}px`;
+                        ringEl.style.top    = `${newTop}px`;
+                        ringEl.style.width  = `${newSize}px`;
+                        ringEl.style.height = `${newSize}px`;
+                        ringEl.style.transform = 'none';
+                        // Update letter radii if size changed significantly
+                        if (!ringEl._lastSize || Math.abs(ringEl._lastSize - newSize) > 4) {
+                            ringEl._lastSize = newSize;
+                            import('./components/CircularText.js').then(({ initCircularText }) => {
+                                initCircularText('#circular-text-ring', {
+                                    text: '* SCROLL DOWN * SHRIYAN * ANDROID DEV * ',
+                                    spinDuration: 18,
+                                    size: newSize,
+                                    fontSize: '32px',
+                                    fontWeight: '700',
+                                });
+                            });
+                        }
+                    }
                 }
             }
 
@@ -2733,6 +2818,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             about: 0.05,
             projects: 0.27,
             experience: 0.70,
+            'exp-node-1': 0.71,
+            'exp-node-2': 0.73,
+            'exp-node-3': 0.75,
             contact: 1.00
         };
 
@@ -2745,11 +2833,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._expHudCutoffDrivePct = savedExpCutoff !== null ? parseFloat(savedExpCutoff) : 0.723;
 
         // Contact/social fade-in threshold — raw scrollPct where the section starts appearing.
-        // Null means "use the hardcoded 0.82 default".
+        // Default: 0.91 (91%) from calibration.
         const savedContactFadeIn = localStorage.getItem('zenith_contact_fadein');
-        window._contactFadeInPct = savedContactFadeIn !== null ? parseFloat(savedContactFadeIn) : null;
+        window._contactFadeInPct = savedContactFadeIn !== null ? parseFloat(savedContactFadeIn) : 0.91;
 
-        // --- DEBUG CALIBRATOR TOGGLE ---
+        // Exp end back-nav target — raw scrollPct to land on when swiping back from links.
+        // Null means "use the computed default (just before last node clears)".
+        const savedExpEnd = localStorage.getItem('zenith_exp_end_nav');
+        window._expEndNavPct = savedExpEnd !== null ? parseFloat(savedExpEnd) : null;
+
+        // --- DEBUG CALIBRATOR TOGGLE --- (disabled — change false→true to re-enable)
+        if (false) { // eslint-disable-line no-constant-condition
         const debugPanel = document.getElementById('debug-calibrator');
         const debugToggleBtn = document.getElementById('debug-toggle');
         const debugCloseBtn = document.getElementById('debug-cal-close');
@@ -2799,11 +2893,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window._expHudCutoffDrivePct = 0.723;
                 localStorage.removeItem('zenith_exp_hud_cutoff');
                 // Also reset contact fade-in
-                window._contactFadeInPct = null;
+                window._contactFadeInPct = 0.91;
                 localStorage.removeItem('zenith_contact_fadein');
+                // Also reset exp end nav
+                window._expEndNavPct = null;
+                localStorage.removeItem('zenith_exp_end_nav');
                 updateCalibLabels();
                 updateExpCutoffLabel();
                 updateContactFadeInLabel();
+                updateExpEndNavLabel();
                 debugResetBtn.style.borderColor = '#00ff88';
                 debugResetBtn.style.color = '#00ff88';
                 setTimeout(() => {
@@ -2884,13 +2982,51 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        // --- EXP END BACK-NAV BUTTON ---
+        const expEndNavBtn = document.getElementById('debug-exp-end-nav');
+
+        const updateExpEndNavLabel = () => {
+            if (!expEndNavBtn) return;
+            if (window._expEndNavPct !== null && window._expEndNavPct !== undefined) {
+                expEndNavBtn.textContent = `Set Exp Back-Nav Landing [${(window._expEndNavPct * 100).toFixed(1)}%]`;
+                expEndNavBtn.style.borderColor = 'rgba(0,255,136,0.6)';
+                expEndNavBtn.style.color = '#00ff88';
+            } else {
+                expEndNavBtn.textContent = `Set Exp Back-Nav Landing [--]`;
+                expEndNavBtn.style.borderColor = '';
+                expEndNavBtn.style.color = '';
+            }
+        };
+        updateExpEndNavLabel();
+
+        if (expEndNavBtn) {
+            expEndNavBtn.addEventListener('click', () => {
+                const currentScroll = scroll.scroll || 0;
+                const maxScroll = scroll.getMaxScroll();
+                const rawPct = Math.min(currentScroll / maxScroll, 1.0);
+
+                window._expEndNavPct = rawPct;
+                localStorage.setItem('zenith_exp_end_nav', rawPct.toString());
+                updateExpEndNavLabel();
+
+                expEndNavBtn.style.background = 'rgba(0,255,136,0.15)';
+                setTimeout(() => { expEndNavBtn.style.background = ''; }, 500);
+            });
+        }
+
         // Update button labels with stored percentages
         const updateCalibLabels = () => {
             document.querySelectorAll('.calib-buttons button').forEach(btn => {
                 const navKey = btn.getAttribute('data-nav');
                 if (navKey && window._navTargets[navKey] !== undefined) {
                     const pctVal = (window._navTargets[navKey] * 100).toFixed(0);
-                    const labelName = navKey === 'hero' ? 'Start' : navKey === 'about' ? 'About' : navKey === 'projects' ? 'Projects' : navKey === 'experience' ? 'Exp' : 'Links';
+                    const labelMap = {
+                        hero: 'Start', about: 'About', projects: 'Projects',
+                        experience: 'Exp',
+                        'exp-node-1': 'Node 1', 'exp-node-2': 'Node 2', 'exp-node-3': 'Node 3',
+                        contact: 'Links'
+                    };
+                    const labelName = labelMap[navKey] ?? navKey;
                     btn.textContent = `Set ${labelName} [${pctVal}%]`;
                 }
             });
@@ -2917,13 +3053,170 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
+        } // end debug calibrator
+
+        // --- EARTH RING DEBUG --- (disabled — change false→true to re-enable)
+        if (false) { // eslint-disable-line no-constant-condition
+        (() => {
+            const ERD_KEY_DESKTOP = 'zenith_earth_ring';
+            const ERD_KEY_MOBILE  = 'zenith_earth_ring_mobile';
+
+            const erdOverlay   = document.getElementById('earth-ring-debug');
+            const erdCircle    = document.getElementById('erd-circle');
+            const erdReadout   = document.getElementById('erd-readout');
+            const erdPinBtn    = document.getElementById('erd-pin');
+            const erdResetBtn  = document.getElementById('erd-reset');
+            const erdToggleBtn = document.getElementById('erd-toggle');
+            const erdFontSize  = document.getElementById('erd-font-size');
+            const erdFontSzVal = document.getElementById('erd-font-size-val');
+            const erdFontWt    = document.getElementById('erd-font-weight');
+            const erdModeBtns  = document.querySelectorAll('.erd-mode-btn');
+
+            if (!erdOverlay || !erdCircle) return;
+            if (erdToggleBtn) erdToggleBtn.classList.remove('hidden');
+
+            // Current mode — 'desktop' or 'mobile'
+            let currentMode = window.innerWidth < 768 ? 'mobile' : 'desktop';
+
+            const defaultsFor = (mode) => ({
+                cx: mode === 'mobile' ? 197  : 768,
+                cy: mode === 'mobile' ? 460  : 389,
+                r:  mode === 'mobile' ? 186  : 234,
+                fontSize:   32,
+                fontWeight: '700',
+            });
+
+            const keyFor   = (mode) => mode === 'mobile' ? ERD_KEY_MOBILE : ERD_KEY_DESKTOP;
+            const loadState = (mode) => {
+                try {
+                    const s = localStorage.getItem(keyFor(mode));
+                    return s ? { ...defaultsFor(mode), ...JSON.parse(s) } : { ...defaultsFor(mode) };
+                } catch { return { ...defaultsFor(mode) }; }
+            };
+
+            let state = loadState(currentMode);
+
+            // ── Mode toggle UI ──
+            const setMode = (mode) => {
+                currentMode = mode;
+                state = loadState(mode);
+                erdModeBtns.forEach(b => b.classList.toggle('erd-mode-active', b.dataset.mode === mode));
+                syncFontUI();
+                applyState();
+            };
+            erdModeBtns.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+            // Init button state
+            erdModeBtns.forEach(b => b.classList.toggle('erd-mode-active', b.dataset.mode === currentMode));
+
+            const syncFontUI = () => {
+                if (erdFontSize)  erdFontSize.value = state.fontSize;
+                if (erdFontSzVal) erdFontSzVal.textContent = `${state.fontSize}px`;
+                if (erdFontWt)    erdFontWt.value = state.fontWeight;
+            };
+            syncFontUI();
+
+            const refreshRing = () => {
+                import('./components/CircularText.js').then(({ initCircularText }) => {
+                    initCircularText('#circular-text-ring', {
+                        text: '* SCROLL DOWN * SHRIYAN * ANDROID DEV * ',
+                        spinDuration: 18,
+                        size: state.r * 2,
+                        fontSize: `${state.fontSize}px`,
+                        fontWeight: state.fontWeight,
+                    });
+                    syncRingPosition();
+                });
+            };
+
+            const syncRingPosition = () => {
+                const ring = document.getElementById('circular-text-ring');
+                if (!ring) return;
+                ring.style.left      = `${state.cx - state.r}px`;
+                ring.style.top       = `${state.cy - state.r}px`;
+                ring.style.transform = 'none';
+            };
+
+            const applyState = () => {
+                const d = state.r * 2;
+                erdCircle.style.width  = `${d}px`;
+                erdCircle.style.height = `${d}px`;
+                erdCircle.style.left   = `${state.cx - state.r}px`;
+                erdCircle.style.top    = `${state.cy - state.r}px`;
+                if (erdReadout) erdReadout.textContent = `x:${Math.round(state.cx)}  y:${Math.round(state.cy)}  r:${Math.round(state.r)}`;
+                syncRingPosition();
+            };
+            applyState();
+
+            // ── Toggle ──
+            const openERD  = () => erdOverlay.classList.remove('hidden');
+            const closeERD = () => erdOverlay.classList.add('hidden');
+            if (erdToggleBtn) erdToggleBtn.addEventListener('click', () => erdOverlay.classList.contains('hidden') ? openERD() : closeERD());
+            document.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && e.key === 'E') { e.preventDefault(); erdOverlay.classList.contains('hidden') ? openERD() : closeERD(); } });
+
+            // ── Drag ──
+            let dragging = false, dragOX = 0, dragOY = 0;
+            erdCircle.addEventListener('pointerdown', (e) => {
+                if (e.target.id === 'erd-resize') return;
+                dragging = true; dragOX = e.clientX - state.cx; dragOY = e.clientY - state.cy;
+                erdCircle.setPointerCapture(e.pointerId); e.stopPropagation();
+            });
+            erdCircle.addEventListener('pointermove', (e) => { if (!dragging) return; state.cx = e.clientX - dragOX; state.cy = e.clientY - dragOY; applyState(); });
+            erdCircle.addEventListener('pointerup', () => { dragging = false; });
+
+            // ── Resize ──
+            const resizeHandle = document.getElementById('erd-resize');
+            let resizing = false, resizeStartX = 0, resizeStartR = 0;
+            if (resizeHandle) {
+                resizeHandle.addEventListener('pointerdown', (e) => { resizing = true; resizeStartX = e.clientX; resizeStartR = state.r; resizeHandle.setPointerCapture(e.pointerId); e.stopPropagation(); });
+                resizeHandle.addEventListener('pointermove', (e) => { if (!resizing) return; state.r = Math.max(30, resizeStartR + (e.clientX - resizeStartX)); applyState(); });
+                resizeHandle.addEventListener('pointerup', () => { resizing = false; });
+            }
+
+            // ── Font controls ──
+            if (erdFontSize) {
+                erdFontSize.addEventListener('input', () => {
+                    state.fontSize = parseFloat(erdFontSize.value);
+                    if (erdFontSzVal) erdFontSzVal.textContent = `${state.fontSize}px`;
+                    refreshRing();
+                });
+            }
+            if (erdFontWt) erdFontWt.addEventListener('change', () => { state.fontWeight = erdFontWt.value; refreshRing(); });
+
+            // ── Pin — saves to the mode-specific key ──
+            if (erdPinBtn) {
+                erdPinBtn.addEventListener('click', () => {
+                    localStorage.setItem(keyFor(currentMode), JSON.stringify(state));
+                    refreshRing();
+                    erdPinBtn.textContent = `Pinned (${currentMode}) ✓`;
+                    erdPinBtn.style.borderColor = '#00ff88';
+                    erdPinBtn.style.color = '#00ff88';
+                    setTimeout(() => { erdPinBtn.textContent = 'Pin to CircularText'; erdPinBtn.style.borderColor = ''; erdPinBtn.style.color = ''; }, 1200);
+                });
+            }
+
+            // ── Reset ──
+            if (erdResetBtn) {
+                erdResetBtn.addEventListener('click', () => {
+                    state = defaultsFor(currentMode);
+                    localStorage.removeItem(keyFor(currentMode));
+                    syncFontUI(); applyState(); refreshRing();
+                });
+            }
+
+            window._getEarthRingState = () => ({ ...state, mode: currentMode });
+        })();
+        } // end earth ring debug
+
         // --- NAVBAR CLICKS ---
         document.querySelectorAll('.hud-nav a').forEach(link => {
             link.addEventListener('click', async (e) => {
                 e.preventDefault(); // prevent native href="#section" instant jump
                 const targetId = link.getAttribute('href');
                 if (targetId && targetId.startsWith('#')) {
-                    if (_navLocked) return; // swipe or previous click still animating
+                    // Direct navbar clicks always override in-flight animations.
+                    // Swipe handler uses _navLocked to prevent rapid-fire swipe spam,
+                    // but a deliberate tap on a nav link should always work.
+                    if (_navLocked) _unlockNav();
 
                     let navKey = 'hero';
 
@@ -2931,11 +3224,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else if (targetId === '#about') navKey = 'about';
                     else if (targetId === '#projects') navKey = 'projects';
                     else if (targetId === '#experience' || targetId === '#work') navKey = 'experience';
+                    else if (targetId === '#exp-node-1') navKey = 'exp-node-1';
+                    else if (targetId === '#exp-node-2') navKey = 'exp-node-2';
+                    else if (targetId === '#exp-node-3') navKey = 'exp-node-3';
                     else if (targetId === '#contact' || targetId === '#signal') navKey = 'contact';
 
-                    // Update section index immediately so swipe/wheel handlers
-                    // have the correct current position before the scroll settles.
-                    const sectionIdxMap = { hero: 0, about: 1, projects: 2, experience: 3, contact: 4 };
+                    // Update section index immediately
+                    const sectionIdxMap = {
+                        hero: 0, about: 1, projects: 2,
+                        experience: 3,
+                        'exp-node-1': 4, 'exp-node-2': 5, 'exp-node-3': 6,
+                        contact: 7
+                    };
                     if (sectionIdxMap[navKey] !== undefined) {
                         _sectionIdx = sectionIdxMap[navKey];
                     }
@@ -2944,38 +3244,56 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const targetPct = targets[navKey] ?? defaultTargets[navKey] ?? 0;
                     const currentPct = getScrollPct();
 
-                    // ── Cinematic guard: experience → contact skips the flight nodes.
-                    // Scale duration proportionally so the animation plays through.
+                    // ── Cinematic guard: any exp-node/experience → contact jump
                     const expStart = targets.experience ?? 0.70;
                     const contactStart = targets.contact ?? 1.00;
                     const inFlightZone = navKey === 'contact'
                         && currentPct >= expStart
                         && currentPct < contactStart;
 
-                    // ── Back-from-links guard: contact → experience enters the free-scroll
-                    // zone at the start of the flight. Also reset _expNodesCleared so the
-                    // free-scroll zone reactivates and the user scrolls back through the nodes.
-                    const backFromLinks = navKey === 'experience'
-                        && currentPct >= (targets.contact ?? 1.00);
+                    // ── Back-from-links: navigating to experience/exp-node-X from contact
+                    const isExpKey = navKey === 'experience' || navKey === 'exp-node-1' || navKey === 'exp-node-2' || navKey === 'exp-node-3';
+                    const backFromLinks = isExpKey && currentPct >= (targets.contact ?? 1.00);
                     if (backFromLinks) {
                         window._expNodesCleared = false;
-                        // Keep _sectionIdx at 4 (links) until the scroll actually lands at
-                        // experience, so a stray swipe during animation doesn't jump to projects.
-                        _sectionIdx = 4;
+                        _sectionIdx = 7; // hold at contact idx until scroll lands
                     }
-                    const effectiveTargetPct = backFromLinks
-                        ? (targets.experience ?? 0.70)
-                        : targetPct;
+
+                    const expEndDefault = (() => {
+                        const DRIVE_START_VAL = 0.167;
+                        const SUB_G_END_VAL   = 0.63;
+                        const phase1EndVal    = 0.35;
+                        const flyTarget       = Math.max(phase1EndVal - 0.03, 0);
+                        const drivePctTarget  = flyTarget * (1 - SUB_G_END_VAL) + SUB_G_END_VAL;
+                        return DRIVE_START_VAL + drivePctTarget * (1 - DRIVE_START_VAL);
+                    })();
+                    const expEndTarget = (window._expEndNavPct !== null && window._expEndNavPct !== undefined)
+                        ? window._expEndNavPct
+                        : expEndDefault;
+
+                    const effectiveTargetPct = backFromLinks ? expEndTarget : targetPct;
 
                     const remaining = Math.abs(effectiveTargetPct - currentPct);
                     const fullRange = contactStart - expStart;
                     const FLIGHT_BASE_DURATION = 5.0;
-                    const NORMAL_DURATION = 2.8;
+                    // Short hops (< 10% scroll) get a faster lock so back-to-back swipes work.
+                    // inFlightZone (exp → contact) caps at 2.5s so it doesn't feel broken.
+                    const NORMAL_DURATION = remaining < 0.10 ? 1.4 : 2.0;
                     const duration = inFlightZone
-                        ? FLIGHT_BASE_DURATION * (remaining / Math.max(fullRange, 0.01))
+                        ? Math.min(FLIGHT_BASE_DURATION * (remaining / Math.max(fullRange, 0.01)), 2.5)
                         : NORMAL_DURATION;
 
                     const targetPx = scroll.getMaxScroll() * effectiveTargetPct;
+
+                    // Cancel any in-flight native scroll animation before starting a new one
+                    if (scroll._nativeScrollRaf) {
+                        cancelAnimationFrame(scroll._nativeScrollRaf);
+                        scroll._nativeScrollRaf = null;
+                    }
+
+                    // Signal that scroll position changes are programmatic — node-hit detection
+                    // should not assert scroll locks while this is true.
+                    window._programmaticScroll = true;
 
                     // Lock nav for the animation duration. _unlockNav fires via onComplete
                     // when the animation snaps to target. Safety net is set to duration + 0.5s.
@@ -3118,7 +3436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const perfParam = new URLSearchParams(window.location.search).get('perf');
         if (perfParam === '0') {
             localStorage.removeItem('zenithPerf');
-        } else if (perfParam === '1' || localStorage.getItem('zenithPerf') === '1') {
+        } else if (false && (perfParam === '1' || localStorage.getItem('zenithPerf') === '1')) { // disabled // eslint-disable-line no-constant-condition
             const { startZenithPerfMonitor } = await import('./debug/perfMonitor.js');
             startZenithPerfMonitor({
                 getScrollY: () => scroll.scroll || 0,

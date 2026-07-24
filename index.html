@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&family=Syne:wght@700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&family=Syne:wght@700;800;900&display=swap"
     rel="stylesheet">
   <script>
     if (window.location.hostname.includes('github.io')) {
@@ -65,15 +65,17 @@
         <a href="#about">About</a>
         <a href="#projects">Projects</a>
         <a href="#experience">Experience</a>
+        <!-- Hidden exp node links — used by swipe navigation only -->
+        <a href="#exp-node-1" class="nav-hidden" aria-hidden="true" tabindex="-1"></a>
+        <a href="#exp-node-2" class="nav-hidden" aria-hidden="true" tabindex="-1"></a>
+        <a href="#exp-node-3" class="nav-hidden" aria-hidden="true" tabindex="-1"></a>
         <a href="#contact">Links</a>
       </div>
     </nav>
 
     <section id="hero" class="hero-section">
-      <div class="hero-content">
-        <h1 class="split-text">Hello, I'm<br>Shriyan</h1>
-        <p class="manifesto">Computer Science Undergraduate.<br>Crafting high-performance interfaces.</p>
-      </div>
+      <!-- Circular text ring around the globe -->
+      <div id="circular-text-ring" class="circular-text-ring" aria-label="Scroll · Shriyan · Portfolio ·"></div>
 
       <!-- Decorative HUD Elements -->
       <div class="hud-element top-left">
@@ -84,8 +86,6 @@
         <span>Open to opportunities</span><br>
         <span>WebGL &amp; Graphics</span>
       </div>
-
-
     </section>
 
     <section id="work" class="content-section work-section">
@@ -123,22 +123,20 @@
                     </div>
                     <div class="bio-item">
                       <span class="bio-label">Focus</span>
-                      <span class="bio-value">Android &amp; Web</span>
+                      <span class="bio-value">Android · Kotlin · UI/UX</span>
                     </div>
                     <div class="bio-item">
                       <span class="bio-label">University</span>
-                      <span class="bio-value">VIT Chennai</span>
+                      <span class="bio-value">VIT Chennai — Year 3</span>
                     </div>
                     <div class="bio-item">
                       <span class="bio-label">Status</span>
                       <span class="bio-value online"><span class="status-dot"></span>Available</span>
                     </div>
                   </div>
-                  <p class="objective" style="margin-top: 2rem;">Building responsive, optimized applications.</p>
-                  <p class="description">I develop for Android and the web with a focus on efficiency. As someone who
-                    roots every device I own to maximize performance, I obsess over how software runs on the metal. I
-                    don't just write code; I optimize it.</p>
-                  <p class="mandate">Performance and user experience.</p>
+                  <p class="objective" style="margin-top: 2rem;">Android developer, mostly Kotlin, with a focus on UI/UX.</p>
+                  <p class="description">I like solving problems most apps don't bother with — building from the OS up rather than settling for defaults. Comfortable moving into ML and web when a project needs it.</p>
+                  <p class="mandate">Third-year CS student at VIT Chennai.</p>
                 </div>
               </div>
               <div class="corner-bracket top-left"></div>
@@ -172,8 +170,8 @@
       <!-- 3D Cards render via WebGL canvas -->
     </section>
 
-    <section id="contact" class="content-section contact-section" data-lenis-prevent>
-      <div class="social-hub-container">
+    <section id="contact" class="content-section contact-section">
+      <div class="social-hub-container" data-lenis-prevent>
 
         <!-- Hub Header -->
         <div class="social-hub-header">
@@ -256,12 +254,8 @@
 
   <!-- Monitor click cue: direct body child so z-index works in root stacking context -->
   <button id="monitor-click-cue" type="button" class="monitor-click-cue hidden" aria-label="Click monitor to view full projects page">
-    <span class="cue-badge">
-      <span class="cue-dot"></span>
-      <span class="cue-icon">🖵</span>
-    </span>
+    <span class="cue-dot"></span>
     <span class="cue-label">Click to view projects</span>
-    <span class="cue-arrow">➔</span>
   </button>
 
   <!-- Drive section — cockpit driving + carrier landing -->
@@ -472,13 +466,56 @@
     <p class="debug-cal-hint" style="margin-top:4px;margin-bottom:4px;">Scroll to where exp card should <em>stop</em> showing.</p>
     <button id="debug-exp-cutoff" type="button" data-cutoff="true">Set Exp HUD Cutoff [drive: --]</button>
     <div class="debug-cal-divider"></div>
+    <p class="debug-cal-hint" style="margin-top:4px;margin-bottom:4px;">Pin each experience node scroll position.</p>
+    <div class="calib-buttons">
+      <button type="button" data-nav="exp-node-1">Set Node 1 [--]</button>
+      <button type="button" data-nav="exp-node-2">Set Node 2 [--]</button>
+      <button type="button" data-nav="exp-node-3">Set Node 3 [--]</button>
+    </div>
+    <div class="debug-cal-divider"></div>
     <p class="debug-cal-hint" style="margin-top:4px;margin-bottom:4px;">Scroll to where social section fades in.</p>
     <button id="debug-contact-fadein" type="button">Set Social Fade-in [--]</button>
+    <div class="debug-cal-divider"></div>
+    <p class="debug-cal-hint" style="margin-top:4px;margin-bottom:4px;">Scroll to where swipe-back from Links should land.</p>
+    <button id="debug-exp-end-nav" type="button">Set Exp Back-Nav Landing [--]</button>
     <button id="debug-cal-reset" type="button" class="debug-cal-reset">Reset to Defaults</button>
   </div>
 
   <!-- Debug toggle button (always visible in corner) -->
   <button id="debug-toggle" type="button" class="debug-toggle" aria-label="Toggle nav calibrator" title="Nav Calibrator (Ctrl+Shift+D)">⊕</button>
+
+  <!-- Earth Ring Debug Overlay — drag to position, resize handle to set radius -->
+  <div id="earth-ring-debug" class="earth-ring-debug hidden" aria-hidden="true">
+    <div class="erd-circle" id="erd-circle">
+      <div class="erd-resize-handle" id="erd-resize" title="Drag to resize"></div>
+      <div class="erd-center-dot"></div>
+    </div>
+    <div class="erd-panel">
+      <span class="erd-label">EARTH RING</span>
+      <div class="erd-row" style="gap:4px;margin-bottom:2px;">
+        <button id="erd-mode-desktop" class="erd-mode-btn erd-mode-active" data-mode="desktop">Desktop</button>
+        <button id="erd-mode-mobile"  class="erd-mode-btn"                 data-mode="mobile">Mobile</button>
+      </div>
+      <span class="erd-readout" id="erd-readout">x:-- y:-- r:--</span>
+      <div class="erd-row">
+        <label class="erd-field-label">Font size</label>
+        <input id="erd-font-size" type="range" min="8" max="32" step="0.5" value="32" class="erd-slider">
+        <span id="erd-font-size-val" class="erd-field-val">32px</span>
+      </div>
+      <div class="erd-row">
+        <label class="erd-field-label">Weight</label>
+        <select id="erd-font-weight" class="erd-select">
+          <option value="400">Regular</option>
+          <option value="600">Semi-bold</option>
+          <option value="700" selected>Bold</option>
+          <option value="900">Black</option>
+        </select>
+      </div>
+      <button id="erd-pin" class="erd-btn">Pin to CircularText</button>
+      <button id="erd-reset" class="erd-btn erd-btn--reset">Reset</button>
+    </div>
+  </div>
+  <button id="erd-toggle" class="erd-toggle hidden" title="Toggle Earth Ring Debug (Ctrl+Shift+E)" aria-label="Toggle earth ring debug">◎</button>
 
   <script type="module" src="/src/main.js"></script>
 </body>
