@@ -328,11 +328,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                     splashLoader.destroy();
                     splashLoader = null;
                 }
-                scroll.start(); // Allow scrolling once loader is gone
-                initSectionNav(); // Section-by-section navigation (touch + wheel)
+                scroll.start();
+                initSectionNav();
                 canFracture = true;
                 ScrollTrigger.refresh();
                 if (scroll.lenis) scroll.lenis.resize();
+
+                // ── Post-load warmup: pre-render the camera path so first scroll is smooth ──
+                // Mobile: call updateScene directly at the about scroll pct — zero scroll
+                // position changes, zero impact on swipe state or _sectionIdx.
+                // Desktop: Lenis animated scroll behind the now-hidden loader glass.
+                if (scroll.isTouch) {
+                    // Just drive the scene math at the about position — no DOM scroll involved
+                    const warmPct = window._navTargets?.about ?? 0.05;
+                    updateScene(warmPct, 0, true);
+                    // One frame later, snap back to hero position
+                    requestAnimationFrame(() => updateScene(0, 0, true));
+                } else {
+                    // Desktop: Lenis warmup scroll — loader is already hidden but fading,
+                    // this runs during the CSS transition so user sees nothing wrong.
+                    const maxScroll = scroll.getMaxScroll();
+                    const aboutPx = Math.max((window._navTargets?.about ?? 0.05) * maxScroll, 80);
+                    scroll.scrollTo(aboutPx, {
+                        duration: 0.8,
+                        easing: (t) => t * t,
+                        onComplete: () => {
+                            scroll.scrollTo(0, {
+                                duration: 0.6,
+                                easing: (t) => 1 - Math.pow(1 - t, 3),
+                            });
+                        },
+                    });
+                }
+                // ─────────────────────────────────────────────────────────────
             }, 2600);
         };
 
