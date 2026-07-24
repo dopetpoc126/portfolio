@@ -3284,14 +3284,14 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* Align to top to allow natural scrolling on short screens */
-  padding: 6rem 1.5rem 4rem; /* Give top breathing room for the navbar */
+  justify-content: center; /* Center it vertically on the screen */
+  padding: 1.5rem;
   width: 100%;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.4s ease, visibility 0.4s ease;
-  overflow-y: auto;
+  overflow: hidden; /* Fully disable scrollbars */
 }
 
 .social-hub-container {
@@ -3299,8 +3299,8 @@ button:focus-visible,
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 3rem;
+  gap: 1.25rem; /* Reduced gap for compact TV layout */
+  padding: 1.5rem 2rem; /* Compact padding */
   background: rgba(10, 13, 20, 0.72);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -3312,7 +3312,7 @@ button:focus-visible,
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   position: relative;
   overflow: hidden;
-  flex-shrink: 0; /* Prevent the container from shrinking on short screens */
+  flex-shrink: 0;
 }
 
 /* TV screen CRT overlay effect */
@@ -3417,7 +3417,7 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 1.5rem;
+  padding: 1rem; /* More compact padding */
   background: rgba(12, 15, 22, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
@@ -3425,7 +3425,7 @@ button:focus-visible,
   border-radius: 14px;
   text-decoration: none;
   color: #ffffff;
-  min-height: 170px;
+  min-height: 130px; /* Reduced from 170px */
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
               border-color 0.25s ease,
               box-shadow 0.25s ease,
@@ -3448,24 +3448,24 @@ button:focus-visible,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem; /* Reduced from 1.25rem */
 }
 
 .social-icon-wrapper {
-  width: 44px;
-  height: 44px;
+  width: 36px; /* Reduced from 44px */
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: background 0.25s ease, transform 0.25s ease;
 }
 
 .social-icon {
-  width: 22px;
-  height: 22px;
+  width: 18px; /* Reduced from 22px */
+  height: 18px;
   fill: #ffffff;
   transition: fill 0.25s ease;
 }
