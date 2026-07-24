@@ -100,39 +100,28 @@ export default class ScrollManager {
     _animateNativeScroll(targetY, duration = 2.8, onComplete) {
         if (this._nativeScrollRaf) cancelAnimationFrame(this._nativeScrollRaf);
 
-        // Kill iOS momentum scroll synchronously. Calling window.scrollTo with
-        // the current position interrupts the compositor's inertia scroll before
-        // our rAF animation takes over — without this, iOS momentum fights the
-        // programmatic scroll and startY is wrong by the first frame.
-        window.scrollTo(0, window.scrollY);
-
+        const startY = window.scrollY;
+        const startTime = performance.now();
+        const distance = targetY - startY;
         const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
         const SNAP_PX = 12;
 
-        // Capture startY inside the first rAF — not before it — so any residual
-        // single-frame compositor movement has already settled.
-        this._nativeScrollRaf = requestAnimationFrame(() => {
-            const startY = window.scrollY;
-            const startTime = performance.now();
-            const distance = targetY - startY;
+        const step = (now) => {
+            const elapsed = (now - startTime) / 1000;
+            const t = Math.min(elapsed / duration, 1);
+            const newY = startY + distance * easeOutCubic(t);
+            window.scrollTo(0, newY);
 
-            const step = (now) => {
-                const elapsed = (now - startTime) / 1000;
-                const t = Math.min(elapsed / duration, 1);
-                const newY = startY + distance * easeOutCubic(t);
-                window.scrollTo(0, newY);
+            if (t < 1 && Math.abs(targetY - newY) > SNAP_PX) {
+                this._nativeScrollRaf = requestAnimationFrame(step);
+            } else {
+                window.scrollTo(0, targetY);
+                this._nativeScrollRaf = null;
+                if (typeof onComplete === 'function') onComplete();
+            }
+        };
 
-                if (t < 1 && Math.abs(targetY - newY) > SNAP_PX) {
-                    this._nativeScrollRaf = requestAnimationFrame(step);
-                } else {
-                    window.scrollTo(0, targetY);
-                    this._nativeScrollRaf = null;
-                    if (typeof onComplete === 'function') onComplete();
-                }
-            };
-
-            this._nativeScrollRaf = requestAnimationFrame(step);
-        });
+        this._nativeScrollRaf = requestAnimationFrame(step);
     }
 
     stop() {
