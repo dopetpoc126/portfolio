@@ -3654,9 +3654,8 @@ button:focus-visible,
 @media (max-width: 768px) {
   .contact-section {
     padding: 1rem;
-    justify-content: flex-start;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    justify-content: center;
+    overflow: hidden;
   }
 
   .social-hub-container {
@@ -3724,6 +3723,8 @@ button:focus-visible,
 @media (max-width: 480px) {
   .contact-section {
     padding: 0.75rem;
+    justify-content: center;
+    overflow: hidden;
   }
 
   .social-hub-container {
