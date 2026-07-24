@@ -47,6 +47,21 @@ export default class GLManager {
 
     addEventListeners() {
         window.addEventListener('resize', this.onResize.bind(this));
+
+        // WebGL context loss recovery hardening
+        this.canvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            console.warn('[GLManager] WebGL context lost. Pausing rendering.');
+            this.isContextLost = true;
+        }, false);
+
+        this.canvas.addEventListener('webglcontextrestored', () => {
+            console.log('[GLManager] WebGL context restored. Re-compiling shaders.');
+            this.isContextLost = false;
+            this.onResize();
+            this.compile(this.scene, this.camera);
+            this.forceRender();
+        }, false);
     }
 
     onResize() {
@@ -54,13 +69,16 @@ export default class GLManager {
         this.height = window.innerHeight;
         this.camera.aspect = this.width / this.height;
 
-        // Adjust FOV for mobile
+        // Cap vertical field of view on mobile portrait screens to prevent wide-angle fisheye distortion
         const baseFOV = 75;
-        if (this.camera.aspect < 1) {
-            // OPTIMIZATION: Clamped FOV. 
-            // Previous: Math.min(..., 120) -> 120 is HUGE, renders way too much peripheral geometry.
-            // New: Max 85. This zooms in slightly but saves rendering objects on edges.
-            this.camera.fov = Math.min(baseFOV / this.camera.aspect, 85);
+        const refAspect = 1.777; // 16:9 desktop baseline
+        if (this.camera.aspect < refAspect) {
+            const isMobilePortrait = this.camera.aspect < 1.0;
+            const maxAllowedFov = isMobilePortrait ? 74 : 85;
+            const radV = (baseFOV * Math.PI) / 360;
+            const hFovRad = 2 * Math.atan(Math.tan(radV) * refAspect);
+            const mobileVRad = 2 * Math.atan(Math.tan(hFovRad / 2) / Math.max(this.camera.aspect, 0.35));
+            this.camera.fov = Math.min(Math.max((mobileVRad * 180) / Math.PI, baseFOV), maxAllowedFov);
         } else {
             this.camera.fov = baseFOV;
         }
@@ -72,6 +90,13 @@ export default class GLManager {
 
     compile(scene, camera) {
         this.renderer.compile(scene, camera);
+    }
+
+    async compileAsync(scene, camera) {
+        if (typeof this.renderer.compileAsync === 'function') {
+            return await this.renderer.compileAsync(scene, camera);
+        }
+        return this.renderer.compile(scene, camera);
     }
 
     forceRender() {

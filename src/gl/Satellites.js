@@ -72,8 +72,6 @@ export default class Satellites {
 
                 this.satellites.push({ group: orbitGroup, model });
                 this.gl.scene.add(orbitGroup);
-
-                console.log(`Satellite ${index + 1} loaded`);
             } catch (error) {
                 console.error(`Error loading satellite ${index + 1}:`, error);
             }
@@ -109,7 +107,6 @@ export default class Satellites {
     }
 
     dispose() {
-        console.log('Satellites: Disposing...');
         this.satellites.forEach(({ group }) => {
             group.traverse(node => {
                 if (node.isMesh) {

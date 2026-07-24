@@ -14,18 +14,15 @@ export default class Suns {
     }
 
     init() {
-        console.log('Earth System: Initializing...');
-
         cloneCachedScene(EARTH_MODEL_URL)
             .then((scene) => {
                 this.model = scene;
                 this.modelReady = true;
-                console.log('Earth System: Model Loaded');
                 if (this.onLoad) this.onLoad();
 
                 // 1. Scale & Position
                 this.isMobile = window.innerWidth < 768;
-                this.baseScale = this.isMobile ? 25.0 : 25.0; // Reduced by 25% for mobile
+                this.baseScale = this.isMobile ? 18.0 : 25.0;
                 this.model.scale.set(this.baseScale, this.baseScale, this.baseScale);
 
                 // Positioned slightly lower to center in Hero view
@@ -44,7 +41,7 @@ export default class Suns {
                             color: new THREE.Color(0xffffff),
                             roughness: 0.6, // Satin finish for vibrancy
                             metalness: 0.1,
-                            transparent: false,
+                            transparent: true,
                             opacity: 1.0,
                             side: THREE.DoubleSide,
                             depthWrite: true,
@@ -130,12 +127,10 @@ export default class Suns {
         if (this.earthMeshes) {
             this.earthMeshes.forEach(mesh => {
                 mesh.material.opacity = opacity;
-                mesh.material.transparent = !isSolid;
-                mesh.material.depthWrite = isSolid;
-                mesh.visible = opacity > 0;
+                mesh.visible = opacity > 0.001;
             });
         }
-        this.model.visible = opacity > 0;
+        this.model.visible = opacity > 0.001;
 
         // 3. Rotation (Spin faster when moving)
         this.model.rotation.y += 0.001 + Math.abs(velocity * 0.0005);
@@ -199,7 +194,6 @@ export default class Suns {
     }
 
     dispose() {
-        console.log('Earth System: Disposing...');
         if (this.model) {
             this.model.traverse(node => {
                 if (node.isMesh) {

@@ -53,7 +53,8 @@ class Haptics {
             immersiveWave: [5, 20, 4, 22, 6],
             sectionEnter: [8, 20, 12],
             sectionExit: [6, 18, 8],
-            sectionSnap: [8, 20, 12],
+            sectionSnap: [10, 25, 15, 25, 20], // Crisp multi-stage section lock
+            sectionLock: [12, 30, 16, 30, 24], // Heavy tactical lock-on pulse
             cardHover: [4],
             cardSelect: [8, 18, 12],
             cardDeselect: [6, 18, 6],
@@ -81,11 +82,9 @@ class Haptics {
 
     init() {
         if (!this.enabled) {
-            console.log('Haptics: Limited - mobile vibration unavailable in this browser/device');
             return;
         }
 
-        console.log(`Haptics: Initialized (${this.isAndroid ? 'android' : this.isIOS ? 'ios-web' : 'mobile-web'})`);
         this.setupTapHaptics();
     }
 
@@ -139,6 +138,7 @@ class Haptics {
 
     setupTapHaptics() {
         document.addEventListener('click', (event) => {
+            if (!event.isTrusted) return; // ignore programmatic clicks — vibrate intervention causes jank
             const target = this.getInteractiveTarget(event.target);
             if (!target) return;
 
@@ -220,6 +220,14 @@ class Haptics {
 
         this.scrollAccumulator = Math.max(0, this.scrollAccumulator - step);
         this.emit(speed > 1200 ? profile.heavy : profile.light, { minGap: profile.minGap });
+    }
+
+    lock() {
+        this.emit('sectionLock', { minGap: 120, cancel: true });
+    }
+
+    heavyLock() {
+        this.emit('sectionSnap', { minGap: 120, cancel: true });
     }
 
     navigation() {

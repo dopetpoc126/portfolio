@@ -1,0 +1,78 @@
+.hero-letter {
+  display: inline-block;
+  will-change: transform, opacity;
+  position: relative;
+}
+
+.hero-jet {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.hero-jet svg {
+  width: 120px;
+  height: auto;
+  filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
+}
+
+/* High-Tech Tactical Cockpit HUD Overlay */
+.cockpit-hud {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 25; /* Sits right over the webgl background but behind absolute text overlays */
+  pointer-events: none;
+  opacity: 0;
+  display: none;
+  will-change: opacity;
+  transition: opacity 0.15s ease-out;
+}
+
+.cockpit-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Subtle holographic cyber-glow on the lines and text */
+.cockpit-svg text {
+  user-select: none;
+}
+
+.hud-elements {
+  filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.6));
+}
+
+.cockpit-hud.ejecting .hud-elements {
+  stroke: #ef4444 !important;
+  fill: none !important;
+  filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.9)) !important;
+  animation: hud-blink 0.15s infinite alternate;
+}
+
+.cockpit-hud.ejecting .hud-elements text {
+  fill: #ef4444 !important;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.9) !important;
+}
+
+.cockpit-hud.ejecting .eject-handle-loop {
+  animation: eject-pull 0.12s infinite alternate;
+  transform-origin: 260px 920px;
+}
+
+@keyframes hud-blink {
+  0% { opacity: 0.25; }
+  100% { opacity: 1.0; }
+}
+
+@keyframes eject-pull {
+  0% { transform: translateY(0px) scaleY(1.0); }
+  100% { transform: translateY(12px) scaleY(1.1); }
+}

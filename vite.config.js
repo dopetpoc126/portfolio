@@ -7,13 +7,16 @@ export default defineConfig(({ command }) => ({
   server: {
     host: true
   },
+  optimizeDeps: {
+    include: ['@dgreenheck/three-pinata', 'three']
+  },
   build: {
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('three')) {
+            if (id.includes('/node_modules/three/') || id.includes('\\node_modules\\three\\')) {
               return 'vendor-three';
             }
             if (id.includes('gsap')) {
