@@ -2436,18 +2436,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // DOM Hero Content Fading (fades out fast to prevent room overlay)
             if (domHeroContent && !isWarmup) {
-                const heroOpacity = 1 - scenePct * 12.5;
-                domHeroContent.style.opacity = Math.max(0, heroOpacity);
-                domHeroContent.style.transform = `translateY(${scenePct * -80}px)`;
+                const heroOpacity = Math.max(0, 1 - scenePct * 12.5);
+                const transformVal = `translateY(${scenePct * -80}px)`;
+                if (domHeroContent._lastOpacity !== heroOpacity) {
+                    domHeroContent.style.opacity = heroOpacity;
+                    domHeroContent._lastOpacity = heroOpacity;
+                }
+                if (domHeroContent._lastTransform !== transformVal) {
+                    domHeroContent.style.transform = transformVal;
+                    domHeroContent._lastTransform = transformVal;
+                }
             }
 
             // DOM Contact / Links Section Fading (fades in when scrolling to Links / Aircraft Carrier)
             if (!domContactSection) domContactSection = document.getElementById('contact');
             if (domContactSection && !isWarmup) {
-                const contactOpacity = scrollMath.clamp01((scrollPct - 0.82) / 0.08);
-                domContactSection.style.opacity = contactOpacity.toFixed(3);
-                domContactSection.style.visibility = contactOpacity > 0.01 ? 'visible' : 'hidden';
-                domContactSection.style.pointerEvents = contactOpacity > 0.5 ? 'auto' : 'none';
+                const contactOpacity = parseFloat(scrollMath.clamp01((scrollPct - 0.82) / 0.08).toFixed(3));
+                const visibilityVal = contactOpacity > 0.01 ? 'visible' : 'hidden';
+                const pointerEventsVal = contactOpacity > 0.5 ? 'auto' : 'none';
+
+                if (domContactSection._lastOpacity !== contactOpacity) {
+                    domContactSection.style.opacity = contactOpacity;
+                    domContactSection._lastOpacity = contactOpacity;
+                }
+                if (domContactSection._lastVisibility !== visibilityVal) {
+                    domContactSection.style.visibility = visibilityVal;
+                    domContactSection._lastVisibility = visibilityVal;
+                }
+                if (domContactSection._lastPointerEvents !== pointerEventsVal) {
+                    domContactSection.style.pointerEvents = pointerEventsVal;
+                    domContactSection._lastPointerEvents = pointerEventsVal;
+                }
             }
 
             /*
