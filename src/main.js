@@ -289,9 +289,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (Math.abs(dx) > Math.abs(dy) * DIRECTION_LOCK_RATIO) return;
 
                 const currentIndex = _sectionIdx;
-                const targetIndex = dy < 0
+                let targetIndex = dy < 0
                     ? Math.min(currentIndex + 1, navLinks.length - 1)
                     : Math.max(currentIndex - 1, 0);
+
+                // The hidden exp-node links (indices 4, 5, 6) are only used when
+                // navigating forward through the experience zone. When swiping back
+                // (dy > 0) from contact (7) or any index above exp-node-1 (4),
+                // skip the hidden nodes entirely and land on experience (3).
+                if (dy > 0 && targetIndex >= 4 && targetIndex <= 6) {
+                    targetIndex = 3;
+                }
 
                 if (targetIndex !== currentIndex && navLinks[targetIndex]) {
                     navLinks[targetIndex].click();
