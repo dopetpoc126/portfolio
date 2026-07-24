@@ -3401,9 +3401,15 @@ button:focus-visible,
 /* Social Grid Layout */
 .social-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
   width: 100%;
+}
+
+@media (max-width: 900px) {
+  .social-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .social-card {
