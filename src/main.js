@@ -323,17 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (scroll.lenis) scroll.lenis.resize();
 
             setTimeout(() => {
-                // ── Hidden warmup scroll ─────────────────────────────────────
-                // Silently drive the earth→room camera path behind the loader
-                // so Three.js renders it at least once before the user scrolls.
-                // Works on both desktop (Lenis) and mobile (native rAF scroll).
                 scroll.start();
-
-                const maxScroll = scroll.getMaxScroll();
-                const aboutPx   = Math.max(
-                    (window._navTargets?.about ?? 0.05) * maxScroll,
-                    80  // floor so we always move something even if maxScroll is 0
-                );
 
                 const dismissLoader = () => {
                     if (loader) loader.classList.add('loader-hidden');
@@ -341,7 +331,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         splashLoader.destroy();
                         splashLoader = null;
                     }
-                    scroll.scrollTo(0, { immediate: true });
+                    window.scrollTo(0, 0);
+                    if (scroll.lenis) scroll.lenis.scrollTo(0, { immediate: true });
                     ScrollTrigger.refresh();
                     if (scroll.lenis) scroll.lenis.resize();
                     initSectionNav();
@@ -349,14 +340,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
 
                 if (scroll.isTouch) {
-                    // Mobile: use the rAF-driven native scroll which has a real onComplete
-                    scroll._animateNativeScroll(aboutPx, 1.0, () => {
-                        scroll._animateNativeScroll(0, 0.8, () => {
-                            setTimeout(dismissLoader, 200);
-                        });
+                    // Mobile: instant jumps only — no rAF animation, no browser scroll
+                    // pipeline involvement. Force Two.js to render the camera path once.
+                    const maxScroll = scroll.getMaxScroll();
+                    const aboutPx = Math.max((window._navTargets?.about ?? 0.05) * maxScroll, 80);
+                    window.scrollTo(0, aboutPx);
+                    requestAnimationFrame(() => {
+                        window.scrollTo(0, 0);
+                        requestAnimationFrame(() => dismissLoader());
                     });
                 } else {
-                    // Desktop: Lenis — onComplete is reliable
+                    // Desktop: Lenis animated warmup — onComplete is reliable
+                    const maxScroll = scroll.getMaxScroll();
+                    const aboutPx = Math.max((window._navTargets?.about ?? 0.05) * maxScroll, 80);
                     scroll.scrollTo(aboutPx, {
                         duration: 1.0,
                         easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
@@ -369,7 +365,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         },
                     });
                 }
-                // ─────────────────────────────────────────────────────────────
             }, 2600);
         };
 
