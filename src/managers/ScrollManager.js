@@ -15,10 +15,10 @@ export default class ScrollManager {
         // syncTouch: false — on touch devices Lenis never takes over native scroll.
         // On desktop it drives smooth wheel scroll only.
         this.lenis = new Lenis({
-            lerp: 0.08,
+            lerp: 0.05,
             smoothWheel: true,
             syncTouch: false,
-            wheelMultiplier: 1.00,
+            wheelMultiplier: 0.6,
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             infinite: false,
@@ -101,12 +101,9 @@ export default class ScrollManager {
         if (this._nativeScrollRaf) cancelAnimationFrame(this._nativeScrollRaf);
 
         const startY = window.scrollY;
-        const distance = targetY - startY;
         const startTime = performance.now();
+        const distance = targetY - startY;
         const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-        // Snap early: easeOutCubic flattens heavily near t=1.
-        // 12px threshold means we snap well before the curve asymptotes,
-        // which also triggers onComplete (nav unlock) much sooner.
         const SNAP_PX = 12;
 
         const step = (now) => {
@@ -115,8 +112,7 @@ export default class ScrollManager {
             const newY = startY + distance * easeOutCubic(t);
             window.scrollTo(0, newY);
 
-            const remaining = Math.abs(targetY - newY);
-            if (t < 1 && remaining > SNAP_PX) {
+            if (t < 1 && Math.abs(targetY - newY) > SNAP_PX) {
                 this._nativeScrollRaf = requestAnimationFrame(step);
             } else {
                 window.scrollTo(0, targetY);

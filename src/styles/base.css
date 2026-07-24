@@ -1265,8 +1265,8 @@ h3,
   inset: 0;
   z-index: 10000;
   overflow: hidden;
-  /* Transparent — Balatro canvas fills it during load, then dissolves to reveal the hero */
-  background: transparent;
+  /* Solid fallback so the loader is opaque before Balatro canvas initialises */
+  background: #000508;
   font-family: var(--font-mono);
   transition: opacity 1s cubic-bezier(0.7, 0, 0.3, 1), visibility 1s;
 }
