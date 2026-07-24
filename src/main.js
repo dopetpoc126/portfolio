@@ -320,28 +320,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, { passive: true });
 
             // ── Wheel (desktop / laptop) ────────────────────────────────────
-            let wheelAccum = 0;
-            let wheelTimer = null;
-            const WHEEL_THRESHOLD = 40;
-
+            // On desktop, Lenis handles smooth scrolling natively — no section
+            // hijacking needed. We only intercept wheel inside scroll-exempt zones
+            // (projects overlay, social container) to prevent them leaking to Lenis.
             document.addEventListener('wheel', (e) => {
-                if (e.target.closest(SCROLL_EXEMPT)) return;
-                e.preventDefault();
-                wheelAccum += e.deltaY;
-                clearTimeout(wheelTimer);
-                wheelTimer = setTimeout(() => {
-                    if (Math.abs(wheelAccum) >= WHEEL_THRESHOLD) {
-                        const currentIndex = _sectionIdx;
-                        const targetIndex = wheelAccum > 0
-                            ? Math.min(currentIndex + 1, navLinks.length - 1)
-                            : Math.max(currentIndex - 1, 0);
-                        if (targetIndex !== currentIndex && navLinks[targetIndex]) {
-                            navLinks[targetIndex].click();
-                        }
-                    }
-                    wheelAccum = 0;
-                }, 50);
-            }, { passive: false });
+                if (e.target.closest(SCROLL_EXEMPT)) {
+                    // Let the element scroll itself; don't propagate to Lenis.
+                    return;
+                }
+                // All other wheel events: let Lenis handle them freely.
+                // Do NOT call e.preventDefault() here — that would kill Lenis.
+            }, { passive: true });
         };
         // ─────────────────────────────────────────────────────────────────────
 
