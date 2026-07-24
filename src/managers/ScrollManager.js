@@ -4,8 +4,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default class ScrollManager {
     constructor() {
-        // pointer:coarse covers phones, tablets, and foldables — more reliable than a width breakpoint.
-        this.isTouch = window.matchMedia('(pointer: coarse)').matches;
+        // Ensure touch behavior is only enabled for actual mobile/tablet viewports.
+        // This prevents desktop/laptop touchscreens from disabling Lenis and breaking desktop navigation.
+        this.isTouch = (window.innerWidth < 1025) && 
+                       (window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
         this.init();
     }
 

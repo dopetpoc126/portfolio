@@ -2786,10 +2786,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const targetPx = scroll.getMaxScroll() * effectiveTargetPct;
 
                     // Lock nav for the animation duration. _unlockNav fires via onComplete
-                    // when the animation snaps to target (well before the full duration due
-                    // to the SNAP_PX early-exit). Safety net is capped at 1.5s max so a
-                    // missed onComplete doesn't freeze swipes for the full 2.8s.
-                    _lockNav(Math.min((duration + 0.3) * 1000, 1500));
+                    // when the animation snaps to target. Safety net is set to duration + 0.5s.
+                    _lockNav((duration + 0.5) * 1000);
 
                     if (scroll.isTouch) {
                         const sectionEl = document.querySelector(targetId);
