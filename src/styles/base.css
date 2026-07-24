@@ -3406,9 +3406,23 @@ button:focus-visible,
   width: 100%;
 }
 
+/* 3-card centered variant */
+.social-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 280px));
+  gap: 1.25rem;
+  width: 100%;
+  justify-content: center;
+}
+
 @media (max-width: 900px) {
   .social-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .social-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+    justify-content: unset;
+    width: 100%;
   }
 }
 
