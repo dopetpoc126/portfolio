@@ -92,6 +92,13 @@ export default class GLManager {
         this.renderer.compile(scene, camera);
     }
 
+    async compileAsync(scene, camera) {
+        if (typeof this.renderer.compileAsync === 'function') {
+            return await this.renderer.compileAsync(scene, camera);
+        }
+        return this.renderer.compile(scene, camera);
+    }
+
     forceRender() {
         this.updates.forEach(update => update());
         this.composer.render();

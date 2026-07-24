@@ -41,7 +41,7 @@ export default class Suns {
                             color: new THREE.Color(0xffffff),
                             roughness: 0.6, // Satin finish for vibrancy
                             metalness: 0.1,
-                            transparent: false,
+                            transparent: true,
                             opacity: 1.0,
                             side: THREE.DoubleSide,
                             depthWrite: true,
@@ -127,12 +127,10 @@ export default class Suns {
         if (this.earthMeshes) {
             this.earthMeshes.forEach(mesh => {
                 mesh.material.opacity = opacity;
-                mesh.material.transparent = !isSolid;
-                mesh.material.depthWrite = isSolid;
-                mesh.visible = opacity > 0;
+                mesh.visible = opacity > 0.001;
             });
         }
-        this.model.visible = opacity > 0;
+        this.model.visible = opacity > 0.001;
 
         // 3. Rotation (Spin faster when moving)
         this.model.rotation.y += 0.001 + Math.abs(velocity * 0.0005);

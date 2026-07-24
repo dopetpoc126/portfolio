@@ -158,8 +158,6 @@ export default class City {
             .then((scene) => {
                 this.model = scene;
                 this.modelReady = true;
-                if (this.onLoad) this.onLoad();
-
                 // Prepare materials for scroll-linked cross-fade opacity
                 this.model.traverse((child) => {
                     if (child.isMesh) {
@@ -234,6 +232,8 @@ export default class City {
 
                 // Create volumetric sun ray shafts coming through the windows
                 this.createSunRays();
+
+                if (this.onLoad) this.onLoad();
             })
             .catch((error) => {
                 console.warn('Loft model failed to load:', error);
@@ -750,7 +750,7 @@ export default class City {
         // Footer
         ctx.font = '40px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,170,68,0.22)'; ctx.textAlign = 'right';
-        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', CW - 100, CH - 40);
+        ctx.fillText('SHRIYAN // PORTFOLIO', CW - 100, CH - 40);
 
         const tex = new THREE.CanvasTexture(canvas);
         tex.minFilter = THREE.LinearFilter;
@@ -1031,7 +1031,7 @@ export default class City {
         ctx.font = '700 40px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255,77,0,0.35)';
         ctx.textAlign = 'right';
-        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', CW - pad - 20, CH - pad - 20);
+        ctx.fillText('SHRIYAN // PORTFOLIO', CW - pad - 20, CH - pad - 20);
 
         this.hologramTex = new THREE.CanvasTexture(canvas);
         this.hologramTex.generateMipmaps = true;
@@ -1171,7 +1171,7 @@ export default class City {
         ctx.font = '700 52px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255, 77, 0, 0.4)';
         ctx.textAlign = 'right';
-        ctx.fillText('SHRIYAN SHANKAR // PORTFOLIO', rEdge, CH - pad - 48);
+        ctx.fillText('SHRIYAN // PORTFOLIO', rEdge, CH - pad - 48);
 
         this.hologramTex = new THREE.CanvasTexture(canvas);
         this.hologramTex.generateMipmaps = true;

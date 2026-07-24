@@ -23,6 +23,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const canvas = document.querySelector('#gl-canvas');
         if (!canvas) throw new Error('Canvas #gl-canvas not found');
 
+        // Start Beams 3D shader immediately for the splash screen loader
+        const splashCanvas = document.getElementById('balatro-canvas');
+        let splashLoader = null;
+        if (splashCanvas) {
+            const BeamsLoader = (await import('./gl/BeamsLoader.js')).default;
+            splashLoader = new BeamsLoader(splashCanvas, {
+                beamWidth: 2,
+                beamHeight: 15,
+                beamNumber: 12,
+                lightColor: '#ffffff',
+                speed: 2,
+                noiseIntensity: 1.75,
+                scale: 0.2,
+                rotation: 0
+            });
+        }
+
         // Debug border to check visibility
         // canvas.style.border = '1px solid red';
 
@@ -309,6 +326,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             setTimeout(() => {
                 if (loader) loader.classList.add('loader-hidden');
+                if (splashLoader) {
+                    splashLoader.destroy();
+                    splashLoader = null;
+                }
                 scroll.start(); // Allow scrolling once loader is gone
                 initSectionNav(); // Section-by-section navigation (touch + wheel)
                 canFracture = true;
@@ -2420,6 +2441,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 domHeroContent.style.transform = `translateY(${scenePct * -80}px)`;
             }
 
+            // DOM Contact / Links Section Fading (fades in when scrolling to Links / Aircraft Carrier)
+            if (!domContactSection) domContactSection = document.getElementById('contact');
+            if (domContactSection && !isWarmup) {
+                const contactOpacity = scrollMath.clamp01((scrollPct - 0.82) / 0.08);
+                domContactSection.style.opacity = contactOpacity.toFixed(3);
+                domContactSection.style.visibility = contactOpacity > 0.01 ? 'visible' : 'hidden';
+                domContactSection.style.pointerEvents = contactOpacity > 0.5 ? 'auto' : 'none';
+            }
+
             /*
             if (heroText && heroText.update) {
                 heroText.update(scrollPct, velocity, isWarmup, canFracture);
@@ -2482,26 +2512,54 @@ document.addEventListener('DOMContentLoaded', async () => {
             gl.forceRender();
         };
 
-        const scheduleWarmupSequence = () => {
+        const scheduleWarmupSequence = async () => {
             if (warmupScheduled) return;
             warmupScheduled = true;
 
+            const hiddenElements = [];
             gl.scene.traverse(child => {
-                if (child.isMesh) {
+                if (child.isMesh || child.isGroup) {
+                    if (child.visible === false) {
+                        child.visible = true;
+                        hiddenElements.push(child);
+                    }
                     child.userData.originalFrustumCulled = child.frustumCulled;
                     child.frustumCulled = false;
                 }
             });
 
-            gl.compile(gl.scene, gl.camera);
+            // Pre-upload all textures to GPU texture memory
+            gl.scene.traverse(child => {
+                if (child.isMesh && child.material) {
+                    const mats = Array.isArray(child.material) ? child.material : [child.material];
+                    mats.forEach(mat => {
+                        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap'].forEach(prop => {
+                            if (mat[prop] && mat[prop].isTexture) {
+                                try { gl.renderer.initTexture(mat[prop]); } catch (e) {}
+                            }
+                        });
+                    });
+                }
+            });
 
-            [0, 0.1, 0.3, Math.max(0.3, getScrollPct())].forEach((sample) => {
+            // Asynchronously compile scene using Three.js compileAsync or fallback to compile
+            if (gl && typeof gl.compileAsync === 'function') {
+                await gl.compileAsync(gl.scene, gl.camera);
+            } else if (gl && typeof gl.compile === 'function') {
+                gl.compile(gl.scene, gl.camera);
+            }
+
+            // Pre-render key scene checkpoints across the entire Earth-to-City zoom curve
+            [0.0, 0.05, 0.08, 0.12, 0.18, 0.27].forEach((sample) => {
                 updateScene(sample, 0, true);
                 gl.forceRender();
             });
 
+            // Restore visibility and frustum culling
+            hiddenElements.forEach(el => { el.visible = false; });
+
             gl.scene.traverse(child => {
-                if (child.isMesh && child.userData.originalFrustumCulled !== undefined) {
+                if (child.userData.originalFrustumCulled !== undefined) {
                     child.frustumCulled = child.userData.originalFrustumCulled;
                 }
             });
@@ -2780,7 +2838,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 2. Only check when camera is held at the monitor table
             const currentScrollPct = getScrollPct();
-            if (currentScrollPct < 0.2667 || currentScrollPct > 0.2855) return;
+            if (currentScrollPct < 0.2043 || currentScrollPct > 0.2971) return;
 
             // 3. Perform 3D raycast targeting computer screen mesh
             compMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -2842,7 +2900,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Dynamically show/hide monitor click cue prompt during Projects section.
             if (monitorClickCue && projectsFullscreen) {
-                const isProjectsSection = scrollPct >= 0.2667 && scrollPct <= 0.2855;
+                const isProjectsSection = scrollPct >= 0.2043 && scrollPct <= 0.2971;
                 const isModalClosed = projectsFullscreen.classList.contains('hidden');
                 monitorClickCue.classList.toggle('hidden', !(isProjectsSection && isModalClosed));
             }

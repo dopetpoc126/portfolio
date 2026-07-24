@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shriyan Shankar — Portfolio</title>
+  <title>Shriyan — Portfolio</title>
   <link rel="stylesheet" href="/src/styles/base.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,14 +24,31 @@
 
   <!-- Initial Loader -->
   <div id="loader" class="loader-overlay">
+    <!-- Beams background canvas -->
+    <canvas id="balatro-canvas" class="loader-bg-canvas" aria-hidden="true"></canvas>
+    <div class="loader-vignette"></div>
+
     <div class="loader-content">
-      <div class="loader-glitch">PORTFOLIO // LOADING...</div>
-      <div class="loader-bar-container">
-        <div id="loader-progress" class="loader-bar"></div>
-      </div>
-      <div class="loader-status">
-        <span id="loader-text">INITIALIZING</span>
-        <span class="loader-percentage" id="loader-pct">00%</span>
+      <!-- Corner brackets — tactical framing -->
+      <div class="loader-corner loader-tl" aria-hidden="true"></div>
+      <div class="loader-corner loader-tr" aria-hidden="true"></div>
+      <div class="loader-corner loader-bl" aria-hidden="true"></div>
+      <div class="loader-corner loader-br" aria-hidden="true"></div>
+
+      <div class="loader-inner">
+        <p class="loader-eyebrow">INITIALIZING SYSTEM</p>
+        <h1 class="loader-name">SHRIYAN</h1>
+        <p class="loader-role">CS_UNDERGRADUATE &nbsp;·&nbsp; SYSTEMS_BUILDER</p>
+
+        <div class="loader-bar-container">
+          <div id="loader-progress" class="loader-bar"></div>
+          <div class="loader-bar-glow"></div>
+        </div>
+
+        <div class="loader-status">
+          <span id="loader-text">INITIALIZING</span>
+          <span class="loader-percentage" id="loader-pct">00%</span>
+        </div>
       </div>
     </div>
     <div class="loader-scanline"></div>
@@ -42,7 +59,7 @@
     <div class="load-sequence"></div>
 
     <nav class="hud-nav" aria-label="Main Navigation">
-      <div class="logo">SHRIYAN SHANKAR</div>
+      <div class="logo">SHRIYAN</div>
       <div class="links">
         <a href="#hero">Start</a>
         <a href="#about">About</a>
@@ -155,41 +172,91 @@
       <!-- 3D Cards render via WebGL canvas -->
     </section>
 
-    <section id="contact" class="content-section contact-section"
-      style="display: none;">
-      <h2 style="margin-bottom: 2rem;">/// CONTACT</h2>
+    <section id="contact" class="content-section contact-section">
+      <div class="social-hub-container">
+        <!-- Hub Header -->
+        <div class="social-hub-header">
+          <div class="social-hub-tagline">
+            <span class="hub-status-dot"></span>
+            <span class="hub-status-text">TRANSMISSION_HUB // SECURE_UPLINK</span>
+          </div>
+          <h2 class="social-hub-title">CONNECT & SOCIALS</h2>
+          <p class="social-hub-subtitle">Initiate direct uplink or inspect code repositories & operative channels.</p>
+        </div>
 
-      <div class="glass-panel" style="width: 100%; max-width: 450px; padding: 2rem;">
-        <div class="social-links-container">
-          <a href="https://linkedin.com/in/shriyan-srivastav-shankar-a446a0321/" target="_blank" rel="noopener noreferrer" class="social-button">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-            </svg>
-            <span class="btn-value">LINKEDIN</span>
+        <!-- Social Media Cards Grid -->
+        <div class="social-grid">
+          <!-- LinkedIn Card -->
+          <a href="https://linkedin.com/in/shriyan-srivastav-shankar-a446a0321/" target="_blank" rel="noopener noreferrer" class="social-card social-linkedin">
+            <div class="social-card-header">
+              <div class="social-icon-wrapper">
+                <svg viewBox="0 0 24 24" class="social-icon"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+              </div>
+              <span class="social-action-badge">CONNECT ↗</span>
+            </div>
+            <div class="social-card-body">
+              <h3 class="social-platform-name">LinkedIn</h3>
+              <span class="social-handle">Shriyan Srivastav Shankar</span>
+              <p class="social-card-desc">Professional background, software experience & engineering network.</p>
+            </div>
           </a>
 
-          <a href="https://github.com/dopetpoc126" target="_blank" rel="noopener noreferrer" class="social-button">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-            </svg>
-            <span class="btn-value">GITHUB</span>
+          <!-- GitHub Card -->
+          <a href="https://github.com/dopetpoc126" target="_blank" rel="noopener noreferrer" class="social-card social-github">
+            <div class="social-card-header">
+              <div class="social-icon-wrapper">
+                <svg viewBox="0 0 24 24" class="social-icon"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              </div>
+              <span class="social-action-badge">VIEW REPOS ↗</span>
+            </div>
+            <div class="social-card-body">
+              <h3 class="social-platform-name">GitHub</h3>
+              <span class="social-handle">@dopetpoc126</span>
+              <p class="social-card-desc">WebGL graphics engines, Android kernels, and open-source software builds.</p>
+            </div>
           </a>
 
-          <a href="mailto:shriyansrivatsav@gmail.com" class="social-button">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-            </svg>
-            <span class="btn-value">EMAIL</span>
+          <!-- Email Card -->
+          <a href="mailto:shriyansrivatsav@gmail.com" class="social-card social-email">
+            <div class="social-card-header">
+              <div class="social-icon-wrapper">
+                <svg viewBox="0 0 24 24" class="social-icon"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+              </div>
+              <span class="social-action-badge">SEND EMAIL ↗</span>
+            </div>
+            <div class="social-card-body">
+              <h3 class="social-platform-name">Direct Signal</h3>
+              <span class="social-handle">shriyansrivatsav@gmail.com</span>
+              <p class="social-card-desc">Direct transmission line for engineering roles, inquiries & collaboration.</p>
+            </div>
+          </a>
+
+          <!-- X / Twitter Card -->
+          <a href="https://x.com" target="_blank" rel="noopener noreferrer" class="social-card social-x">
+            <div class="social-card-header">
+              <div class="social-icon-wrapper">
+                <svg viewBox="0 0 24 24" class="social-icon"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </div>
+              <span class="social-action-badge">FOLLOW ↗</span>
+            </div>
+            <div class="social-card-body">
+              <h3 class="social-platform-name">X // Twitter</h3>
+              <span class="social-handle">@shriyan</span>
+              <p class="social-card-desc">Real-time tech updates, WebGL experiments, and dev thoughts.</p>
+            </div>
           </a>
         </div>
-      </div>
 
-      <div
-        style="margin-top: 2.5rem; font-family: var(--font-mono); font-size: 0.65rem; opacity: 0.3; text-align: center; letter-spacing: 3px;">
-        <p>TERMINAL_CONNECTION: ENCRYPTED // SECURE_UPLINK</p>
+        <!-- Terminal Uplink Status Footer -->
+        <div class="social-hub-footer">
+          <div class="terminal-status-left">
+            <span class="term-prompt">&gt;_</span>
+            <span>UPLINK: ENCRYPTED // LATENCY: 24ms</span>
+          </div>
+          <div class="terminal-status-right">
+            <span>STATUS: READY_FOR_DISPATCH</span>
+          </div>
+        </div>
       </div>
     </section>
   </main>
