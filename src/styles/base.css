@@ -3300,7 +3300,50 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: 3rem;
+  background: rgba(10, 13, 20, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 1px solid rgba(45, 212, 191, 0.3);
+  border-radius: 20px;
+  box-shadow: 
+    0 30px 90px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
 }
+
+/* TV screen CRT overlay effect */
+.social-hub-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Screen corner brackets */
+.screen-bracket {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: rgba(255, 255, 255, 0.25);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 5;
+}
+.bracket-tl { top: 20px; left: 20px; border-width: 2px 0 0 2px; }
+.bracket-tr { top: 20px; right: 20px; border-width: 2px 2px 0 0; }
+.bracket-bl { bottom: 20px; left: 20px; border-width: 0 0 2px 2px; }
+.bracket-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; }
 
 .social-hub-header {
   text-align: center;
@@ -3586,6 +3629,18 @@ button:focus-visible,
 }
 
 @media (max-width: 640px) {
+  .social-hub-container {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+  .screen-bracket {
+    width: 10px;
+    height: 10px;
+  }
+  .bracket-tl { top: 12px; left: 12px; }
+  .bracket-tr { top: 12px; right: 12px; }
+  .bracket-bl { bottom: 12px; left: 12px; }
+  .bracket-br { bottom: 12px; right: 12px; }
   .social-grid {
     grid-template-columns: 1fr;
   }
